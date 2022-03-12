@@ -106,7 +106,7 @@ def scalar_flux_engquist_osher(
     assert u.shape[0] == grid.x.size
     fp = flux(scheme, t, grid.x, jnp.maximum(u, omega))
     fm = flux(scheme, t, grid.x, jnp.minimum(u, omega))
-    fo = flux(scheme, t, grid.x, jnp.full_like(u, omega))
+    fo = flux(scheme, t, grid.x, jnp.full_like(grid.df, omega))
 
     fnum = (fp[:-1] + fm[1:] - fo)
     return jnp.pad(fnum, 1)

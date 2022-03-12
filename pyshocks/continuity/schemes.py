@@ -83,7 +83,7 @@ def _(scheme: Godunov,
 # {{{ WENO
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):
+class WENOJS(Scheme, WENOJSMixin):          # pylint: disable=abstract-method
     """See :class:`pyshocks.burgers.WENOJS`."""
     def __post_init__(self):
         # pylint: disable=no-member

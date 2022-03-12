@@ -30,9 +30,6 @@ main.pdf
 *.o
 *.x
 
-# Fortran
-*.mod
-
 # directories
 _output
 build
@@ -41,3 +38,4 @@ __pycache__
 
 # binary
 *.h5
+*.png

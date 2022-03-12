@@ -120,7 +120,7 @@ def _(scheme: EngquistOsher,
 # {{{ WENO
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):
+class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
     """Classic (finite volume) WENO schemes by Jiang and Shu. Implementation
     follows the steps from [Shu2009]_.
 

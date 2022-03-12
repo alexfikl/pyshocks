@@ -36,15 +36,13 @@ class WENOMixin:
 
 # {{{ coefficients for WENOJS
 
-class WENOJSMixin(WENOMixin):
+class WENOJSMixin(WENOMixin):       # pylint: disable=abstract-method
     a: ClassVar[jnp.ndarray]
     b: ClassVar[jnp.ndarray]
     c: ClassVar[jnp.ndarray]
     d: ClassVar[jnp.ndarray]
 
-    @property
-    def eps(self):
-        raise NotImplementedError
+    eps: float
 
 
 class WENOJS32Mixin(WENOJSMixin):
