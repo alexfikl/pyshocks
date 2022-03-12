@@ -1,0 +1,43 @@
+# system
+.DS_Store
+tags
+
+# temporary
+*~
+*.swp
+*.kate-swp
+
+# latex
+scribbles/*.pdf
+main.pdf
+*.out
+*.aux
+*.log
+*.thm
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.spl
+
+# python
+*.egg-info
+*.egg
+*.whl
+
+# object files
+*.o
+*.x
+
+# Fortran
+*.mod
+
+# directories
+_output
+build
+latex.out
+__pycache__
+
+# binary
+*.h5
