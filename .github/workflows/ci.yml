@@ -20,8 +20,8 @@ jobs:
         python-version: '3.x'
     - name: Main Script
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install --verbose -e '.[dev]'
+        python -m pip install --upgrade pip numpy
+        python -m pip install --verbose -e '.[dev,git]'
         make flake8
 
   pylint:
@@ -35,8 +35,8 @@ jobs:
         python-version: '3.x'
     - name: Main Script
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install -e .[dev]
+        python -m pip install --upgrade pip numpy
+        python -m pip install -e '.[dev,git]'
         make pylint
 
   # mypy:
@@ -50,8 +50,8 @@ jobs:
   #       python-version: '3.x'
   #   - name: Main Script
   #     run: |
-  #       python -m pip install --upgrade pip pytools
-  #       python -m pip install -e .[dev]
+  #       python -m pip install --upgrade pip numpy
+  #       python -m pip install -e '.[dev,git]'
   #       make mypy
 
   pytest:
@@ -72,8 +72,8 @@ jobs:
         # NOTE: tested separately in `pytest-meshmode`
         rm -rf tests/test_meshmode.py
 
-        python -m pip install --upgrade pip
-        python -m pip install -e .[dev]
+        python -m pip install --upgrade pip numpy
+        python -m pip install -e '.[dev,git]'
         python -m pytest
 
 # vim: set ts=2 sw=2 et:
