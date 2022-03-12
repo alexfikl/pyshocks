@@ -4,9 +4,9 @@
 # {{{ project information
 
 project = "pyshocks"
-copyright = "2021, Et Al"
-author = "Et Al"
-release = "2021.1"
+copyright = "2021, Alexandru Fikl"
+author = "Alexandru Fikl"
+release = "2022.3"
 
 # }}}
 
@@ -38,16 +38,6 @@ pygments_style = "sphinx"
 language = "en"
 
 # }}
-
-# {{{ output
-
-# html
-html_theme = "furo"
-html_theme_options = {
-    "page_width": "75%",
-}
-
-# }}}
 
 # {{{ extension settings
 
