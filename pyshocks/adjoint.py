@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2020 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-License-Identifier: MIT
+
 from dataclasses import dataclass, field
 from functools import singledispatch
 from typing import Any, Dict, List, Optional
