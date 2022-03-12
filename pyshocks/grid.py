@@ -91,8 +91,7 @@ class Grid:
     def df(self):
         return jnp.diff(self.x)
 
-    @property               # type: ignore[misc]
-    @memoize_method
+    @property
     def dx(self):
         return jnp.diff(self.f)
 
