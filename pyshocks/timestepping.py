@@ -17,9 +17,11 @@
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Any, Callable, List, Optional
+from typing import List, Optional
 
 import jax.numpy as jnp
+
+from pyshocks.schemes import ScalarFunction, VectorFunction
 
 
 # {{{ interface
@@ -61,8 +63,8 @@ class Stepper:
         A callable taking ``(t, u)`` that acts as a source term to the ODE.
     """
 
-    predict_timestep: Callable[[float, jnp.ndarray], float]
-    source: Callable[[float, jnp.ndarray, Any], jnp.ndarray]
+    predict_timestep: ScalarFunction
+    source: VectorFunction
 
 
 def step(stepper: Stepper, u0: jnp.ndarray, *,
@@ -89,16 +91,19 @@ def step(stepper: Stepper, u0: jnp.ndarray, *,
     if tfinal is None:
         tfinal = jnp.inf
 
-    if maxit is None:
-        maxit = jnp.inf
-
     m = 0
     t = tstart
     u = u0
 
     yield StepCompleted(t=t, tfinal=tfinal, dt=0.0, iteration=m, u=u)
 
-    while t < tfinal and m < maxit:
+    while True:
+        if tfinal is not None and t >= tfinal:
+            break
+
+        if maxit is not None and m >= maxit:
+            break
+
         dt = stepper.predict_timestep(t, u)
         dt = min(dt, tfinal - t) + 1.0e-15
 

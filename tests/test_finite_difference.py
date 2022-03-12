@@ -29,13 +29,13 @@ def test_advection_vs_continuity(ascheme, cscheme, bc_type,
         n: int = 256, visualize: bool = True):
     # {{{ setup
 
-    from pyshocks import UniformGrid
+    from pyshocks import UniformGrid, Boundary
     order = int(ascheme.order) + 1
     grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary
-        boundary = PeriodicBoundary()
+        boundary: Boundary = PeriodicBoundary()
     elif bc_type == "dirichlet":
         from pyshocks.scalar import dirichlet_boundary
         boundary = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
@@ -106,13 +106,13 @@ def test_advection_finite_difference_jacobian(scheme, bc_type,
         n: int = 32, visualize: bool = True):
     # {{{ setup
 
-    from pyshocks import UniformGrid
+    from pyshocks import UniformGrid, Boundary
     order = int(scheme.order)
     grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary
-        boundary = PeriodicBoundary()
+        boundary: Boundary = PeriodicBoundary()
     elif bc_type == "dirichlet":
         from pyshocks.scalar import dirichlet_boundary
         boundary = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))

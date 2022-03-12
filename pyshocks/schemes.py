@@ -4,6 +4,9 @@
 """
 .. currentmodule:: pyshocks
 
+.. autoclass:: ScalarFunction
+.. autoclass:: VectorFunction
+
 .. autoclass:: SchemeBase
     :no-show-inheritance:
 .. autoclass:: ConservationLawScheme
@@ -24,10 +27,38 @@
 from dataclasses import dataclass
 from functools import singledispatch
 from typing import Optional
+try:
+    from typing import Protocol
+except ImportError:
+    from typing_extensions import Protocol      # type: ignore[misc]
 
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
+
+
+# {{{
+
+class ScalarFunction(Protocol):
+    r"""A generic callable that can be evaluated at :math:`(t, \mathbf{x})`.
+
+    .. automethod:: __call__
+    """
+
+    def __call__(self, t: float, x: jnp.ndarray) -> float:
+        ...
+
+
+class VectorFunction(Protocol):
+    r"""A generic callable that can be evaluated at :math:`(t, \mathbf{x})`.
+
+    .. automethod:: __call__
+    """
+
+    def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
+        ...
+
+# }}}
 
 
 # {{{ schemes

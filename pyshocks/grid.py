@@ -86,7 +86,7 @@ class Grid:
     def f(self):
         raise NotImplementedError
 
-    @property
+    @property               # type: ignore[misc]
     @memoize_method
     def df(self):
         return jnp.diff(self.x)
@@ -95,12 +95,12 @@ class Grid:
     def dx(self):
         return jnp.diff(self.f)
 
-    @property
+    @property               # type: ignore[misc]
     @memoize_method
     def dx_min(self):
         return jnp.min(self.dx)
 
-    @property
+    @property               # type: ignore[misc]
     @memoize_method
     def dx_max(self):
         return jnp.max(self.dx)
@@ -124,7 +124,7 @@ class UniformGrid(Grid):
     .. automethod:: __init__
     """
 
-    @property
+    @property               # type: ignore[misc]
     @memoize_method
     def f(self):
         dx = (self.b - self.a) / self.n
@@ -134,7 +134,7 @@ class UniformGrid(Grid):
 
         return jnp.linspace(a, b, n + 1)
 
-    @property
+    @property               # type: ignore[misc]
     @memoize_method
     def x(self):
         return 0.5 * (self.f[1:] + self.f[:-1])

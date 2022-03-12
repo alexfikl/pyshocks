@@ -19,12 +19,12 @@ Boundary Conditions
 """
 
 from dataclasses import dataclass
-from typing import Callable
 
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
 from pyshocks.schemes import (
+        VectorFunction,
         SchemeBase, flux,
         Boundary, OneSidedBoundary, TwoSidedBoundary, apply_boundary,
         )
@@ -101,11 +101,12 @@ def scalar_flux_engquist_osher(
         scheme: SchemeBase,
         grid: Grid,
         t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+        u: jnp.ndarray,
+        omega: float = 0.0) -> jnp.ndarray:
     assert u.shape[0] == grid.x.size
-    fp = flux(scheme, t, grid.x, jnp.maximum(u, scheme.omega))
-    fm = flux(scheme, t, grid.x, jnp.minimum(u, scheme.omega))
-    fo = flux(scheme, t, grid.x, scheme.omega)
+    fp = flux(scheme, t, grid.x, jnp.maximum(u, omega))
+    fm = flux(scheme, t, grid.x, jnp.minimum(u, omega))
+    fo = flux(scheme, t, grid.x, jnp.full_like(u, omega))
 
     fnum = (fp[:-1] + fm[1:] - fo)
     return jnp.pad(fnum, 1)
@@ -138,7 +139,7 @@ class DirichletBoundary(OneSidedBoundary):
 
     .. automethod:: __init__
     """
-    f: Callable[[float, jnp.ndarray], jnp.ndarray]
+    f: VectorFunction
 
 
 @apply_boundary.register(DirichletBoundary)

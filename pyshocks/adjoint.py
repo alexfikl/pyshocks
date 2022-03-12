@@ -32,7 +32,7 @@ def save(chk: Checkpoint, idx: int, values: Dict[str, Any]):
 
 @singledispatch
 def load(chk: Checkpoint, idx: int, *,
-        include: Optional[List[str]] = None) -> Dict[str, Any]:
+         include: Optional[List[str]] = None) -> Dict[str, Any]:
     raise NotImplementedError(type(chk).__name__)
 
 
@@ -44,7 +44,7 @@ class InMemoryCheckpoint(Checkpoint):
 
 
 @save.register(InMemoryCheckpoint)
-def _(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]):
+def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]):
     key = chk.index_to_key(idx)
     if key in chk.storage:
         raise KeyError(f"cannot set existing checkpoint at '{idx}'")
@@ -54,8 +54,8 @@ def _(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]):
 
 
 @load.register(InMemoryCheckpoint)
-def _(chk: InMemoryCheckpoint, idx: int, *,
-        include: Optional[List[str]] = None) -> List[Any]:
+def _load_in_memory(chk: InMemoryCheckpoint, idx: int, *,
+                    include: Optional[List[str]] = None) -> Dict[str, Any]:
     key = chk.index_to_key(idx)
     if key not in chk.storage:
         raise KeyError(f"cannot find checkpoint at index '{idx}'")
@@ -63,7 +63,7 @@ def _(chk: InMemoryCheckpoint, idx: int, *,
     if include is None:
         return chk.storage[key]
 
-    return tuple(v for k, v in chk.storage[key].items() if k in include)
+    return {k: v for k, v in chk.storage[key].items() if k in include}
 
 # }}}
 
@@ -85,13 +85,21 @@ class AutoAdjoint(SchemeBase):
 
 
 @numerical_flux.register(AutoAdjoint)
-def _(scheme: AutoAdjoint, grid: Grid, t: float, u: jnp.ndarray) -> jnp.ndarray:
+def _numerical_flux_adjoint(
+        scheme: AutoAdjoint,
+        grid: Grid,
+        t: float,
+        u: jnp.ndarray) -> jnp.ndarray:
     pass
 
 
 @predict_timestep.register(AutoAdjoint)
-def _(scheme: AutoAdjoint, grid: Grid, t: float, u: jnp.ndarray) -> float:
-    dt = load(scheme.checkpoints, scheme.index, include=["dt"])[0]
+def _predict_time_step_adjoint(
+        scheme: AutoAdjoint,
+        grid: Grid,
+        t: float,
+        u: jnp.ndarray) -> float:
+    dt = load(scheme.checkpoints, scheme.index, include=["dt"])["dt"]
     object.__setattr__(scheme, "index", scheme.index - 1)
 
     return dt

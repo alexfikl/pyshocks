@@ -1,17 +1,14 @@
 from dataclasses import dataclass
-from typing import Callable
+from typing import Optional
 
 import jax.numpy as jnp
 
 from pyshocks import Grid, ConservationLawScheme
 from pyshocks import flux, numerical_flux, predict_timestep
-from pyshocks.weno import WENOJS32Mixin, WENOJS53Mixin
+from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 
 # {{{ base
-
-VelocityFun = Callable[[float, jnp.ndarray], jnp.ndarray]
-
 
 @dataclass(frozen=True)
 class Scheme(ConservationLawScheme):
@@ -21,16 +18,28 @@ class Scheme(ConservationLawScheme):
 
         Advection velocity at cell centers.
     """
-    velocity: jnp.array
+    velocity: Optional[jnp.ndarray]
 
 
 @flux.register(Scheme)
-def _(scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+def _flux_continuity(
+            scheme: Scheme,
+            t: float,
+            x: jnp.ndarray,
+            u: jnp.ndarray) -> jnp.ndarray:
+    assert scheme.velocity is not None
+
     return scheme.velocity * u
 
 
 @predict_timestep.register(Scheme)
-def _(scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray) -> float:
+def _predict_timestep_continuity(
+            scheme: Scheme,
+            grid: Grid,
+            t: float,
+            u: jnp.ndarray) -> float:
+    assert scheme.velocity is not None
+
     amax = jnp.max(jnp.abs(scheme.velocity[grid.i_]))
     return grid.dx_min / amax
 
@@ -59,6 +68,7 @@ class Godunov(Scheme):
 def _(scheme: Godunov,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
+    assert scheme.velocity is not None
     assert u.shape[0] == grid.x.size
 
     am = jnp.maximum(-scheme.velocity, 0.0)
@@ -73,7 +83,7 @@ def _(scheme: Godunov,
 # {{{ WENO
 
 @dataclass(frozen=True)
-class WENOJS(Scheme):
+class WENOJS(Scheme, WENOJSMixin):
     """See :class:`pyshocks.burgers.WENOJS`."""
     def __post_init__(self):
         # pylint: disable=no-member
@@ -96,6 +106,7 @@ class WENOJS53(WENOJS53Mixin, WENOJS):
 def _(scheme: WENOJS,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
+    assert scheme.velocity is not None
     assert u.size == grid.x.size
 
     from pyshocks.weno import reconstruct

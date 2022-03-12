@@ -13,6 +13,7 @@
 .. autofunction:: reconstruct
 """
 from functools import singledispatch
+from typing import ClassVar
 
 import jax.numpy as jnp
 import numpy as np
@@ -35,9 +36,15 @@ class WENOMixin:
 
 # {{{ coefficients for WENOJS
 
-# pylint: disable=W0223
 class WENOJSMixin(WENOMixin):
-    pass
+    a: ClassVar[jnp.ndarray]
+    b: ClassVar[jnp.ndarray]
+    c: ClassVar[jnp.ndarray]
+    d: ClassVar[jnp.ndarray]
+
+    @property
+    def eps(self):
+        raise NotImplementedError
 
 
 class WENOJS32Mixin(WENOJSMixin):

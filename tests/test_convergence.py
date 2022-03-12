@@ -26,7 +26,7 @@ def evolve(scheme, solution, n: int, *, timestep: float,
     if order is None:
         order = int(max(scheme.order, 1)) + 1
 
-    from pyshocks import UniformGrid
+    from pyshocks import UniformGrid, Boundary
     grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
 
     from pyshocks import Quadrature
@@ -52,7 +52,7 @@ def evolve(scheme, solution, n: int, *, timestep: float,
 
     if isinstance(scheme, advection.Scheme):
         from pyshocks.scalar import PeriodicBoundary
-        boundary = PeriodicBoundary()
+        boundary: Boundary = PeriodicBoundary()
     else:
         from pyshocks.scalar import dirichlet_boundary
         boundary = dirichlet_boundary(solution)

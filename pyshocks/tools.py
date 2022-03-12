@@ -360,6 +360,8 @@ def get_logger(
     if isinstance(level, str):
         level = getattr(logging, level.upper())
 
+    assert isinstance(level, int)
+
     formatter = ColoredFormatter(PYSHOCKS_LOG_FORMAT)
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)

@@ -4,7 +4,7 @@ import jax.numpy as jnp
 
 from pyshocks import Grid, ConservationLawScheme
 from pyshocks import flux, numerical_flux, predict_timestep
-from pyshocks.weno import WENOJS32Mixin, WENOJS53Mixin
+from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 
 # {{{ base
@@ -112,7 +112,7 @@ def _(scheme: EngquistOsher,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_engquist_osher
-    return scalar_flux_engquist_osher(scheme, grid, t, u)
+    return scalar_flux_engquist_osher(scheme, grid, t, u, omega=scheme.omega)
 
 # }}}
 
@@ -120,7 +120,7 @@ def _(scheme: EngquistOsher,
 # {{{ WENO
 
 @dataclass(frozen=True)
-class WENOJS(Scheme):
+class WENOJS(Scheme, WENOJSMixin):
     """Classic (finite volume) WENO schemes by Jiang and Shu. Implementation
     follows the steps from [Shu2009]_.
 

@@ -25,7 +25,7 @@ try:
     # python >=3.8 only
     from importlib import metadata
 except ImportError:
-    import importlib_metadata as metadata
+    import importlib_metadata as metadata       # type: ignore[no-redef]
 
 __version__ = metadata.version("pyshocks")
 

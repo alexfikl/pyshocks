@@ -5,9 +5,9 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
-from pyshocks import UniformGrid, norm, timeme, get_logger
+from pyshocks import UniformGrid, Boundary, norm, timeme, get_logger
 from pyshocks import advection, apply_boundary, apply_operator, predict_timestep
-from pyshocks.timestepping import step
+from pyshocks.timestepping import Stepper, step
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
 
 logger = get_logger("advection-adjoint")
@@ -17,8 +17,8 @@ logger = get_logger("advection-adjoint")
 class Simulation:
     scheme: advection.Scheme
     grid: UniformGrid
-    bc: ...
-    stepper: ...
+    bc: Boundary
+    stepper: Stepper
 
     tfinal: float
     chk: InMemoryCheckpoint
@@ -112,7 +112,7 @@ def evolve_adjoint(sim: Simulation, *,
 
     from pyshocks.scalar import PeriodicBoundary, dirichlet_boundary
     if isinstance(sim.bc, PeriodicBoundary):
-        bc = sim.bc
+        bc: Boundary = sim.bc
     else:
         bc = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
 
@@ -293,9 +293,9 @@ def main(scheme,
 
 if __name__ == "__main__":
     try:
-        # https://github.com/nschloe/dufte
-        import dufte
-        mp.style.use(dufte.style)
+        # https://github.com/nschloe/matplotx
+        import matplotx
+        mp.style.use(matplotx.styles.dufte)
     except ImportError:
         pass
 

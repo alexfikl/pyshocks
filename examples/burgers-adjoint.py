@@ -6,9 +6,9 @@ import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
 from pyshocks import burgers, get_logger
-from pyshocks import UniformGrid, norm, timeme
+from pyshocks import UniformGrid, Boundary, norm, timeme
 from pyshocks import apply_boundary, apply_operator, predict_timestep
-from pyshocks.timestepping import step
+from pyshocks.timestepping import step, Stepper
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
 
 logger = get_logger("burgers-adjoint")
@@ -18,8 +18,8 @@ logger = get_logger("burgers-adjoint")
 class Simulation:
     scheme: burgers.Scheme
     grid: UniformGrid
-    bc: ...
-    stepper: ...
+    bc: Boundary
+    stepper: Stepper
 
     tfinal: float
     chk: InMemoryCheckpoint
@@ -285,9 +285,9 @@ def main(scheme,
 
 if __name__ == "__main__":
     try:
-        # https://github.com/nschloe/dufte
-        import dufte
-        mp.style.use(dufte.style)
+        # https://github.com/nschloe/matplotx
+        import matplotx
+        mp.style.use(matplotx.styles.dufte)
     except ImportError:
         pass
 
