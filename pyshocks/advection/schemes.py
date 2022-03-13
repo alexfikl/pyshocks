@@ -70,7 +70,7 @@ class Godunov(Scheme):
 
 
 @numerical_flux.register(Godunov)
-def _(scheme: Godunov,
+def _numerical_flux_advection_godunov(scheme: Godunov,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
     assert scheme.velocity is not None
@@ -111,7 +111,7 @@ class WENOJS53(WENOJS, WENOJS53Mixin):
 
 
 @numerical_flux.register(WENOJS)
-def _(scheme: WENOJS,
+def _numerical_flux_advection_wenojs(scheme: WENOJS,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
     assert scheme.velocity is not None

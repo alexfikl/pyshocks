@@ -181,7 +181,8 @@ class ForwardEuler(Stepper):
 
 
 @advance.register(ForwardEuler)
-def _(stepper: ForwardEuler, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarray:
+def _advance_forward_euler(
+        stepper: ForwardEuler, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarray:
     return u + dt * stepper.source(t, u)
 
 # }}}
@@ -195,7 +196,7 @@ class SSPRK33(Stepper):
 
 
 @advance.register(SSPRK33)
-def _(stepper: SSPRK33, dt: float, t: float, u: jnp.ndarray):
+def _advance_ssprk33(stepper: SSPRK33, dt: float, t: float, u: jnp.ndarray):
     fn = stepper.source
 
     k1 = u + dt * fn(t, u)
@@ -213,7 +214,7 @@ class RK44(Stepper):
 
 
 @advance.register(RK44)
-def _(stepper: RK44, dt: float, t: float, u: jnp.ndarray):
+def _advance_rk44(stepper: RK44, dt: float, t: float, u: jnp.ndarray):
     fn = stepper.source
 
     k1 = dt * fn(t, u)

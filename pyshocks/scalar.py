@@ -143,7 +143,8 @@ class DirichletBoundary(OneSidedBoundary):
 
 
 @apply_boundary.register(DirichletBoundary)
-def _(bc: DirichletBoundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.ndarray:
+def _apply_boundary_scalar_dirichlet(
+        bc: DirichletBoundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.ndarray:
     assert u.size == grid.x.size
 
     ito = grid.g_[bc.side]
@@ -160,7 +161,8 @@ class PeriodicBoundary(Boundary):
 
 
 @apply_boundary.register(PeriodicBoundary)
-def _(bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray):
+def _apply_boundary_scalar_periodic(
+        bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray):
     assert u.size == grid.x.size
     g = grid.nghosts
 

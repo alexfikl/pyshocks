@@ -158,7 +158,8 @@ def _weno_js_reconstruct(u, c):
 
 
 @reconstruct.register(UniformGrid)
-def _(grid: Grid, scheme: WENOJSMixin, u: jnp.ndarray) -> jnp.ndarray:
+def _reconstruct_uniform_wenojs(
+        grid: Grid, scheme: WENOJSMixin, u: jnp.ndarray) -> jnp.ndarray:
     """WENO-JS reconstruction from the [JiangShu1996]_.
 
     .. [JiangShu1996] G.-S. Jiang, C.-W. Shu, *Efficient Implementation of

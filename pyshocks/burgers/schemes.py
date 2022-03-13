@@ -15,12 +15,14 @@ class Scheme(ConservationLawScheme):
 
 
 @flux.register(Scheme)
-def _(scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+def _flux_burgers(
+        scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
     return u**2 / 2
 
 
 @predict_timestep.register(Scheme)
-def _(scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray) -> float:
+def _predict_timestep_burgers(
+        scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray) -> float:
     # largest wave speed i.e. max |f'(u)|
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
@@ -58,7 +60,8 @@ class LaxFriedrichs(Scheme):
 
 
 @numerical_flux.register(LaxFriedrichs)
-def _(scheme: LaxFriedrichs,
+def _numerical_flux_burgers_lax_friedrichs(
+        scheme: LaxFriedrichs,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_lax_friedrichs
@@ -67,7 +70,8 @@ def _(scheme: LaxFriedrichs,
 
 
 @predict_timestep.register(LaxFriedrichs)
-def _(scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray) -> float:
+def _predict_timestep_burgers_lax_friedrichs(
+        scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray) -> float:
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
     return 0.5 * grid.dx_min**(2 - scheme.alpha) / smax
@@ -108,7 +112,8 @@ class EngquistOsher(Scheme):
 
 
 @numerical_flux.register(EngquistOsher)
-def _(scheme: EngquistOsher,
+def _numerical_flux_burgers_engquist_osher(
+        scheme: EngquistOsher,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_engquist_osher
@@ -150,7 +155,8 @@ class WENOJS53(WENOJS53Mixin, WENOJS):
 
 
 @numerical_flux.register(WENOJS)
-def _(scheme: WENOJS,
+def _numerical_flux_burgers_wenojs(
+        scheme: WENOJS,
         grid: Grid, t: float,
         u: jnp.ndarray) -> jnp.ndarray:
     assert u.size == grid.x.size

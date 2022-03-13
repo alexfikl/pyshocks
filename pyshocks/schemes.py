@@ -189,7 +189,10 @@ class ConservationLawScheme(SchemeBase):
 
 
 @apply_operator.register(ConservationLawScheme)
-def _(scheme: ConservationLawScheme, grid: Grid, bc: "Boundary",
+def _apply_operator_conservation_law(
+        scheme: ConservationLawScheme,
+        grid: Grid,
+        bc: "Boundary",
         t: float,
         u: jnp.ndarray):
     u = apply_boundary(bc, grid, t, u)
@@ -255,7 +258,11 @@ class TwoSidedBoundary(Boundary):
 
 
 @apply_boundary.register(TwoSidedBoundary)
-def _(bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.ndarray:
+def _apply_boundary_two_sided(
+        bc: TwoSidedBoundary,
+        grid: Grid,
+        t: float,
+        u: jnp.ndarray) -> jnp.ndarray:
     if bc.left is not None:
         u = apply_boundary(bc.left, grid, t, u)
 
