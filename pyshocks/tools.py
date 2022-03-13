@@ -27,6 +27,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 # {{{ memoize method
 
+
 def memoize_on_first_arg(function, cache_dict_name=None):
     if cache_dict_name is None:
         cache_dict_name = f"_memoize_dict_{function.__module__}{function.__name__}"
@@ -44,7 +45,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
             attribute_error = False
 
         result = function(obj, *args, **kwargs)
-        if attribute_error:         # pylint: disable=no-else-return
+        if attribute_error:  # pylint: disable=no-else-return
             object.__setattr__(obj, cache_dict_name, {key: result})
             return result
         else:
@@ -55,6 +56,7 @@ def memoize_on_first_arg(function, cache_dict_name=None):
         object.__delattr__(obj, cache_dict_name)
 
     from functools import update_wrapper
+
     new_wrapper = update_wrapper(wrapper, function)
     new_wrapper.clear_cache = clear_cache
 
@@ -64,10 +66,12 @@ def memoize_on_first_arg(function, cache_dict_name=None):
 def memoize_method(method: F) -> F:
     return memoize_on_first_arg(method, f"_memoize_dict_{method.__name__}")
 
+
 # }}}
 
 
 # {{{ eoc
+
 
 def estimate_order_of_convergence(x, y):
     """Computes an estimate of the order of convergence in the least-square sense.
@@ -84,8 +88,9 @@ def estimate_order_of_convergence(x, y):
         raise RuntimeError("need at least two values to estimate order")
 
     import numpy as np
+
     c = np.polyfit(np.log10(x), np.log10(y), 1)
-    return 10**c[-1], c[-2]
+    return 10 ** c[-1], c[-2]
 
 
 def estimate_gliding_order_of_convergence(x, y, *, gliding_mean=None):
@@ -97,12 +102,14 @@ def estimate_gliding_order_of_convergence(x, y, *, gliding_mean=None):
         gliding_mean = x.size
 
     import numpy as np
+
     npoints = x.size - gliding_mean + 1
     eocs = np.zeros((npoints, 2), dtype=np.float64)
 
     for i in range(npoints):
         eocs[i] = estimate_order_of_convergence(
-                x[i:i + gliding_mean], y[i:i + gliding_mean])
+            x[i : i + gliding_mean], y[i : i + gliding_mean]
+        )
 
     return eocs
 
@@ -139,6 +146,7 @@ class EOCRecorder:
     @property
     def estimated_order(self):
         import numpy as np
+
         h, error = np.array(self.history).T
         _, eoc = estimate_order_of_convergence(h, error)
         return eoc
@@ -153,6 +161,7 @@ class EOCRecorder:
             of convergence of the current data.
         """
         import numpy as np
+
         h, error = np.array(self.history).T
         orders = estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
 
@@ -164,34 +173,37 @@ class EOCRecorder:
 
         # rows
         for i in range(h.size):
-            lines.append((
-                f"{h[i]:.3e}",
-                f"{error[i]:.6e}",
-                "---" if i == 0 else f"{orders[i - 1, 1]:.3f}"
-                ))
+            lines.append(
+                (
+                    f"{h[i]:.3e}",
+                    f"{error[i]:.6e}",
+                    "---" if i == 0 else f"{orders[i - 1, 1]:.3f}",
+                )
+            )
 
         # footer
         lines.append(("Overall", "", f"{self.estimated_order:.3f}"))
 
         # figure out column width
-        widths = [
-                max(len(line[i]) for line in lines)
-                for i in range(3)
-                ]
-        formats = ["{:%s}" % w for w in widths]     # pylint: disable=C0209
+        widths = [max(len(line[i]) for line in lines) for i in range(3)]
+        formats = ["{:%s}" % w for w in widths]  # pylint: disable=C0209
 
-        return "\n".join([
-            " | ".join(fmt.format(value) for fmt, value in zip(formats, line))
-            for line in lines
-            ])
+        return "\n".join(
+            [
+                " | ".join(fmt.format(value) for fmt, value in zip(formats, line))
+                for line in lines
+            ]
+        )
 
     def __str__(self):
         return self.as_table()
+
 
 # }}}
 
 
 # {{{ timer
+
 
 @dataclass
 class BlockTimer:
@@ -229,12 +241,14 @@ class BlockTimer:
 
     def __enter__(self):
         import time
+
         self.t_wall_start = time.perf_counter()
         self.t_proc_start = time.process_time()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         import time
+
         self.t_wall = time.perf_counter() - self.t_wall_start
         self.t_proc = time.process_time() - self.t_proc_start
 
@@ -243,9 +257,9 @@ class BlockTimer:
 
     def __str__(self):
         return (
-                f"{self.name}: completed "
-                f"({self.t_wall:.3}s wall, {self.t_cpu:.3f}x cpu)"
-                )
+            f"{self.name}: completed "
+            f"({self.t_wall:.3}s wall, {self.t_cpu:.3f}x cpu)"
+        )
 
 
 @dataclass
@@ -282,7 +296,8 @@ class IterationTimer:
         """
         return BlockTimer(
             name="inner",
-            callback=lambda subtimer: self.t_deltas.append(subtimer.t_wall))
+            callback=lambda subtimer: self.t_deltas.append(subtimer.t_wall),
+        )
 
     @property
     def total(self):
@@ -298,15 +313,12 @@ class IterationTimer:
 
         # NOTE: skipping the first few iterations because they mostly measure
         # the jit warming up, so they'll skew the standard deviation
-        return (
-                jnp.sum(t_deltas),
-                jnp.mean(t_deltas[5:-1]),
-                jnp.std(t_deltas[5:-1])
-                )
+        return (jnp.sum(t_deltas), jnp.mean(t_deltas[5:-1]), jnp.std(t_deltas[5:-1]))
 
 
 def timeme(fun):
     """Decorator that applies :class:`BlockTimer`."""
+
     @wraps(fun)
     def wrapper(*args, **kwargs):
         with BlockTimer(fun.__qualname__) as t:
@@ -317,6 +329,7 @@ def timeme(fun):
 
     return wrapper
 
+
 # }}}
 
 
@@ -326,17 +339,17 @@ def timeme(fun):
 LOG_BOLD = "\033[1m"
 LOG_RESET = "\033[0m"
 LOGLEVEL_TO_COLOR = {
-        "WARNING": "\033[1;33m",        # yellow
-        "INFO": "\033[1;36m",           # cyan
-        "DEBUG": "\033[1;37m",          # light gray
-        "CRITICAL": "\033[1;33m",       # yellow
-        "ERROR": "\033[1;31m",          # red
+    "WARNING": "\033[1;33m",  # yellow
+    "INFO": "\033[1;36m",  # cyan
+    "DEBUG": "\033[1;37m",  # light gray
+    "CRITICAL": "\033[1;33m",  # yellow
+    "ERROR": "\033[1;31m",  # red
 }
 
 PYSHOCKS_LOG_FORMAT = (
-        f"[{LOG_BOLD}%(name)s{LOG_RESET}][%(levelname)s] "
-        f"{LOG_BOLD}%(filename)s:%(lineno)-4d{LOG_RESET} :: %(message)s "
-        )
+    f"[{LOG_BOLD}%(name)s{LOG_RESET}][%(levelname)s] "
+    f"{LOG_BOLD}%(filename)s:%(lineno)-4d{LOG_RESET} :: %(message)s "
+)
 
 
 class ColoredFormatter(logging.Formatter):
@@ -344,16 +357,15 @@ class ColoredFormatter(logging.Formatter):
         levelname = record.levelname
 
         if levelname in LOGLEVEL_TO_COLOR:
-            record.levelname = \
-                    f"{LOGLEVEL_TO_COLOR[levelname]}{levelname}{LOG_RESET}"
+            record.levelname = f"{LOGLEVEL_TO_COLOR[levelname]}{levelname}{LOG_RESET}"
 
         return super().format(record)
 
 
 def get_logger(
-        module: str,
-        level: Optional[Union[int, str]] = None,
-        ) -> logging.Logger:
+    module: str,
+    level: Optional[Union[int, str]] = None,
+) -> logging.Logger:
     if level is None:
         level = logging.INFO
 
@@ -371,5 +383,6 @@ def get_logger(
     logger.setLevel(level)
 
     return logger
+
 
 # }}}

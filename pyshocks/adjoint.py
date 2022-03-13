@@ -13,6 +13,7 @@ from pyshocks import numerical_flux, predict_timestep
 
 # {{{ checkpointing
 
+
 @dataclass
 class Checkpoint:
     basename: str = "Iteration"
@@ -31,12 +32,14 @@ def save(chk: Checkpoint, idx: int, values: Dict[str, Any]):
 
 
 @singledispatch
-def load(chk: Checkpoint, idx: int, *,
-         include: Optional[List[str]] = None) -> Dict[str, Any]:
+def load(
+    chk: Checkpoint, idx: int, *, include: Optional[List[str]] = None
+) -> Dict[str, Any]:
     raise NotImplementedError(type(chk).__name__)
 
 
 # {{{ in memory checkpointing
+
 
 @dataclass
 class InMemoryCheckpoint(Checkpoint):
@@ -54,8 +57,9 @@ def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]):
 
 
 @load.register(InMemoryCheckpoint)
-def _load_in_memory(chk: InMemoryCheckpoint, idx: int, *,
-                    include: Optional[List[str]] = None) -> Dict[str, Any]:
+def _load_in_memory(
+    chk: InMemoryCheckpoint, idx: int, *, include: Optional[List[str]] = None
+) -> Dict[str, Any]:
     key = chk.index_to_key(idx)
     if key not in chk.storage:
         raise KeyError(f"cannot find checkpoint at index '{idx}'")
@@ -65,12 +69,14 @@ def _load_in_memory(chk: InMemoryCheckpoint, idx: int, *,
 
     return {k: v for k, v in chk.storage[key].items() if k in include}
 
+
 # }}}
 
 # }}}
 
 
 # {{{ adjoint scheme
+
 
 @dataclass(frozen=True)
 class AutoAdjoint(SchemeBase):
@@ -86,22 +92,19 @@ class AutoAdjoint(SchemeBase):
 
 @numerical_flux.register(AutoAdjoint)
 def _numerical_flux_adjoint(
-        scheme: AutoAdjoint,
-        grid: Grid,
-        t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+    scheme: AutoAdjoint, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     pass
 
 
 @predict_timestep.register(AutoAdjoint)
 def _predict_time_step_adjoint(
-        scheme: AutoAdjoint,
-        grid: Grid,
-        t: float,
-        u: jnp.ndarray) -> float:
+    scheme: AutoAdjoint, grid: Grid, t: float, u: jnp.ndarray
+) -> float:
     dt = load(scheme.checkpoints, scheme.index, include=["dt"])["dt"]
     object.__setattr__(scheme, "index", scheme.index - 1)
 
     return dt
+
 
 # }}}

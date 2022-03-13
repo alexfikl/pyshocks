@@ -9,15 +9,21 @@ import jax.numpy.linalg as jla
 import jax.config
 
 import pytest
+
 jax.config.update("jax_enable_x64", 1)
 logger = get_logger("test_weno")
 
 
 # {{{ test_weno_smoothness_indicator_vectorization
 
-@pytest.mark.parametrize("scheme", [
-    WENOJS32(), WENOJS53(),
-    ])
+
+@pytest.mark.parametrize(
+    "scheme",
+    [
+        WENOJS32(),
+        WENOJS53(),
+    ],
+)
 def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
     """Tests that the vectorized version of the smoothness indicator matches
     the explicitly looped version.
@@ -47,10 +53,11 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
     beta0 = jnp.zeros((nstencils, n)).copy().copy()
     for j in range(*m.indices(n)):
         for i, k in product(range(nstencils), range(a.size)):
-            beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1])**2
+            beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1]) ** 2
 
     # jnp.convolve-based
     from pyshocks.weno import _weno_js_smoothness
+
     beta1 = _weno_js_smoothness(u, a, b)
 
     # }}}
@@ -65,6 +72,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
 
     # jnp.convolve-based
     from pyshocks.weno import _weno_js_reconstruct
+
     uhat1 = _weno_js_reconstruct(u, c)
 
     # }}}
@@ -81,15 +89,20 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
 
     # }}}
 
+
 # }}}
 
 
 # {{{ test_weno_smoothness_indicator
 
-@pytest.mark.parametrize(("scheme", "n"), [
-    (WENOJS32(), 512),
-    (WENOJS53(), 128),
-    ])
+
+@pytest.mark.parametrize(
+    ("scheme", "n"),
+    [
+        (WENOJS32(), 512),
+        (WENOJS53(), 128),
+    ],
+)
 @pytest.mark.parametrize("is_smooth", [True, False])
 def test_weno_smoothness_indicator(scheme, n, is_smooth):
     """Tests that the smoothness indicator actually works."""
@@ -107,16 +120,17 @@ def test_weno_smoothness_indicator(scheme, n, is_smooth):
     if is_smooth:
         u = jnp.sin(theta)
     else:
-        u = (theta < jnp.pi)
+        u = theta < jnp.pi
 
     # }}}
 
     # {{{ compute smoothness indicator
 
     from pyshocks.weno import _weno_js_smoothness
+
     beta = _weno_js_smoothness(u, a, b)
 
-    alpha = scheme.d / (scheme.eps + beta)**2
+    alpha = scheme.d / (scheme.eps + beta) ** 2
     omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
     # }}}
@@ -136,23 +150,29 @@ def test_weno_smoothness_indicator(scheme, n, is_smooth):
 
     # }}}
 
+
 # }}}
 
 
 # {{{
 
+
 def _pyweno_reconstruct(u, order, side):
     import pyweno
+
     ul, sl = pyweno.weno.reconstruct(u, order, side, return_smoothness=True)
 
     return jax.device_put(ul), jax.device_put(sl)
 
 
-@pytest.mark.parametrize(("scheme", "order", "n"), [
-    # NOTE: pyweno only seems to support order >= 5
-    # (WENOJS32(), 3, 256),
-    (WENOJS53(), 5, 512),
-    ])
+@pytest.mark.parametrize(
+    ("scheme", "order", "n"),
+    [
+        # NOTE: pyweno only seems to support order >= 5
+        # (WENOJS32(), 3, 256),
+        (WENOJS53(), 5, 512),
+    ],
+)
 def test_weno_reference(scheme, order, n, visualize=False):
     """Compares our weno reconstruction to PyWENO"""
     pytest.importorskip("pyweno")
@@ -160,9 +180,11 @@ def test_weno_reference(scheme, order, n, visualize=False):
     # {{{ reference values
 
     from pyshocks import UniformGrid
+
     grid = UniformGrid(a=0, b=2.0 * jnp.pi, n=n, nghosts=scheme.order)
 
     from pyshocks import Quadrature, cell_average
+
     quad = Quadrature(grid=grid, order=order)
     u = cell_average(quad, jnp.sin)
 
@@ -177,6 +199,7 @@ def test_weno_reference(scheme, order, n, visualize=False):
     from pyshocks import rnorm
 
     from pyshocks.weno import _weno_js_smoothness
+
     betar = _weno_js_smoothness(u[::-1], scheme.a, scheme.b)[:, ::-1].T
     betal = _weno_js_smoothness(u, scheme.a, scheme.b).T
 
@@ -186,6 +209,7 @@ def test_weno_reference(scheme, order, n, visualize=False):
     assert errorl < 1.0e-5 and errorr < 1.0e-8
 
     from pyshocks.weno import reconstruct
+
     urhat = reconstruct(grid, scheme, u)
     ulhat = reconstruct(grid, scheme, u[::-1])[::-1]
 
@@ -202,6 +226,7 @@ def test_weno_reference(scheme, order, n, visualize=False):
     s = grid.i_
 
     import matplotlib.pyplot as plt
+
     fig = plt.figure()
     ax = fig.gca()
 
@@ -221,11 +246,13 @@ def test_weno_reference(scheme, order, n, visualize=False):
 
     plt.close(fig)
 
+
 # }}}
 
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:

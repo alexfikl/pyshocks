@@ -4,15 +4,16 @@ import jax
 import jax.numpy.linalg as jla
 
 from pyshocks import get_logger
+
 logger = get_logger("example-autodiff")
 
 
-def scalar_fn(A, x, b):     # noqa: N803
+def scalar_fn(A, x, b):  # noqa: N803
     y = A @ x + b
     return y.dot(y) / 2.0
 
 
-def vector_fn(A, x, b):     # noqa: N803
+def vector_fn(A, x, b):  # noqa: N803
     return A @ x + b
 
 

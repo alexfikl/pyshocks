@@ -7,16 +7,20 @@ import jax.numpy as jnp
 import jax.config
 
 import pytest
+
 jax.config.update("jax_enable_x64", 1)
 
 logger = get_logger("test_timestepping")
 
 
-@pytest.mark.parametrize(("cls", "order"), [
-    (ts.ForwardEuler, 1),
-    (ts.SSPRK33, 3),
-    (ts.RK44, 4),
-    ])
+@pytest.mark.parametrize(
+    ("cls", "order"),
+    [
+        (ts.ForwardEuler, 1),
+        (ts.SSPRK33, 3),
+        (ts.RK44, 4),
+    ],
+)
 def test_time_convergence(cls, order, visualize=False):
     # {{{ ode
 
@@ -38,6 +42,7 @@ def test_time_convergence(cls, order, visualize=False):
 
     if visualize:
         import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.gca()
 
@@ -46,6 +51,7 @@ def test_time_convergence(cls, order, visualize=False):
     # {{{ convergence
 
     from pyshocks import EOCRecorder
+
     eoc = EOCRecorder(name=cls.__name__)
 
     for n in range(2, 7):
@@ -53,9 +59,9 @@ def test_time_convergence(cls, order, visualize=False):
         maxit, dt = ts.predict_maxit_from_timestep(tfinal, dt)
 
         stepper = cls(
-                predict_timestep=partial(predict_timestep, dt=dt),
-                source=source,
-                )
+            predict_timestep=partial(predict_timestep, dt=dt),
+            source=source,
+        )
 
         u = []
         t = []
@@ -94,6 +100,7 @@ def test_time_convergence(cls, order, visualize=False):
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:

@@ -26,6 +26,7 @@ from pyshocks.schemes import ScalarFunction, VectorFunction
 
 # {{{ interface
 
+
 @dataclass(frozen=True)
 class StepCompleted:
     """
@@ -44,9 +45,9 @@ class StepCompleted:
 
     def __str__(self):
         return (
-                f"[{self.iteration:5d}] "
-                f"t = {self.t:.5e} / {self.tfinal:.5e} dt {self.dt:.5e}"
-                )
+            f"[{self.iteration:5d}] "
+            f"t = {self.t:.5e} / {self.tfinal:.5e} dt {self.dt:.5e}"
+        )
 
 
 @dataclass(frozen=True)
@@ -67,10 +68,14 @@ class Stepper:
     source: VectorFunction
 
 
-def step(stepper: Stepper, u0: jnp.ndarray, *,
-        maxit: Optional[int] = None,
-        tstart: float = 0.0,
-        tfinal: Optional[float] = None):
+def step(
+    stepper: Stepper,
+    u0: jnp.ndarray,
+    *,
+    maxit: Optional[int] = None,
+    tstart: float = 0.0,
+    tfinal: Optional[float] = None,
+):
     """Advance a given ODE description in time to *tfinal*.
 
     This function is a generator and is meant to be used as
@@ -132,10 +137,12 @@ def advance(stepper: Stepper, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarra
     """
     raise NotImplementedError(type(stepper).__name__)
 
+
 # }}}
 
 
 # {{{ fixed time step
+
 
 def predict_timestep_from_maxit(tfinal: float, maxit: int):
     """Determine time step from *tfinal* and *maxit*.
@@ -158,8 +165,8 @@ def predict_maxit_from_timestep(tfinal: float, dt: float):
 
 
 def predict_timestep_from_resolutions(
-        a: float, b: float, resolutions: List[int], *,
-        umax: float = 1.0) -> float:
+    a: float, b: float, resolutions: List[int], *, umax: float = 1.0
+) -> float:
     """Determine a maximum time step that is stable for the given domain
     and resolutions. The time step is computed based on the characteristic
     velocity *umax*.
@@ -170,10 +177,12 @@ def predict_timestep_from_resolutions(
 
     return dx / umax
 
+
 # }}}
 
 
 # {{{ Forward Euler
+
 
 @dataclass(frozen=True)
 class ForwardEuler(Stepper):
@@ -182,13 +191,16 @@ class ForwardEuler(Stepper):
 
 @advance.register(ForwardEuler)
 def _advance_forward_euler(
-        stepper: ForwardEuler, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarray:
+    stepper: ForwardEuler, dt: float, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     return u + dt * stepper.source(t, u)
+
 
 # }}}
 
 
 # {{{ SSPRK33
+
 
 @dataclass(frozen=True)
 class SSPRK33(Stepper):
@@ -203,10 +215,12 @@ def _advance_ssprk33(stepper: SSPRK33, dt: float, t: float, u: jnp.ndarray):
     k2 = 3.0 / 4.0 * u + 1.0 / 4.0 * (k1 + dt * fn(t + dt, k1))
     return 1.0 / 3.0 * u + 2.0 / 3.0 * (k2 + dt * fn(t + 0.5 * dt, k2))
 
+
 # }}}
 
 
 # {{{ RK44
+
 
 @dataclass(frozen=True)
 class RK44(Stepper):
@@ -223,5 +237,6 @@ def _advance_rk44(stepper: RK44, dt: float, t: float, u: jnp.ndarray):
     k4 = dt * fn(t + dt, u + k3)
 
     return u + 1.0 / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+
 
 # }}}

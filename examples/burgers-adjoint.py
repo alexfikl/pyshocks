@@ -29,18 +29,23 @@ class Simulation:
         # are not actually enforced after, which seems to mess with the adjoint
         u = apply_boundary(self.bc, self.grid, event.t, event.u)
 
-        save(self.chk, event.iteration, {
-            "iteration": event.iteration,
-            "t": event.t,
-            "dt": event.dt,
-            "u": u,
-            })
+        save(
+            self.chk,
+            event.iteration,
+            {
+                "iteration": event.iteration,
+                "t": event.t,
+                "dt": event.dt,
+                "u": u,
+            },
+        )
 
     def load_checkpoint(self):
         self.chk.count -= 1
         data = load(self.chk, self.chk.count)
 
         from pyshocks.timestepping import StepCompleted
+
         return StepCompleted(tfinal=self.tfinal, **data)
 
 
@@ -54,14 +59,19 @@ def get_filename(sim: Simulation, basename: str, ext: str = ""):
     suffix = f"{scheme}_{stepper}_{n:05}"
 
     import os
+
     dirname = os.path.dirname(__file__)
     return os.path.join(dirname, f"{basename}_{suffix}{ext}")
 
 
 @timeme
-def evolve_forward(sim: Simulation, u0: jnp.ndarray, *,
-        interactive: bool = False,
-        visualize: bool = True) -> None:
+def evolve_forward(
+    sim: Simulation,
+    u0: jnp.ndarray,
+    *,
+    interactive: bool = False,
+    visualize: bool = True,
+) -> None:
     grid = sim.grid
     stepper = sim.stepper
 
@@ -70,8 +80,14 @@ def evolve_forward(sim: Simulation, u0: jnp.ndarray, *,
     event = None
     for event in step(stepper, u0, tfinal=sim.tfinal):
         umax = norm(sim.grid, event.u, p=jnp.inf)
-        logger.info("[%4d] t = %.5e / %.5e dt %.5e umax = %.5e",
-                event.iteration, event.t, sim.tfinal, event.dt, umax)
+        logger.info(
+            "[%4d] t = %.5e / %.5e dt %.5e umax = %.5e",
+            event.iteration,
+            event.t,
+            sim.tfinal,
+            event.dt,
+            umax,
+        )
 
         sim.save_checkpoint(event)
 
@@ -103,15 +119,16 @@ def evolve_forward(sim: Simulation, u0: jnp.ndarray, *,
 
 
 @timeme
-def evolve_adjoint(sim: Simulation, *,
-        interactive: bool = False,
-        visualize: bool = True) -> None:
+def evolve_adjoint(
+    sim: Simulation, *, interactive: bool = False, visualize: bool = True
+) -> None:
     grid = sim.grid
     stepper = sim.stepper
 
     # {{{ setup
 
     from pyshocks.scalar import dirichlet_boundary
+
     bc = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
 
     chk = sim.load_checkpoint()
@@ -133,9 +150,8 @@ def evolve_adjoint(sim: Simulation, *,
     # problems -- mostly n < 1024
 
     from pyshocks.timestepping import advance
-    jac_fun = jax.jit(
-            jax.jacfwd(partial(advance, stepper), argnums=2)
-            )
+
+    jac_fun = jax.jit(jax.jacfwd(partial(advance, stepper), argnums=2))
 
     # }}}
 
@@ -179,8 +195,9 @@ def evolve_adjoint(sim: Simulation, *,
         dt = chk.dt
 
         pmax = norm(grid, p, p=jnp.inf)
-        logger.info("[%4d] t = %.5e / %.5e dt %.5e pmax = %.5e",
-                n - 1, t, sim.tfinal, dt, pmax)
+        logger.info(
+            "[%4d] t = %.5e / %.5e dt %.5e pmax = %.5e", n - 1, t, sim.tfinal, dt, pmax
+        )
 
         if interactive:
             ln0.set_ydata(chk.u[s])
@@ -209,19 +226,23 @@ def evolve_adjoint(sim: Simulation, *,
     # }}}
 
 
-def main(scheme,
-        a=-1.0, b=+1.0,
-        n=256,
-        tfinal=1.0,
-        theta=1.0,
-        interactive=False,
-        visualize=True):
+def main(
+    scheme,
+    a=-1.0,
+    b=+1.0,
+    n=256,
+    tfinal=1.0,
+    theta=1.0,
+    interactive=False,
+    visualize=True,
+):
     # {{{ setup
 
     order = int(max(scheme.order, 1.0)) + 1
     grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
 
     from pyshocks import Quadrature
+
     quad = Quadrature(grid=grid, order=order)
 
     # }}}
@@ -229,10 +250,12 @@ def main(scheme,
     # {{{ initial condition
 
     from pyshocks import cell_average
+
     solution = partial(burgers.ex_shock, grid)
-    u0 = cell_average(quad, lambda x: solution(0., x))
+    u0 = cell_average(quad, lambda x: solution(0.0, x))
 
     from pyshocks.scalar import dirichlet_boundary
+
     boundary = dirichlet_boundary(solution)
 
     # }}}
@@ -248,37 +271,41 @@ def main(scheme,
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     from pyshocks.timestepping import ForwardEuler as TimeStepper
+
     stepper = TimeStepper(
-            predict_timestep=forward_predict_timestep,
-            source=forward_operator,
-            )
+        predict_timestep=forward_predict_timestep,
+        source=forward_operator,
+    )
 
     # }}}
 
     # {{{ evolve forward
 
     sim = Simulation(
-            scheme=scheme,
-            grid=grid,
-            bc=boundary,
-            stepper=stepper,
-            tfinal=tfinal,
-            chk=InMemoryCheckpoint(),
-            )
+        scheme=scheme,
+        grid=grid,
+        bc=boundary,
+        stepper=stepper,
+        tfinal=tfinal,
+        chk=InMemoryCheckpoint(),
+    )
 
-    evolve_forward(sim, u0,
-            interactive=interactive,
-            visualize=visualize,
-            )
+    evolve_forward(
+        sim,
+        u0,
+        interactive=interactive,
+        visualize=visualize,
+    )
 
     # }}}
 
     # {{{ evolve adjoint
 
-    evolve_adjoint(sim,
-            interactive=False,
-            visualize=visualize,
-            )
+    evolve_adjoint(
+        sim,
+        interactive=False,
+        visualize=visualize,
+    )
 
     # }}}
 
@@ -287,6 +314,7 @@ if __name__ == "__main__":
     try:
         # https://github.com/nschloe/matplotx
         import matplotx
+
         mp.style.use(matplotx.styles.dufte)
     except ImportError:
         pass
@@ -295,8 +323,8 @@ if __name__ == "__main__":
     jax.config.update("jax_enable_x64", 1)
 
     main(
-            scheme=burgers.LaxFriedrichs(alpha=0.995),
-            # scheme=burgers.EngquistOsher(),
-            # scheme=burgers.WENOJS32(),
-            # scheme=burgers.WENOJS53(),
-            )
+        scheme=burgers.LaxFriedrichs(alpha=0.995),
+        # scheme=burgers.EngquistOsher(),
+        # scheme=burgers.WENOJS32(),
+        # scheme=burgers.WENOJS53(),
+    )

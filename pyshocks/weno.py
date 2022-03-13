@@ -23,6 +23,7 @@ from pyshocks import Grid, UniformGrid
 
 # {{{ WENO
 
+
 class WENOMixin:
     @property
     def order(self):
@@ -31,12 +32,14 @@ class WENOMixin:
     def set_coefficients(self):
         raise NotImplementedError
 
+
 # }}}
 
 
 # {{{ coefficients for WENOJS
 
-class WENOJSMixin(WENOMixin):       # pylint: disable=abstract-method
+
+class WENOJSMixin(WENOMixin):  # pylint: disable=abstract-method
     a: ClassVar[jnp.ndarray]
     b: ClassVar[jnp.ndarray]
     c: ClassVar[jnp.ndarray]
@@ -63,16 +66,18 @@ class WENOJS32Mixin(WENOJSMixin):
 def weno_js_32_coefficients():
     # smoothness indicator coefficients
     a = jnp.array([1.0], dtype=jnp.float64)
-    b = jnp.array([
-        [[0.0, -1.0, 1.0]],
-        [[-1.0, 1.0, 0.0]],
-        ], dtype=jnp.float64)
+    b = jnp.array(
+        [
+            [[0.0, -1.0, 1.0]],
+            [[-1.0, 1.0, 0.0]],
+        ],
+        dtype=jnp.float64,
+    )
 
     # stencil coefficients
-    c = jnp.array([
-        [0.0, 3.0 / 2.0, -1.0 / 2.0],
-        [1.0 / 2.0, 1.0 / 2.0, 0.0]
-        ], dtype=jnp.float64)
+    c = jnp.array(
+        [[0.0, 3.0 / 2.0, -1.0 / 2.0], [1.0 / 2.0, 1.0 / 2.0, 0.0]], dtype=jnp.float64
+    )
 
     # weights coefficients
     d = jnp.array([[1.0 / 3.0, 2.0 / 3.0]], dtype=jnp.float64).T
@@ -103,28 +108,36 @@ def weno_js_53_coefficients():
 
     # equation 2.17 [Shu2009]
     a = jnp.array([13.0 / 12.0, 1.0 / 4.0], dtype=np.float64)
-    b = jnp.array([
-        [[0.0, 0.0, 1.0, -2.0, 1.0], [0.0, 0.0, 3.0, -4.0, 1.0]],
-        [[0.0, 1.0, -2.0, 1.0, 0.0], [0.0, 1.0, 0.0, -1.0, 0.0]],
-        [[1.0, -2.0, 1.0, 0.0, 0.0], [1.0, -4.0, 3.0, 0.0, 0.0]],
-        ], dtype=np.float64)
+    b = jnp.array(
+        [
+            [[0.0, 0.0, 1.0, -2.0, 1.0], [0.0, 0.0, 3.0, -4.0, 1.0]],
+            [[0.0, 1.0, -2.0, 1.0, 0.0], [0.0, 1.0, 0.0, -1.0, 0.0]],
+            [[1.0, -2.0, 1.0, 0.0, 0.0], [1.0, -4.0, 3.0, 0.0, 0.0]],
+        ],
+        dtype=np.float64,
+    )
 
     # equation 2.11, 2.12, 2.13 [Shu2009]
-    c = jnp.array([
-        [0.0, 0.0, 11.0 / 6.0, -7.0 / 6.0, 2.0 / 6.0],
-        [0.0, 2.0 / 6.0, 5.0 / 6.0, -1.0 / 6.0, 0.0],
-        [-1.0 / 6.0, 5.0 / 6.0, 2.0 / 6.0, 0.0, 0.0],
-        ], dtype=np.float64)
+    c = jnp.array(
+        [
+            [0.0, 0.0, 11.0 / 6.0, -7.0 / 6.0, 2.0 / 6.0],
+            [0.0, 2.0 / 6.0, 5.0 / 6.0, -1.0 / 6.0, 0.0],
+            [-1.0 / 6.0, 5.0 / 6.0, 2.0 / 6.0, 0.0, 0.0],
+        ],
+        dtype=np.float64,
+    )
 
     # equation 2.15 [Shu2009]
     d = jnp.array([[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=jnp.float64).T
 
     return a, b, c, d
 
+
 # }}}
 
 
 # {{{ helpers
+
 
 @singledispatch
 def reconstruct(grid: Grid, scheme: WENOMixin, u: jnp.ndarray) -> jnp.ndarray:
@@ -138,28 +151,33 @@ def reconstruct(grid: Grid, scheme: WENOMixin, u: jnp.ndarray) -> jnp.ndarray:
     """
     raise NotImplementedError(type(grid).__name__)
 
+
 # }}}
 
 
 # {{{ uniform grid reconstruction
 
+
 def _weno_js_smoothness(u, a, b):
-    return jnp.stack([
-        sum(a[j] * jnp.convolve(u, b[i, j, :], mode="same")**2
-            for j in range(a.size))
-        for i in range(b.shape[0])
-        ])
+    return jnp.stack(
+        [
+            sum(
+                a[j] * jnp.convolve(u, b[i, j, :], mode="same") ** 2
+                for j in range(a.size)
+            )
+            for i in range(b.shape[0])
+        ]
+    )
 
 
 def _weno_js_reconstruct(u, c):
-    return jnp.stack([
-        jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])
-        ])
+    return jnp.stack([jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])])
 
 
 @reconstruct.register(UniformGrid)
 def _reconstruct_uniform_wenojs(
-        grid: Grid, scheme: WENOJSMixin, u: jnp.ndarray) -> jnp.ndarray:
+    grid: Grid, scheme: WENOJSMixin, u: jnp.ndarray
+) -> jnp.ndarray:
     """WENO-JS reconstruction from the [JiangShu1996]_.
 
     .. [JiangShu1996] G.-S. Jiang, C.-W. Shu, *Efficient Implementation of
@@ -170,9 +188,10 @@ def _reconstruct_uniform_wenojs(
     beta = _weno_js_smoothness(u, scheme.a, scheme.b)
     uhat = _weno_js_reconstruct(u, scheme.c)
 
-    alpha = scheme.d / (scheme.eps + beta)**2
+    alpha = scheme.d / (scheme.eps + beta) ** 2
     omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
     return jnp.sum(omega * uhat, axis=0)
+
 
 # }}}

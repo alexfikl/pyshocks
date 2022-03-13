@@ -28,6 +28,7 @@ from pyshocks.tools import memoize_method
 
 # {{{ grids
 
+
 @dataclass(frozen=True)
 class Grid:
     """
@@ -86,7 +87,7 @@ class Grid:
     def f(self):
         raise NotImplementedError
 
-    @property               # type: ignore[misc]
+    @property  # type: ignore[misc]
     @memoize_method
     def df(self):
         return jnp.diff(self.x)
@@ -95,12 +96,12 @@ class Grid:
     def dx(self):
         return jnp.diff(self.f)
 
-    @property               # type: ignore[misc]
+    @property  # type: ignore[misc]
     @memoize_method
     def dx_min(self):
         return jnp.min(self.dx)
 
-    @property               # type: ignore[misc]
+    @property  # type: ignore[misc]
     @memoize_method
     def dx_max(self):
         return jnp.max(self.dx)
@@ -111,11 +112,11 @@ class Grid:
 
     @property
     def g_(self):
-        return (None, jo.index[:+self.nghosts], jo.index[-self.nghosts:])
+        return (None, jo.index[: +self.nghosts], jo.index[-self.nghosts :])
 
     @property
     def i_(self):
-        return jo.index[self.nghosts:-self.nghosts]
+        return jo.index[self.nghosts : -self.nghosts]
 
 
 @dataclass(frozen=True)
@@ -124,7 +125,7 @@ class UniformGrid(Grid):
     .. automethod:: __init__
     """
 
-    @property               # type: ignore[misc]
+    @property  # type: ignore[misc]
     @memoize_method
     def f(self):
         dx = (self.b - self.a) / self.n
@@ -134,15 +135,17 @@ class UniformGrid(Grid):
 
         return jnp.linspace(a, b, n + 1)
 
-    @property               # type: ignore[misc]
+    @property  # type: ignore[misc]
     @memoize_method
     def x(self):
         return 0.5 * (self.f[1:] + self.f[:-1])
+
 
 # }}}
 
 
 # {{{ cell averaging
+
 
 @dataclass(frozen=True)
 class Quadrature:
@@ -175,6 +178,7 @@ class Quadrature:
 
         # get Gauss-Legendre quadrature nodes and weights
         from numpy.polynomial.legendre import leggauss
+
         xi, wi = leggauss(self.order)
         xi = jax.device_put(xi).reshape(-1, 1)
         wi = jax.device_put(wi).reshape(-1, 1)
@@ -209,10 +213,12 @@ def cell_average(quad: Quadrature, fn, staggered=False) -> jnp.ndarray:
 
     return jnp.sum(fn(quad.x) * quad.w, axis=0) / jnp.sum(quad.w, axis=0)
 
+
 # }}}
 
 
 # {{{ norms
+
 
 @partial(jax.jit, static_argnums=(2,))
 def _norm(x, dx, p):
@@ -229,15 +235,14 @@ def _norm(x, dx, p):
         return jnp.min(x)
 
     from numbers import Number
+
     if isinstance(p, Number):
-        return jnp.sum(x**p * dx)**(-1.0/p)
+        return jnp.sum(x**p * dx) ** (-1.0 / p)
 
     raise ValueError(f"unrecognized 'p': {p}")
 
 
-def norm(grid: Grid, x: jnp.ndarray, *,
-        p: float = 2,
-        weighted: bool = False) -> float:
+def norm(grid: Grid, x: jnp.ndarray, *, p: float = 2, weighted: bool = False) -> float:
     r"""Computes the interior :math:`\ell^p` norm of *x*."""
     dx = grid.dx[grid.i_] if weighted else 1.0
     x = jnp.abs(x[grid.i_])
@@ -245,10 +250,15 @@ def norm(grid: Grid, x: jnp.ndarray, *,
     return _norm(x, dx, p)
 
 
-def rnorm(grid: Grid, x: jnp.ndarray, y: jnp.ndarray, *,
-        p: float = 2,
-        weighted: bool = False,
-        atol: float = 1.0e-14) -> float:
+def rnorm(
+    grid: Grid,
+    x: jnp.ndarray,
+    y: jnp.ndarray,
+    *,
+    p: float = 2,
+    weighted: bool = False,
+    atol: float = 1.0e-14,
+) -> float:
     r"""Computes the interior :math:`\ell^p` relative error norm of *x* and *y*
     as
 
@@ -263,5 +273,6 @@ def rnorm(grid: Grid, x: jnp.ndarray, y: jnp.ndarray, *,
         ynorm = 1.0
 
     return norm(grid, x - y, p=p) / ynorm
+
 
 # }}}

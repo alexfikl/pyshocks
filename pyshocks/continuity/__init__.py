@@ -46,6 +46,7 @@ def check_oslc(grid, velocity, *, n=512):
 
 # {{{ velocity fields
 
+
 def velocity_const(grid, t, x):
     return jnp.ones_like(x)
 
@@ -56,18 +57,22 @@ def velocity_sign(grid, t, x):
 
     return jnp.where(x - x0 < 0, -a0, a0)
 
+
 # }}}
 
 
 # {{{ exact solutions
 
+
 def ex_constant_velocity_field(t, x, *, a, u0):
     return u0(x - a * t)
+
 
 # }}}
 
 
 # {{{ initial conditions
+
 
 def ic_gaussian(grid, x, *, sigma=0.1):
     r"""Gaussian initial condition given by
@@ -79,7 +84,7 @@ def ic_gaussian(grid, x, *, sigma=0.1):
     where :math:`x_c` is the domain midpoint.
     """
     mu = (grid.b - grid.a) / 2.0
-    return jnp.exp(-(x - mu)**2 / (2 * sigma**2))
+    return jnp.exp(-((x - mu) ** 2) / (2 * sigma**2))
 
 
 def ic_sine(grid, x, *, k=1):
@@ -110,17 +115,21 @@ def ic_tophat(grid, x, *, x0=None, width=0.25):
     value = jnp.ones_like(x)
 
     return jnp.where(
-            jnp.logical_and((x0 - width/2) < x, x < (x0 + width/2)),
-            value, -value
-            )
+        jnp.logical_and((x0 - width / 2) < x, x < (x0 + width / 2)), value, -value
+    )
+
 
 # }}}
 
 
 __all__ = (
-    "Scheme", "Godunov", "WENOJS", "WENOJS32", "WENOJS53",
-
-    "velocity_const", "velocity_sign",
+    "Scheme",
+    "Godunov",
+    "WENOJS",
+    "WENOJS32",
+    "WENOJS53",
+    "velocity_const",
+    "velocity_sign",
     "ic_sine",
     "ex_constant_velocity_field",
 )

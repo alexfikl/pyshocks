@@ -10,6 +10,7 @@ from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 # {{{ base
 
+
 @dataclass(frozen=True)
 class Scheme(SchemeBase):
     """Base class for numerical schemes for the linear advection equation.
@@ -25,10 +26,8 @@ class Scheme(SchemeBase):
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_advection(
-            scheme: Scheme,
-            grid: Grid,
-            t: float,
-            u: jnp.ndarray) -> float:
+    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
+) -> float:
     assert scheme.velocity is not None
 
     # NOTE: keep in sync with pyshocks.continuity.schemes.predict_timestep
@@ -38,23 +37,23 @@ def _predict_timestep_advection(
 
 @apply_operator.register(Scheme)
 def _apply_operator_advection(
-        scheme: Scheme,
-        grid: Grid,
-        bc: Boundary,
-        t: float,
-        u: jnp.ndarray):
+    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+):
     assert scheme.velocity is not None
 
     from pyshocks import apply_boundary
+
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, t, u)
 
     return -scheme.velocity * (f[1:] - f[:-1]) / grid.dx
 
+
 # }}}
 
 
 # {{{ upwind
+
 
 @dataclass(frozen=True)
 class Godunov(Scheme):
@@ -70,9 +69,9 @@ class Godunov(Scheme):
 
 
 @numerical_flux.register(Godunov)
-def _numerical_flux_advection_godunov(scheme: Godunov,
-        grid: Grid, t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+def _numerical_flux_advection_godunov(
+    scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     assert scheme.velocity is not None
     assert u.shape[0] == grid.x.size
 
@@ -82,6 +81,7 @@ def _numerical_flux_advection_godunov(scheme: Godunov,
 
     return jnp.pad(fnum, 1)
 
+
 # }}}
 
 
@@ -89,8 +89,9 @@ def _numerical_flux_advection_godunov(scheme: Godunov,
 
 # FIXME: a bit copy-pasty?
 
+
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
+class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
     """See :class:`pyshocks.burgers.WENOJS`."""
 
     def __post_init__(self):
@@ -101,23 +102,26 @@ class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
 @dataclass(frozen=True)
 class WENOJS32(WENOJS, WENOJS32Mixin):
     """See :class:`pyshocks.burgers.WENOJS32`."""
+
     eps: float = 1.0e-6
 
 
 @dataclass(frozen=True)
 class WENOJS53(WENOJS, WENOJS53Mixin):
     """See :class:`pyshocks.burgers.WENOJS53`."""
+
     eps: float = 1.0e-12
 
 
 @numerical_flux.register(WENOJS)
-def _numerical_flux_advection_wenojs(scheme: WENOJS,
-        grid: Grid, t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+def _numerical_flux_advection_wenojs(
+    scheme: WENOJS, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     assert scheme.velocity is not None
     assert u.size == grid.x.size
 
     from pyshocks.weno import reconstruct
+
     up = reconstruct(grid, scheme, u)
     ap = reconstruct(grid, scheme, scheme.velocity)
 
@@ -129,5 +133,6 @@ def _numerical_flux_advection_wenojs(scheme: WENOJS,
     fnum = jnp.where(aavg > 0, up[:-1], um[1:])
 
     return jnp.pad(fnum, 1)
+
 
 # }}}

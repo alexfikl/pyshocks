@@ -9,6 +9,7 @@ from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 # {{{ base
 
+
 @dataclass(frozen=True)
 class Scheme(ConservationLawScheme):
     """Base class for numerical schemes for Burgers' equation."""
@@ -16,22 +17,26 @@ class Scheme(ConservationLawScheme):
 
 @flux.register(Scheme)
 def _flux_burgers(
-        scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray
+) -> jnp.ndarray:
     return u**2 / 2
 
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_burgers(
-        scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray) -> float:
+    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
+) -> float:
     # largest wave speed i.e. max |f'(u)|
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
     return 0.5 * grid.dx_min / smax
 
+
 # }}}
 
 
 # {{{ Lax-Friedrichs
+
 
 @dataclass(frozen=True)
 class LaxFriedrichs(Scheme):
@@ -61,25 +66,27 @@ class LaxFriedrichs(Scheme):
 
 @numerical_flux.register(LaxFriedrichs)
 def _numerical_flux_burgers_lax_friedrichs(
-        scheme: LaxFriedrichs,
-        grid: Grid, t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+    scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_lax_friedrichs
-    return scalar_flux_lax_friedrichs(scheme, grid, t,
-            u, u, alpha=scheme.alpha)
+
+    return scalar_flux_lax_friedrichs(scheme, grid, t, u, u, alpha=scheme.alpha)
 
 
 @predict_timestep.register(LaxFriedrichs)
 def _predict_timestep_burgers_lax_friedrichs(
-        scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray) -> float:
+    scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray
+) -> float:
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
-    return 0.5 * grid.dx_min**(2 - scheme.alpha) / smax
+    return 0.5 * grid.dx_min ** (2 - scheme.alpha) / smax
+
 
 # }}}
 
 
 # {{{ Engquist-Osher
+
 
 @dataclass(frozen=True)
 class EngquistOsher(Scheme):
@@ -113,19 +120,21 @@ class EngquistOsher(Scheme):
 
 @numerical_flux.register(EngquistOsher)
 def _numerical_flux_burgers_engquist_osher(
-        scheme: EngquistOsher,
-        grid: Grid, t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+    scheme: EngquistOsher, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_engquist_osher
+
     return scalar_flux_engquist_osher(scheme, grid, t, u, omega=scheme.omega)
+
 
 # }}}
 
 
 # {{{ WENO
 
+
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
+class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
     """Classic (finite volume) WENO schemes by Jiang and Shu. Implementation
     follows the steps from [Shu2009]_.
 
@@ -137,6 +146,7 @@ class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
     .. attribute:: eps
     .. automethod:: __init__
     """
+
     def __post_init__(self):
         # pylint: disable=no-member
         self.set_coefficients()
@@ -145,26 +155,28 @@ class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
 @dataclass(frozen=True)
 class WENOJS32(WENOJS32Mixin, WENOJS):
     """Third-order WENO scheme based on :class:`WENOJS`."""
+
     eps: float = 1.0e-6
 
 
 @dataclass(frozen=True)
 class WENOJS53(WENOJS53Mixin, WENOJS):
     """Fifth-order WENO scheme based on :class:`WENOJS`."""
+
     eps: float = 1.0e-12
 
 
 @numerical_flux.register(WENOJS)
 def _numerical_flux_burgers_wenojs(
-        scheme: WENOJS,
-        grid: Grid, t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+    scheme: WENOJS, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     assert u.size == grid.x.size
 
     # FIXME: use scalar_flux_lax_friedrichs? somehow?
     # WENO should probably have a Riemann solver-based flux thing passed to it
 
     from pyshocks.weno import reconstruct
+
     up = reconstruct(grid, scheme, u)
     fp = flux(scheme, t, grid.f, up)
 
@@ -176,6 +188,7 @@ def _numerical_flux_burgers_wenojs(
     fnum = 0.5 * (fp[:-1] + fm[1:] + umax * (up[:-1] - um[1:]))
 
     return jnp.pad(fnum, 1)
+
 
 # }}}
 

@@ -19,5 +19,9 @@ initial conditions.
 from pyshocks.advection.schemes import Scheme, Godunov, WENOJS, WENOJS32, WENOJS53
 
 __all__ = (
-    "Scheme", "Godunov", "WENOJS", "WENOJS32", "WENOJS53",
+    "Scheme",
+    "Godunov",
+    "WENOJS",
+    "WENOJS32",
+    "WENOJS53",
 )

@@ -27,10 +27,11 @@
 from dataclasses import dataclass
 from functools import singledispatch
 from typing import Optional
+
 try:
     from typing import Protocol
 except ImportError:
-    from typing_extensions import Protocol      # type: ignore[misc]
+    from typing_extensions import Protocol  # type: ignore[misc]
 
 import jax.numpy as jnp
 
@@ -38,6 +39,7 @@ from pyshocks.grid import Grid
 
 
 # {{{
+
 
 class ScalarFunction(Protocol):
     r"""A generic callable that can be evaluated at :math:`(t, \mathbf{x})`.
@@ -58,10 +60,12 @@ class VectorFunction(Protocol):
     def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
         ...
 
+
 # }}}
 
 
 # {{{ schemes
+
 
 @dataclass(frozen=True)
 class SchemeBase:
@@ -94,10 +98,8 @@ def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.nd
 
 @singledispatch
 def numerical_flux(
-        scheme: SchemeBase,
-        grid: Grid,
-        t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     """Approximate the flux at each cell-cell interface.
 
     :param scheme: scheme for which to compute the (numerical) flux.
@@ -114,11 +116,8 @@ def numerical_flux(
 
 @singledispatch
 def apply_operator(
-        scheme: SchemeBase,
-        grid: Grid,
-        bc: "Boundary",
-        t: float,
-        u: jnp.ndarray):
+    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
+):
     r"""Applies right-hand side operator for a "Method of Lines" approach.
     For any PDE, we have that
 
@@ -144,11 +143,7 @@ def apply_operator(
 
 
 @singledispatch
-def predict_timestep(
-        scheme: SchemeBase,
-        grid: Grid,
-        t: float,
-        u: jnp.ndarray) -> float:
+def predict_timestep(scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray) -> float:
     r"""Estimate the time step based on the current solution. This time step
     prediction can then be used together with a Courant number to give
     the final time step
@@ -168,10 +163,12 @@ def predict_timestep(
     """
     raise NotImplementedError(type(scheme).__name__)
 
+
 # }}}
 
 
 # {{{ conservation law schemes
+
 
 @dataclass(frozen=True)
 class ConservationLawScheme(SchemeBase):
@@ -190,20 +187,19 @@ class ConservationLawScheme(SchemeBase):
 
 @apply_operator.register(ConservationLawScheme)
 def _apply_operator_conservation_law(
-        scheme: ConservationLawScheme,
-        grid: Grid,
-        bc: "Boundary",
-        t: float,
-        u: jnp.ndarray):
+    scheme: ConservationLawScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
+):
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, t, u)
 
     return -(f[1:] - f[:-1]) / grid.dx
 
+
 # }}}
 
 
 # {{{ boundary conditions
+
 
 @dataclass(frozen=True)
 class Boundary:
@@ -234,6 +230,7 @@ class OneSidedBoundary(Boundary):
 
     .. automethod:: __init__
     """
+
     side: int
 
 
@@ -259,10 +256,8 @@ class TwoSidedBoundary(Boundary):
 
 @apply_boundary.register(TwoSidedBoundary)
 def _apply_boundary_two_sided(
-        bc: TwoSidedBoundary,
-        grid: Grid,
-        t: float,
-        u: jnp.ndarray) -> jnp.ndarray:
+    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     if bc.left is not None:
         u = apply_boundary(bc.left, grid, t, u)
 
@@ -270,5 +265,6 @@ def _apply_boundary_two_sided(
         u = apply_boundary(bc.right, grid, t, u)
 
     return u
+
 
 # }}}

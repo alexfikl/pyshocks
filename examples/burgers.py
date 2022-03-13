@@ -8,15 +8,17 @@ from pyshocks import UniformGrid, apply_operator, predict_timestep
 from pyshocks import burgers
 
 
-def main(scheme,
-        a=-1.0,
-        b=+1.0,
-        n=256,
-        tfinal=1.0,
-        theta=1.0,
-        interactive=False,
-        visualize=True,
-        verbose=True):
+def main(
+    scheme,
+    a=-1.0,
+    b=+1.0,
+    n=256,
+    tfinal=1.0,
+    theta=1.0,
+    interactive=False,
+    visualize=True,
+    verbose=True,
+):
     # {{{ setup
 
     order = int(max(scheme.order, 1.0)) + 1
@@ -25,10 +27,12 @@ def main(scheme,
     solution = partial(burgers.ex_shock, grid)
 
     from pyshocks import Quadrature, cell_average
+
     quad = Quadrature(grid=grid, order=order)
-    u = cell_average(quad, lambda x: solution(0., x))
+    u = cell_average(quad, lambda x: solution(0.0, x))
 
     from pyshocks.scalar import dirichlet_boundary
+
     boundary = dirichlet_boundary(solution)
 
     # }}}
@@ -68,13 +72,15 @@ def main(scheme,
     # {{{ evolution
 
     from pyshocks import timestepping
+
     method = timestepping.SSPRK33(
-            predict_timestep=_predict_timestep,
-            source=_apply_operator,
-            )
+        predict_timestep=_predict_timestep,
+        source=_apply_operator,
+    )
     step = timestepping.step(method, u, tfinal=tfinal)
 
     from pyshocks import IterationTimer
+
     timer = IterationTimer(name="burgers")
 
     try:
@@ -102,6 +108,7 @@ def main(scheme,
     print(f"total {t_total:.3f}s iteration {t_mean:.3f}s ± {t_std}")
 
     from pyshocks import rnorm
+
     uhat = cell_average(quad, lambda x: solution(tfinal, x))
     error = rnorm(grid, event.u, uhat, p=1)
 
@@ -120,8 +127,8 @@ def main(scheme,
 
         scheme_name = type(scheme).__name__.lower()
         filename = os.path.join(
-                os.path.dirname(__file__),
-                f"burgers_{scheme_name}_{n:05d}")
+            os.path.dirname(__file__), f"burgers_{scheme_name}_{n:05d}"
+        )
         fig.savefig(filename)
 
     # }}}
@@ -132,8 +139,8 @@ if __name__ == "__main__":
     jax.config.update("jax_enable_x64", 1)
 
     main(
-            scheme=burgers.LaxFriedrichs(alpha=1),
-            # scheme=burgers.EngquistOsher(),
-            # scheme=burgers.WENOJS32(),
-            # scheme=burgers.WENOJS53(),
-            )
+        scheme=burgers.LaxFriedrichs(alpha=1),
+        # scheme=burgers.EngquistOsher(),
+        # scheme=burgers.WENOJS32(),
+        # scheme=burgers.WENOJS53(),
+    )

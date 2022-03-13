@@ -25,13 +25,19 @@ Data
 """
 
 from pyshocks.burgers.schemes import (
-        Scheme, LaxFriedrichs, EngquistOsher,
-        WENOJS, WENOJS32, WENOJS53)
+    Scheme,
+    LaxFriedrichs,
+    EngquistOsher,
+    WENOJS,
+    WENOJS32,
+    WENOJS53,
+)
 
 import numpy as np
 
 
 # {{{ initial conditions
+
 
 def ic_tophat(grid, x):
     # TODO: this looks like it should have a solution for all t
@@ -51,19 +57,23 @@ def ic_rarefaction(grid, x):
 
 def ic_sine(grid, x):
     import jax.numpy as jnp
+
     dx = (grid.b - grid.a) / 3.0
     lb = grid.a + dx
     rb = grid.b - dx
 
     return jnp.where(
-            jnp.logical_and(lb < x, x < rb),
-            1.0 + jnp.sin(2.0 * jnp.pi * (x - lb) / dx),
-            1.0)
+        jnp.logical_and(lb < x, x < rb),
+        1.0 + jnp.sin(2.0 * jnp.pi * (x - lb) / dx),
+        1.0,
+    )
+
 
 # }}}
 
 
 # {{{ forward analytic solutions
+
 
 def ex_shock(grid, t, x):
     # shock velocity
@@ -73,13 +83,19 @@ def ex_shock(grid, t, x):
 
     return (x < (x0 + s * t)).astype(np.float64)
 
+
 # }}}
 
 
 __all__ = (
-    "Scheme", "LaxFriedrichs", "EngquistOsher",
-    "WENOJS", "WENOJS32", "WENOJS53",
-
-    "ic_tophat", "ic_rarefaction", "ic_sine",
+    "Scheme",
+    "LaxFriedrichs",
+    "EngquistOsher",
+    "WENOJS",
+    "WENOJS32",
+    "WENOJS53",
+    "ic_tophat",
+    "ic_rarefaction",
+    "ic_sine",
     "ex_shock",
 )

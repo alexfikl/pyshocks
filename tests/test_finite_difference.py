@@ -11,33 +11,50 @@ import jax.config
 from pyshocks import advection, continuity
 
 import pytest
+
 jax.config.update("jax_enable_x64", 1)
 
 
 # {{{ test advection vs continuity
 
-@pytest.mark.parametrize(("ascheme", "cscheme"), [
-    (advection.Godunov(velocity=None), continuity.Godunov(velocity=None)),
-    (advection.WENOJS32(velocity=None), continuity.WENOJS32(velocity=None)),
-    ])
-@pytest.mark.parametrize("bc_type", [
-    "periodic", "dirichlet",
-    ])
-def test_advection_vs_continuity(ascheme, cscheme, bc_type,
-        a: float = -1.0,
-        b: float = +1.0,
-        n: int = 256, visualize: bool = True):
+
+@pytest.mark.parametrize(
+    ("ascheme", "cscheme"),
+    [
+        (advection.Godunov(velocity=None), continuity.Godunov(velocity=None)),
+        (advection.WENOJS32(velocity=None), continuity.WENOJS32(velocity=None)),
+    ],
+)
+@pytest.mark.parametrize(
+    "bc_type",
+    [
+        "periodic",
+        "dirichlet",
+    ],
+)
+def test_advection_vs_continuity(
+    ascheme,
+    cscheme,
+    bc_type,
+    a: float = -1.0,
+    b: float = +1.0,
+    n: int = 256,
+    visualize: bool = True,
+):
     # {{{ setup
 
     from pyshocks import UniformGrid, Boundary
+
     order = int(ascheme.order) + 1
     grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary
+
         boundary: Boundary = PeriodicBoundary()
     elif bc_type == "dirichlet":
         from pyshocks.scalar import dirichlet_boundary
+
         boundary = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
     else:
         raise ValueError(f"unknown 'bc_type': {bc_type}")
@@ -61,6 +78,7 @@ def test_advection_vs_continuity(ascheme, cscheme, bc_type,
         return (x[i] * grid.dx[i]) @ y[i]
 
     from pyshocks import apply_operator
+
     aop = jax.jit(partial(apply_operator, ascheme, grid, boundary, 0.0))
     cop = jax.jit(partial(apply_operator, cscheme, grid, boundary, 0.0))
 
@@ -69,7 +87,7 @@ def test_advection_vs_continuity(ascheme, cscheme, bc_type,
 
     error = abs(dot(u, aop(v)) - dot(cop(u), v))
     print(f"error: {error:.5e}")
-    assert error < 1.e-15
+    assert error < 1.0e-15
 
     # }}}
 
@@ -77,6 +95,7 @@ def test_advection_vs_continuity(ascheme, cscheme, bc_type,
         return
 
     import matplotlib.pyplot as plt
+
     fig = plt.figure()
     ax = fig.gca()
 
@@ -88,33 +107,43 @@ def test_advection_vs_continuity(ascheme, cscheme, bc_type,
     fig.savefig(f"finite_comparison_{type(ascheme).__name__}_{bc_type}")
     plt.close(fig)
 
+
 # }}}
 
 
 # {{{ test advection vs finite difference
 
-@pytest.mark.parametrize("scheme", [
-    advection.Godunov(velocity=None),
-    # advection.WENOJS32(velocity=None),
-    ])
-@pytest.mark.parametrize("bc_type", [
-    "periodic", "dirichlet"
-    ])
-def test_advection_finite_difference_jacobian(scheme, bc_type,
-        a: float = -1.0,
-        b: float = +1.0,
-        n: int = 32, visualize: bool = True):
+
+@pytest.mark.parametrize(
+    "scheme",
+    [
+        advection.Godunov(velocity=None),
+        # advection.WENOJS32(velocity=None),
+    ],
+)
+@pytest.mark.parametrize("bc_type", ["periodic", "dirichlet"])
+def test_advection_finite_difference_jacobian(
+    scheme,
+    bc_type,
+    a: float = -1.0,
+    b: float = +1.0,
+    n: int = 32,
+    visualize: bool = True,
+):
     # {{{ setup
 
     from pyshocks import UniformGrid, Boundary
+
     order = int(scheme.order)
     grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary
+
         boundary: Boundary = PeriodicBoundary()
     elif bc_type == "dirichlet":
         from pyshocks.scalar import dirichlet_boundary
+
         boundary = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
     else:
         raise ValueError(f"unknown 'bc_type': {bc_type}")
@@ -130,6 +159,7 @@ def test_advection_finite_difference_jacobian(scheme, bc_type,
     # TODO: This would be more convincing as a convergence study
 
     from pyshocks import apply_operator
+
     op = jax.jit(partial(apply_operator, scheme, grid, boundary, 0.0))
 
     _, subkey = jax.random.split(key)
@@ -161,6 +191,7 @@ def test_advection_finite_difference_jacobian(scheme, bc_type,
         return
 
     import matplotlib.pyplot as plt
+
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
     ax1.imshow(fddjac)
     ax1.set_title("$Finite$")
@@ -180,11 +211,13 @@ def test_advection_finite_difference_jacobian(scheme, bc_type,
     fig.savefig(f"finite_jacfwd_error_{type(scheme).__name__}_{bc_type}")
     plt.close(fig)
 
+
 # }}}
 
 
 if __name__ == "__main__":
     import sys
+
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:

@@ -12,25 +12,31 @@ logger = get_logger("advection")
 
 def make_solution(name, grid, a=1.0, x0=1.0):
     if name == "const":
+
         def velocity(t, x):
             return a * continuity.velocity_const(grid, t, x)
 
         def solution(t, x):
-            return continuity.ex_constant_velocity_field(t, x,
-                    a=a,
-                    u0=partial(continuity.ic_sine, grid, x0=x0))
+            return continuity.ex_constant_velocity_field(
+                t, x, a=a, u0=partial(continuity.ic_sine, grid, x0=x0)
+            )
+
     elif name == "sign":
+
         def velocity(t, x):
             return a * continuity.velocity_sign(grid, t, x)
 
         def solution(t, x):
             return x0 + continuity.ic_sine(grid, x)
+
     elif name == "double_sign":
+
         def velocity(t, x):
             return a * continuity.velocity_sign(grid, t, x)
 
         def solution(t, x):
             return a * continuity.velocity_sign(grid, t, x)
+
     else:
         raise ValueError(f"unknown example: '{name}'")
 
@@ -40,19 +46,24 @@ def make_solution(name, grid, a=1.0, x0=1.0):
 def make_boundary_conditions(name, solution, *, a=1.0):
     if name == "const":
         from pyshocks.scalar import PeriodicBoundary
+
         bc = PeriodicBoundary()
     elif name in ["sign", "double_sign"]:
+
         @jax.jit
         def bc_left(t, x):
-            return continuity.ex_constant_velocity_field(t, x,
-                    a=-a, u0=partial(solution, t))
+            return continuity.ex_constant_velocity_field(
+                t, x, a=-a, u0=partial(solution, t)
+            )
 
         @jax.jit
         def bc_right(t, x):
-            return continuity.ex_constant_velocity_field(t, x,
-                    a=+a, u0=partial(solution, t))
+            return continuity.ex_constant_velocity_field(
+                t, x, a=+a, u0=partial(solution, t)
+            )
 
         from pyshocks.scalar import dirichlet_boundary
+
         bc = dirichlet_boundary(fa=bc_left, fb=bc_right)
     else:
         raise ValueError(f"unknown example: '{name}'")
@@ -60,27 +71,31 @@ def make_boundary_conditions(name, solution, *, a=1.0):
     return bc
 
 
-def main(scheme,
-        a=-1.0,
-        b=+1.0,
-        n=512,
-        tfinal=0.5,
-        theta=0.5,
-        example_name="sign",
-        interactive=False,
-        visualize=True,
-        verbose=True):
+def main(
+    scheme,
+    a=-1.0,
+    b=+1.0,
+    n=512,
+    tfinal=0.5,
+    theta=0.5,
+    example_name="sign",
+    interactive=False,
+    visualize=True,
+    verbose=True,
+):
     # {{{ setup
 
     order = int(max(scheme.order, 1.0)) + 1
     grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
 
     from dataclasses import replace
+
     velocity, solution = make_solution(example_name, grid, a=0.5, x0=1.0)
     boundary = make_boundary_conditions(example_name, solution, a=0.5)
 
     # initial condition
     from pyshocks import Quadrature, cell_average
+
     quad = Quadrature(grid=grid, order=4)
     u = cell_average(quad, lambda x: solution(0.0, x))
 
@@ -126,13 +141,15 @@ def main(scheme,
     # {{{ evolution
 
     from pyshocks import timestepping
+
     method = timestepping.SSPRK33(
-            predict_timestep=_predict_timestep,
-            source=_apply_operator,
-            )
+        predict_timestep=_predict_timestep,
+        source=_apply_operator,
+    )
     step = timestepping.step(method, u, tfinal=tfinal)
 
     from pyshocks import IterationTimer
+
     timer = IterationTimer(name="advection")
 
     try:
@@ -161,6 +178,7 @@ def main(scheme,
         logger.info("total %.3fs iteration %.3fs ± %g", t_total, t_mean, t_std)
 
     from pyshocks import rnorm
+
     uhat = cell_average(quad, lambda x: solution(tfinal, x))
     error = rnorm(grid, event.u, uhat, p=1)
 
@@ -184,8 +202,8 @@ def main(scheme,
 
         scheme_name = type(scheme).__name__.lower()
         filename = os.path.join(
-                os.path.dirname(__file__),
-                f"advection_{scheme_name}_{example_name}_{n:05d}")
+            os.path.dirname(__file__), f"advection_{scheme_name}_{example_name}_{n:05d}"
+        )
         fig.savefig(filename)
         plt.close(fig)
 
@@ -200,10 +218,12 @@ def convergence(scheme, visualize=True):
 
     if visualize:
         import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.gca()
 
     from pyshocks import EOCRecorder
+
     eoc = EOCRecorder(name=type(scheme).__name__)
 
     # NOTE:
@@ -218,9 +238,14 @@ def convergence(scheme, visualize=True):
 
     ncells = 3 + jnp.array([64, 128, 256, 512, 1024, 2048])
     for n in ncells:
-        x, u, uhat = main(scheme, n=n,
-                example_name="sign",
-                interactive=False, visualize=False, verbose=False)
+        x, u, uhat = main(
+            scheme,
+            n=n,
+            example_name="sign",
+            interactive=False,
+            visualize=False,
+            verbose=False,
+        )
 
         imid = len(u) // 2
         umid = u[imid]
@@ -247,8 +272,8 @@ def convergence(scheme, visualize=True):
 
         scheme_name = type(scheme).__name__.lower()
         filename = os.path.join(
-                os.path.dirname(__file__),
-                f"advection_{scheme_name}_convergence")
+            os.path.dirname(__file__), f"advection_{scheme_name}_convergence"
+        )
         fig.savefig(filename)
         plt.close(fig)
 
