@@ -3,7 +3,6 @@ from itertools import product
 from pyshocks import get_logger
 from pyshocks.burgers import WENOJS32, WENOJS53
 
-import jax.ops as jo
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
 import jax.config
@@ -24,7 +23,7 @@ logger = get_logger("test_weno")
         WENOJS53(),
     ],
 )
-def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
+def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
     """Tests that the vectorized version of the smoothness indicator matches
     the explicitly looped version.
     """
@@ -40,7 +39,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
     stencil = jnp.arange(-nghosts, nghosts + 1)
 
     n = n + 2 * nghosts
-    m = jo.index[nghosts:-nghosts]
+    m = jnp.s_[nghosts:-nghosts]
 
     theta = jnp.linspace(0.0, 2.0 * jnp.pi, n)
     u = jnp.sin(theta)
@@ -51,7 +50,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
 
     # loop-based
     beta0 = jnp.zeros((nstencils, n)).copy().copy()
-    for j in range(*m.indices(n)):
+    for j in range(*m.indices(n)):      # pylint: disable=no-member
         for i, k in product(range(nstencils), range(a.size)):
             beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1]) ** 2
 
@@ -66,7 +65,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=1.0e-15, n=64):
 
     # loop-based
     uhat0 = jnp.zeros((nstencils, n)).copy().copy()
-    for j in range(*m.indices(n)):
+    for j in range(*m.indices(n)):      # pylint: disable=no-member
         for i in range(nstencils):
             uhat0[i, j] = jnp.sum(u[j + stencil] * c[i, ::-1])
 
@@ -114,7 +113,7 @@ def test_weno_smoothness_indicator(scheme, n, is_smooth):
 
     nghosts = b.shape[-1] // 2
     n = n + 2 * nghosts
-    m = jo.index[nghosts:-nghosts]
+    m = jnp.s_[nghosts:-nghosts]
 
     theta = jnp.linspace(0.0, 2.0 * jnp.pi, n)
     if is_smooth:

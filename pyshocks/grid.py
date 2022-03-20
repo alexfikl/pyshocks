@@ -21,7 +21,6 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
-import jax.ops as jo
 
 from pyshocks.tools import memoize_method
 
@@ -112,11 +111,11 @@ class Grid:
 
     @property
     def g_(self):
-        return (None, jo.index[: +self.nghosts], jo.index[-self.nghosts :])
+        return (None, jnp.s_[: +self.nghosts], jnp.s_[-self.nghosts :])
 
     @property
     def i_(self):
-        return jo.index[self.nghosts : -self.nghosts]
+        return jnp.s_[self.nghosts : -self.nghosts]
 
 
 @dataclass(frozen=True)
