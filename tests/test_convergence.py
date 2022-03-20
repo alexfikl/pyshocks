@@ -4,12 +4,10 @@ from functools import partial
 from pyshocks import timeme, get_logger
 from pyshocks import burgers, advection, continuity
 
+import jax
 import jax.numpy as jnp
-import jax.config
 
 import pytest
-
-jax.config.update("jax_enable_x64", 1)
 
 logger = get_logger("test_convergence")
 

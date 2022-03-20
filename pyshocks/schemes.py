@@ -6,6 +6,7 @@
 
 .. autoclass:: ScalarFunction
 .. autoclass:: VectorFunction
+.. autoclass:: SpatialFunction
 
 .. autoclass:: SchemeBase
     :no-show-inheritance:
@@ -60,6 +61,15 @@ class VectorFunction(Protocol):
     def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
         ...
 
+
+class SpatialFunction(Protocol):
+    r"""A generic callable that can be evaluated at :math:`\mathbf{x}`.
+
+    .. automethod:: __call__
+    """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        ...
 
 # }}}
 

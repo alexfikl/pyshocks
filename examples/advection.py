@@ -279,8 +279,6 @@ def convergence(scheme, visualize=True):
 
 
 if __name__ == "__main__":
-    jax.config.update("jax_enable_x64", 1)
-
     # scheme_ = continuity.Godunov(velocity=None)
     # scheme_ = continuity.WENOJS32(velocity=None)
     scheme_ = advection.Godunov(velocity=None)

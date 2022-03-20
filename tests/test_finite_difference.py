@@ -6,13 +6,10 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 import jax.random
-import jax.config
 
 from pyshocks import advection, continuity
 
 import pytest
-
-jax.config.update("jax_enable_x64", 1)
 
 
 # {{{ test advection vs continuity

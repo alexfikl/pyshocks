@@ -3,13 +3,12 @@ from itertools import product
 from pyshocks import get_logger
 from pyshocks.burgers import WENOJS32, WENOJS53
 
+import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
-import jax.config
 
 import pytest
 
-jax.config.update("jax_enable_x64", 1)
 logger = get_logger("test_weno")
 
 

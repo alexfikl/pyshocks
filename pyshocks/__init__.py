@@ -42,8 +42,13 @@ except ImportError:
 
 __version__ = metadata.version("pyshocks")
 
-# NOTE: jax defaults to 32bit because neural networks
-jax.config.update("jax_enable_x64", 1)
+# NOTE: without setting this flag, jax forcefully makes everything float32, even
+# if the user requested float64, so it needs to stay on until this is fixed
+#       https://github.com/google/jax/issues/8178
+jax.config.update("jax_enable_x64", True)
+
+# NOTE: forcing to "cpu" until anyone bothers even trying to test on GPUs
+jax.config.update("jax_platform_name", "cpu")
 
 # }}}
 

@@ -3,12 +3,10 @@ from functools import partial
 from pyshocks import get_logger
 from pyshocks import timestepping as ts
 
+import jax
 import jax.numpy as jnp
-import jax.config
 
 import pytest
-
-jax.config.update("jax_enable_x64", 1)
 
 logger = get_logger("test_timestepping")
 

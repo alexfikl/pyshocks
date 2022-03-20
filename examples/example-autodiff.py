@@ -84,7 +84,4 @@ def main(n=128):
 
 
 if __name__ == "__main__":
-    jax.config.update("jax_platform_name", "cpu")
-    jax.config.update("jax_enable_x64", 1)
-
     main()

@@ -319,9 +319,6 @@ if __name__ == "__main__":
     except ImportError:
         pass
 
-    jax.config.update("jax_platform_name", "cpu")
-    jax.config.update("jax_enable_x64", 1)
-
     main(
         scheme=burgers.LaxFriedrichs(alpha=0.995),
         # scheme=burgers.EngquistOsher(),

@@ -132,7 +132,7 @@ class UniformGrid(Grid):
         b = self.b + self.nghosts * dx
         n = self.n + 2 * self.nghosts
 
-        return jnp.linspace(a, b, n + 1)
+        return jnp.linspace(a, b, n + 1, dtype=jnp.float64)
 
     @property  # type: ignore[misc]
     @memoize_method
