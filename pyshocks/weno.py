@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: MIT
 
 """
+.. autoclass:: WENOMixin
+    :no-show-inheritance:
+
+.. autoclass:: WENOJSMixin
+    :no-show-inheritance:
+
 .. autoclass:: WENOJS32Mixin
     :no-show-inheritance:
 .. autoclass:: WENOJS53Mixin
@@ -25,11 +31,20 @@ from pyshocks import Grid, UniformGrid
 
 
 class WENOMixin:
+    """
+    .. attribute:: order
+
+        Minimum order of the WENO scheme.
+
+    .. automethod:: set_coefficients
+    """
+
     @property
-    def order(self):
+    def order(self) -> int:
         raise NotImplementedError
 
-    def set_coefficients(self):
+    def set_coefficients(self) -> None:
+        """Initialize WENO coefficients."""
         raise NotImplementedError
 
 
@@ -40,6 +55,15 @@ class WENOMixin:
 
 
 class WENOJSMixin(WENOMixin):  # pylint: disable=abstract-method
+    """
+    .. attribute:: a
+    .. attribute:: b
+    .. attribute:: c
+    .. attribute:: d
+
+    .. attribute:: eps
+    """
+
     a: ClassVar[jnp.ndarray]
     b: ClassVar[jnp.ndarray]
     c: ClassVar[jnp.ndarray]

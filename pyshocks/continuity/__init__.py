@@ -10,10 +10,6 @@ This module implements schemes for the conservative continuity equation
 
 where :math:`a(t, x)` is a known velocity field.
 
-.. class:: VelocityFun
-
-    A callable ``Callable[[float, jnp.ndarray], jnp.ndarray]`` for velocity fields.
-
 .. autoclass:: Scheme
 .. autoclass:: Godunov
 
