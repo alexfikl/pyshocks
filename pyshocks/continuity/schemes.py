@@ -18,6 +18,8 @@ class Scheme(ConservationLawScheme):
     .. attribute:: a
 
         Advection velocity at cell centers.
+
+    .. automethod:: __init__
     """
 
     velocity: Optional[jnp.ndarray]
@@ -56,6 +58,7 @@ class Godunov(Scheme):
     :func:`~pyshocks.scalar.scalar_flux_upwind`.
 
     .. attribute:: order
+
     .. automethod:: __init__
     """
 
@@ -86,7 +89,10 @@ def _numerical_flux_continuity_godunov(
 
 @dataclass(frozen=True)
 class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
-    """See :class:`pyshocks.burgers.WENOJS`."""
+    """See :class:`pyshocks.burgers.WENOJS`.
+
+    .. automethod:: __init__
+    """
 
     def __post_init__(self):
         # pylint: disable=no-member
@@ -95,14 +101,20 @@ class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
 
 @dataclass(frozen=True)
 class WENOJS32(WENOJS32Mixin, WENOJS):
-    """See :class:`pyshocks.burgers.WENOJS32`."""
+    """See :class:`pyshocks.burgers.WENOJS32`.
+
+    .. automethod:: __init__
+    """
 
     eps: float = 1.0e-6
 
 
 @dataclass(frozen=True)
 class WENOJS53(WENOJS53Mixin, WENOJS):
-    """See :class:`pyshocks.burgers.WENOJS53`."""
+    """See :class:`pyshocks.burgers.WENOJS53`.
+
+    .. automethod:: __init__
+    """
 
     eps: float = 1.0e-12
 

@@ -3,10 +3,18 @@
 
 # {{{ project information
 
-project = "pyshocks"
-copyright = "2021, Alexandru Fikl"
-author = "Alexandru Fikl"
-release = "2022.3"
+try:
+    # python >=3.8 only
+    from importlib import metadata
+except ImportError:
+    import importlib_metadata as metadata
+
+m = metadata.metadata("pyshocks")
+project = m["Name"]
+author = m["Author"]
+copyright = f"2021 {author}"
+version = m["Version"]
+release = version
 
 # }}}
 
@@ -25,7 +33,7 @@ source_suffix = ".rst"
 # name of the main (master) document
 master_doc = "index"
 # min sphinx version
-needs_sphinx = "3.3"
+needs_sphinx = "4.0"
 # files to ignore
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # highlighting
@@ -41,15 +49,13 @@ language = "en"
 
 # {{{ extension settings
 
+autoclass_content = "class"
 autodoc_member_order = "bysource"
 autodoc_default_options = {
     "show-inheritance": None,
 }
 
 autodoc_typehints = "description"
-autodoc_type_aliases = {
-    "VelocityFun": "pyshocks.continuity.VelocityFun",
-}
 
 # }}}
 

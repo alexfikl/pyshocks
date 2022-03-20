@@ -10,6 +10,9 @@ This module implements schemes for the conservative continuity equation
 
 where :math:`a(t, x)` is a known velocity field.
 
+Schemes
+^^^^^^^
+
 .. autoclass:: Scheme
 .. autoclass:: Godunov
 
@@ -17,10 +20,14 @@ where :math:`a(t, x)` is a known velocity field.
 .. autoclass:: WENOJS32
 .. autoclass:: WENOJS53
 
+Helpers
+^^^^^^^
+
+.. autofunction:: check_oslc
+
 Data
 ^^^^
 
-.. autofunction:: check_oslc
 .. autofunction:: velocity_const
 .. autofunction:: velocity_sign
 .. autofunction:: ex_constant_velocity_field
@@ -37,6 +44,23 @@ import jax.numpy as jnp
 
 
 def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> float:
+    r"""Check the One-sided Lipschitz Continuous condition.
+
+    A function :math:`f(t, x)` is called one-sided Lipschitz continuous if
+    there exists an integrable function :math:`L(t)` such that for every
+    :math:`x_1, x_2 \in \mathbb{R}^d` such that
+
+    .. math
+
+        \frac{f(t, x_1) - f(t, x_2)}{x_1 - x_2} \le L(t)
+
+    This computes the maximum velocity variation on the given *grid*. The
+    user can then check this against a reasonable tolerance to determine if
+    the OSLC is satisfied.
+
+    :returns: the maximum over all points :math:`(x_1, x_2)` on *grid*.
+    """
+
     x = jnp.linspace(grid.a, grid.b, n, dtype=jnp.float64)
     a = velocity(x)
 
@@ -48,10 +72,22 @@ def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> float:
 
 
 def velocity_const(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    """Evaluates a constant velocity field on *grid*."""
     return jnp.ones_like(x)
 
 
 def velocity_sign(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    r"""Evaluates a sign velocity field on *grid*.
+
+    .. math::
+
+        a(x) =
+        \begin{cases}
+        -1, & \quad x < (a + b) / 2, \\
+        +1, & \quad x > (a + b) / 2.
+        \end{cases}
+    """
+
     x0 = 0.5 * (grid.a + grid.b)
     a0 = jnp.ones_like(x)
 
@@ -67,6 +103,15 @@ def velocity_sign(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
 def ex_constant_velocity_field(t: float, x: jnp.ndarray, *,
                                a: float,
                                u0: SpatialFunction) -> jnp.ndarray:
+    """Evaluates exact solution for a constant velocity field.
+
+    The exact solution is simply given by the traveling wave
+
+    .. math::
+
+        u(t, x) = u_0(x - a t)
+    """
+
     return u0(x - a * t)
 
 
@@ -113,6 +158,16 @@ def ic_sine_sine(grid: Grid, x: jnp.ndarray, *,
 def ic_tophat(grid: Grid, x: jnp.ndarray, *,
               x0: Optional[float] = None,
               width: float = 0.25) -> jnp.ndarray:
+    r"""Initial condition given by
+
+    .. math::
+
+        u_0(x) =
+        \begin{cases}
+        1, & \quad (a + b - w) / 2 < x < (a + b + w) / 2, \\
+        0, & \quad \text{otherwise}.
+        \end{cases}
+    """
     if x0 is None:
         x0 = 0.5 * (grid.a + grid.b)
 
