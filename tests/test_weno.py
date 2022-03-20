@@ -47,8 +47,10 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
 
     # {{{ compute smoothness indicator
 
+    import numpy as np
+
     # loop-based
-    beta0 = jnp.zeros((nstencils, n)).copy().copy()
+    beta0 = np.zeros((nstencils, n), dtype=jnp.float64)
     for j in range(*m.indices(n)):      # pylint: disable=no-member
         for i, k in product(range(nstencils), range(a.size)):
             beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1]) ** 2
@@ -63,7 +65,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
     # {{{ compute stencils
 
     # loop-based
-    uhat0 = jnp.zeros((nstencils, n)).copy().copy()
+    uhat0 = np.zeros((nstencils, n), dtype=jnp.float64)
     for j in range(*m.indices(n)):      # pylint: disable=no-member
         for i in range(nstencils):
             uhat0[i, j] = jnp.sum(u[j + stencil] * c[i, ::-1])

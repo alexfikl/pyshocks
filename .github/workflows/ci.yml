@@ -69,8 +69,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Main Script
       run: |
-        # NOTE: tested separately in `pytest-meshmode`
-        rm -rf tests/test_meshmode.py
+        export JAX_DEFAULT_DTYPE_BITS=32
 
         python -m pip install --upgrade pip numpy
         python -m pip install -e '.[dev,git]'
