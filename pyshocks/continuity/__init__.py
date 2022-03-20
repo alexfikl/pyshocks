@@ -31,6 +31,8 @@ Data
 .. autofunction:: ic_sine
 """
 
+from typing import Optional
+
 from pyshocks.grid import Grid
 from pyshocks.schemes import SpatialFunction
 from pyshocks.continuity.schemes import Scheme, Godunov, WENOJS, WENOJS32, WENOJS53
@@ -113,7 +115,8 @@ def ic_sine_sine(grid: Grid, x: jnp.ndarray, *,
 
 
 def ic_tophat(grid: Grid, x: jnp.ndarray, *,
-              x0: jnp.ndarray = None, width: float = 0.25) -> jnp.ndarray:
+              x0: Optional[float] = None,
+              width: float = 0.25) -> jnp.ndarray:
     if x0 is None:
         x0 = 0.5 * (grid.a + grid.b)
 
