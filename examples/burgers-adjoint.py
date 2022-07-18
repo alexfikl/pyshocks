@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-import os
 from dataclasses import dataclass
 from functools import partial
 
