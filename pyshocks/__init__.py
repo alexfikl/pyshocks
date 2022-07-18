@@ -12,7 +12,9 @@ from pyshocks.grid import (
     rnorm,
 )
 from pyshocks.schemes import (
-    ScalarFunction, VectorFunction, SpatialFunction,
+    ScalarFunction,
+    VectorFunction,
+    SpatialFunction,
     SchemeBase,
     ConservationLawScheme,
     flux,
@@ -54,7 +56,9 @@ jax.config.update("jax_platform_name", "cpu")
 # }}}
 
 __all__ = (
-    "ScalarFunction", "VectorFunction", "SpatialFunction",
+    "ScalarFunction",
+    "VectorFunction",
+    "SpatialFunction",
     "Grid",
     "UniformGrid",
     "SchemeBase",

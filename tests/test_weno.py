@@ -51,7 +51,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
 
     # loop-based
     beta0 = np.zeros((nstencils, n), dtype=jnp.float64)
-    for j in range(*m.indices(n)):      # pylint: disable=no-member
+    for j in range(*m.indices(n)):  # pylint: disable=no-member
         for i, k in product(range(nstencils), range(a.size)):
             beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1]) ** 2
 
@@ -66,7 +66,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
 
     # loop-based
     uhat0 = np.zeros((nstencils, n), dtype=jnp.float64)
-    for j in range(*m.indices(n)):      # pylint: disable=no-member
+    for j in range(*m.indices(n)):  # pylint: disable=no-member
         for i in range(nstencils):
             uhat0[i, j] = jnp.sum(u[j + stencil] * c[i, ::-1])
 

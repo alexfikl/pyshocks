@@ -71,6 +71,7 @@ class SpatialFunction(Protocol):
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
         ...
 
+
 # }}}
 
 

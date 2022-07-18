@@ -100,9 +100,9 @@ def velocity_sign(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
 # {{{ exact solutions
 
 
-def ex_constant_velocity_field(t: float, x: jnp.ndarray, *,
-                               a: float,
-                               u0: SpatialFunction) -> jnp.ndarray:
+def ex_constant_velocity_field(
+    t: float, x: jnp.ndarray, *, a: float, u0: SpatialFunction
+) -> jnp.ndarray:
     """Evaluates exact solution for a constant velocity field.
 
     The exact solution is simply given by the traveling wave
@@ -144,8 +144,9 @@ def ic_sine(grid: Grid, x: jnp.ndarray, *, k: float = 1) -> jnp.ndarray:
     return jnp.sin(k * jnp.pi * x)
 
 
-def ic_sine_sine(grid: Grid, x: jnp.ndarray, *,
-                 k1: float = 1, k2: float = 1) -> jnp.ndarray:
+def ic_sine_sine(
+    grid: Grid, x: jnp.ndarray, *, k1: float = 1, k2: float = 1
+) -> jnp.ndarray:
     r"""Initial condition given by
 
     .. math::
@@ -155,9 +156,9 @@ def ic_sine_sine(grid: Grid, x: jnp.ndarray, *,
     return jnp.sin(k1 * jnp.pi * x + jnp.sin(k2 * jnp.pi * x) / jnp.pi)
 
 
-def ic_tophat(grid: Grid, x: jnp.ndarray, *,
-              x0: Optional[float] = None,
-              width: float = 0.25) -> jnp.ndarray:
+def ic_tophat(
+    grid: Grid, x: jnp.ndarray, *, x0: Optional[float] = None, width: float = 0.25
+) -> jnp.ndarray:
     r"""Initial condition given by
 
     .. math::
