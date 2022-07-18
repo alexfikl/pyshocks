@@ -6,6 +6,16 @@
     :alt: Documentation
     :target: https://pyshocks.readthedocs.io/en/latest/?badge=latest
 
+About
+=====
+
+This repository contains some preliminary experiments on performing adjoint-based
+optimization for systems with shocks by using automatic differentiation. The
+main goal is to get it working for theone-dimensional unsteady Euler equations
+with common WENO schemes.
+
+It is currently quite far from that goal, so this is **very experimental**.
+
 Installation
 ============
 
