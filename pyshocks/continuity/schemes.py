@@ -15,7 +15,7 @@ from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 class Scheme(ConservationLawScheme):
     """Base class for numerical schemes for the continuity equation.
 
-    .. attribute:: a
+    .. attribute:: velocity
 
         Advection velocity at cell centers.
 
@@ -88,15 +88,8 @@ def _numerical_flux_continuity_godunov(
 
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
-    """See :class:`pyshocks.burgers.WENOJS`.
-
-    .. automethod:: __init__
-    """
-
-    def __post_init__(self):
-        # pylint: disable=no-member
-        self.set_coefficients()
+class WENOJS(Scheme, WENOJSMixin):          # pylint: disable=abstract-method
+    """See :class:`pyshocks.burgers.WENOJS`."""
 
 
 @dataclass(frozen=True)
@@ -108,6 +101,9 @@ class WENOJS32(WENOJS32Mixin, WENOJS):
 
     eps: float = 1.0e-6
 
+    def __post_init__(self):
+        self.set_coefficients()
+
 
 @dataclass(frozen=True)
 class WENOJS53(WENOJS53Mixin, WENOJS):
@@ -117,6 +113,9 @@ class WENOJS53(WENOJS53Mixin, WENOJS):
     """
 
     eps: float = 1.0e-12
+
+    def __post_init__(self):
+        self.set_coefficients()
 
 
 @numerical_flux.register(WENOJS)

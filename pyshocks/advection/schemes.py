@@ -15,9 +15,11 @@ from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 class Scheme(SchemeBase):
     """Base class for numerical schemes for the linear advection equation.
 
-    .. attribute:: a
+    .. attribute:: velocity
 
         Advection velocity at cell centers.
+
+    .. automethod:: __init__
     """
 
     # NOTE: this is Optional just for mypy, but should never be `None` in practice
@@ -60,6 +62,7 @@ class Godunov(Scheme):
     """First-order Godunov (upwind) scheme for the advection equation.
 
     .. attribute:: order
+
     .. automethod:: __init__
     """
 
@@ -85,32 +88,38 @@ def _numerical_flux_advection_godunov(
 # }}}
 
 
-# {{{ WENO
-
-# FIXME: a bit copy-pasty?
+# {{{ WENOJS
 
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
+class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
     """See :class:`pyshocks.burgers.WENOJS`."""
-
-    def __post_init__(self):
-        # pylint: disable=no-member
-        self.set_coefficients()
 
 
 @dataclass(frozen=True)
 class WENOJS32(WENOJS, WENOJS32Mixin):
-    """See :class:`pyshocks.burgers.WENOJS32`."""
+    """See :class:`pyshocks.burgers.WENOJS32`.
+
+    .. automethod:: __init__
+    """
 
     eps: float = 1.0e-6
+
+    def __post_init__(self):
+        self.set_coefficients()
 
 
 @dataclass(frozen=True)
 class WENOJS53(WENOJS, WENOJS53Mixin):
-    """See :class:`pyshocks.burgers.WENOJS53`."""
+    """See :class:`pyshocks.burgers.WENOJS53`.
+
+    .. automethod:: __init__
+    """
 
     eps: float = 1.0e-12
+
+    def __post_init__(self):
+        self.set_coefficients()
 
 
 @numerical_flux.register(WENOJS)

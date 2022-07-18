@@ -12,8 +12,15 @@ where :math:`a(t, x)` is a known velocity field. For a conservative version
 of the same equation see :mod:`pyshocks.continuity`, which also provides
 initial conditions.
 
+Schemes
+^^^^^^^
+
 .. autoclass:: Scheme
 .. autoclass:: Godunov
+
+.. autoclass:: WENOJS
+.. autoclass:: WENOJS32
+.. autoclass:: WENOJS53
 """
 
 from pyshocks.advection.schemes import Scheme, Godunov, WENOJS, WENOJS32, WENOJS53

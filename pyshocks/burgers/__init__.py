@@ -8,9 +8,13 @@ This module implements schemes for the inviscid Burgers' equation
 
     \frac{\partial u}{\partial t} + \frac{1}{2} \frac{\partial}{\partial x} (u^2)  = 0.
 
+Schemes
+^^^^^^^
+
 .. autoclass:: Scheme
 .. autoclass:: LaxFriedrichs
 .. autoclass:: EngquistOsher
+
 .. autoclass:: WENOJS
 .. autoclass:: WENOJS32
 .. autoclass:: WENOJS53

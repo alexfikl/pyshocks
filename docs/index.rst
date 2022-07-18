@@ -30,11 +30,6 @@ Interfaces
 .. automodule:: pyshocks.schemes
 .. automodule:: pyshocks.grid
 
-Utilities
----------
-
-.. automodule:: pyshocks.tools
-
 Scalar
 ------
 
@@ -49,6 +44,11 @@ Timestepping
 ------------
 
 .. automodule:: pyshocks.timestepping
+
+Utilities
+---------
+
+.. automodule:: pyshocks.tools
 
 Indices and tables
 ==================

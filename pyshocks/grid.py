@@ -4,6 +4,9 @@
 """
 .. currentmodule:: pyshocks
 
+Grid
+^^^^
+
 .. autoclass:: Grid
     :no-show-inheritance:
 .. autoclass:: UniformGrid

@@ -12,7 +12,10 @@ from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 @dataclass(frozen=True)
 class Scheme(ConservationLawScheme):
-    """Base class for numerical schemes for Burgers' equation."""
+    """Base class for numerical schemes for Burgers' equation.
+
+    .. automethod:: __init__
+    """
 
 
 @flux.register(Scheme)
@@ -108,6 +111,7 @@ class EngquistOsher(Scheme):
     minimum.
 
     .. attribute:: order
+
     .. automethod:: __init__
     """
 
@@ -134,7 +138,7 @@ def _numerical_flux_burgers_engquist_osher(
 
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
+class WENOJS(Scheme, WENOJSMixin):          # pylint: disable=abstract-method
     """Classic (finite volume) WENO schemes by Jiang and Shu. Implementation
     follows the steps from [Shu2009]_.
 
@@ -144,12 +148,9 @@ class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
         `DOI <http://dx.doi.org/10.1137/070679065>`__.
 
     .. attribute:: eps
+
     .. automethod:: __init__
     """
-
-    def __post_init__(self):
-        # pylint: disable=no-member
-        self.set_coefficients()
 
 
 @dataclass(frozen=True)
@@ -158,12 +159,18 @@ class WENOJS32(WENOJS32Mixin, WENOJS):
 
     eps: float = 1.0e-6
 
+    def __post_init__(self):
+        self.set_coefficients()
+
 
 @dataclass(frozen=True)
 class WENOJS53(WENOJS53Mixin, WENOJS):
     """Fifth-order WENO scheme based on :class:`WENOJS`."""
 
     eps: float = 1.0e-12
+
+    def __post_init__(self):
+        self.set_coefficients()
 
 
 @numerical_flux.register(WENOJS)

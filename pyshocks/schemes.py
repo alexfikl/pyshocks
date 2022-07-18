@@ -4,9 +4,8 @@
 """
 .. currentmodule:: pyshocks
 
-.. autoclass:: ScalarFunction
-.. autoclass:: VectorFunction
-.. autoclass:: SpatialFunction
+Schemes
+^^^^^^^
 
 .. autoclass:: SchemeBase
     :no-show-inheritance:
@@ -17,12 +16,22 @@
 .. autofunction:: apply_operator
 .. autofunction:: predict_timestep
 
+Boundary Conditions
+^^^^^^^^^^^^^^^^^^^
+
 .. autoclass:: Boundary
     :no-show-inheritance:
 .. autoclass:: OneSidedBoundary
 .. autoclass:: TwoSidedBoundary
+
 .. autofunction:: apply_boundary
 
+Protocols
+^^^^^^^^^
+
+.. autoclass:: ScalarFunction
+.. autoclass:: VectorFunction
+.. autoclass:: SpatialFunction
 """
 
 from dataclasses import dataclass

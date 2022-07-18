@@ -8,7 +8,7 @@ from importlib import metadata
 m = metadata.metadata("pyshocks")
 project = m["Name"]
 author = m["Author"]
-copyright = f"2021 {author}"
+copyright = f"2021-2022 {author}"
 version = m["Version"]
 release = version
 
@@ -51,7 +51,7 @@ autodoc_default_options = {
     "show-inheritance": None,
 }
 
-autodoc_typehints = "description"
+# autodoc_typehints = "description"
 
 # }}}
 
