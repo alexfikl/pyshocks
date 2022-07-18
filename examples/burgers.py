@@ -93,7 +93,7 @@ def main(
                 print(f"{event} umax {umax:.5e}")
 
             if interactive:
-                uhat = cell_average(quad, lambda x: solution(event.t, x))
+                uhat = cell_average(quad, lambda x, event=event: solution(event.t, x))
                 ln0.set_ydata(uhat[s])
                 ln1.set_ydata(event.u[s])
                 plt.pause(0.01)
