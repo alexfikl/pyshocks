@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2020 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from importlib import metadata
 import jax
 
 from pyshocks.grid import (
@@ -35,13 +36,7 @@ from pyshocks.tools import (
     get_logger,
 )
 
-# {{{ version
-
-try:
-    # python >=3.8 only
-    from importlib import metadata
-except ImportError:
-    import importlib_metadata as metadata  # type: ignore[no-redef]
+# {{{ config
 
 __version__ = metadata.version("pyshocks")
 

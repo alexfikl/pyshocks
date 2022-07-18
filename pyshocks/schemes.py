@@ -27,12 +27,7 @@
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Optional
-
-try:
-    from typing import Protocol
-except ImportError:
-    from typing_extensions import Protocol  # type: ignore[misc]
+from typing import Optional, Protocol
 
 import jax.numpy as jnp
 

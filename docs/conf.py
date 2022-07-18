@@ -3,11 +3,7 @@
 
 # {{{ project information
 
-try:
-    # python >=3.8 only
-    from importlib import metadata
-except ImportError:
-    import importlib_metadata as metadata
+from importlib import metadata
 
 m = metadata.metadata("pyshocks")
 project = m["Name"]
