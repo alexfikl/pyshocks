@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-License-Identifier: MIT
+
 import numpy as np
 
 import jax

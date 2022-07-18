@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-License-Identifier: MIT
+
 r"""
 Linear Advection Equation
 -------------------------

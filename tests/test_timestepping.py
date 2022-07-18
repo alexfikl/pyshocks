@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-License-Identifier: MIT
+
 from functools import partial
 
 from pyshocks import get_logger

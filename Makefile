@@ -20,6 +20,10 @@ mypy:
 	$(PYTHON) -m mypy --show-error-codes pyshocks tests examples
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 
+reuse:
+	@reuse lint
+	@echo -e "\e[1;32mREUSE compliant!\e[0m"
+
 pip-install:
 	$(PYTHON) -m pip install --upgrade pip numpy
 	$(PYTHON) -m pip install -e '.[dev,git]'
