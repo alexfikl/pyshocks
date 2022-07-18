@@ -20,6 +20,12 @@ logger = get_logger("test_timestepping")
     ],
 )
 def test_time_convergence(cls, order, visualize=False):
+    if visualize:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            visualize = False
+
     # {{{ ode
 
     @jax.jit
@@ -39,8 +45,6 @@ def test_time_convergence(cls, order, visualize=False):
     u_ex = solution(tfinal)
 
     if visualize:
-        import matplotlib.pyplot as plt
-
         fig = plt.figure()
         ax = fig.gca()
 

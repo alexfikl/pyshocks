@@ -38,6 +38,12 @@ def test_advection_vs_continuity(
     n: int = 256,
     visualize: bool = True,
 ):
+    if visualize:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            visualize = False
+
     # {{{ setup
 
     from pyshocks import UniformGrid, Boundary
@@ -91,8 +97,6 @@ def test_advection_vs_continuity(
     if not visualize:
         return
 
-    import matplotlib.pyplot as plt
-
     fig = plt.figure()
     ax = fig.gca()
 
@@ -127,6 +131,12 @@ def test_advection_finite_difference_jacobian(
     n: int = 32,
     visualize: bool = True,
 ):
+    if visualize:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            visualize = False
+
     # {{{ setup
 
     from pyshocks import UniformGrid, Boundary
@@ -186,8 +196,6 @@ def test_advection_finite_difference_jacobian(
 
     if not visualize:
         return
-
-    import matplotlib.pyplot as plt
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
     ax1.imshow(fddjac)

@@ -26,6 +26,12 @@ def evolve(
     finalize=None,
     visualize: bool = True,
 ):
+    if visualize:
+        try:
+            import matplotlib.pyplot as mp
+        except ImportError:
+            visualize = False
+
     # {{{ grid
 
     if order is None:
@@ -45,9 +51,7 @@ def evolve(
     if visualize:
         equation_name = scheme.__module__.split(".")[-2]
         scheme_name = type(scheme).__name__.lower()
-
         s = grid.i_
-        import matplotlib.pyplot as mp
 
     # }}}
 

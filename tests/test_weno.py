@@ -160,7 +160,9 @@ def test_weno_smoothness_indicator(scheme, n, is_smooth):
 def _pyweno_reconstruct(u, order, side):
     import pyweno
 
-    ul, sl = pyweno.weno.reconstruct(u, order, side, return_smoothness=True)
+    ul, sl = pyweno.weno.reconstruct(
+        jax.device_get(u), order, side, return_smoothness=True
+    )
 
     return jax.device_put(ul), jax.device_put(sl)
 
@@ -176,6 +178,12 @@ def _pyweno_reconstruct(u, order, side):
 def test_weno_reference(scheme, order, n, visualize=False):
     """Compares our weno reconstruction to PyWENO"""
     pytest.importorskip("pyweno")
+
+    if visualize:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            visualize = False
 
     # {{{ reference values
 
@@ -224,8 +232,6 @@ def test_weno_reference(scheme, order, n, visualize=False):
         return
 
     s = grid.i_
-
-    import matplotlib.pyplot as plt
 
     fig = plt.figure()
     ax = fig.gca()
