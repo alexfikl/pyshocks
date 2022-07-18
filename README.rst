@@ -11,13 +11,19 @@ Installation
 
 Common practice in the community is to set up a virtual environment
 
+.. code:: bash
+
     python -m venv --system-site-packages /path/to/env/pyshocks
 
 Activate the environment with
 
+.. code:: bash
+
     source /path/to/env/pyshocks/bin/activate
 
 Finally, just install the package with
+
+.. code:: bash
 
     python -m pip install -e .[dev]
 
@@ -36,10 +42,14 @@ Documentation
 Documentation can be generated using `Sphinx <https://github.com/sphinx-doc/sphinx>`__.
 For example, to generate a nice HTML-based variant go
 
+.. code:: bash
+
     cd docs && make html
     firefox _build/html/index.html
 
 Sphinx ca can also generate LaTeX documentation with
+
+.. code:: bash
 
     make latex && cd _build/latex && latexrun pyshocks.tex
     xdg-open pyshocks.pdf
