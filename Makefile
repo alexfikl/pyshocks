@@ -26,7 +26,7 @@ reuse:
 
 pip-install:
 	$(PYTHON) -m pip install --upgrade pip numpy
-	$(PYTHON) -m pip install -e '.[dev,git]'
+	$(PYTHON) -m pip install -e '.[dev,pyweno]'
 
 ctags:
 	ctags --recurse=yes \
