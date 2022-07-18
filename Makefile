@@ -3,7 +3,7 @@ PYTHON?=python
 all: flake8 pylint
 
 test:
-	$(PYTHON) -m pytest -rswx --durations=25
+	$(PYTHON) -m pytest -rswx -v -s --durations=25
 
 black:
 	$(PYTHON) -m black pyshocks tests examples
@@ -20,6 +20,10 @@ mypy:
 	$(PYTHON) -m mypy --show-error-codes pyshocks tests examples
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 
+pip-install:
+	$(PYTHON) -m pip install --upgrade pip numpy
+	$(PYTHON) -m pip install -e '.[dev,git]'
+
 ctags:
 	ctags --recurse=yes \
 		--tag-relative=yes \
@@ -31,4 +35,4 @@ ctags:
 clean:
 	find . -name "*.png" -exec rm -rf {} +
 
-.PHONY: all black flake8 pylint clean
+.PHONY: all black flake8 pylint clean ctags pip-install
