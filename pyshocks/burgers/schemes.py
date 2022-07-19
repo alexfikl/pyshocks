@@ -113,8 +113,10 @@ class EngquistOsher(Scheme):
         f(u_l, u_r) = f(u_l^+) + f(u_r^-) - f(\omega),
 
     where :math:`u_l^+ = \max(u_l, \omega)` and :math:`u_r^- = \min(u_r, \omega)`.
-    Here, :math:`\omega = 0` is the point at which the flux attains its
+    Here, :math:`\omega = 0` is the point at which the Burgers flux attains its
     minimum.
+
+    .. attribute:: omega
 
     .. automethod:: __init__
     """

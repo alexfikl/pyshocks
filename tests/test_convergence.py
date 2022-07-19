@@ -5,7 +5,7 @@ from dataclasses import replace
 from functools import partial
 
 from pyshocks import timeme, get_logger, set_recommended_matplotlib
-from pyshocks import burgers, advection, continuity
+from pyshocks import burgers, advection, continuity, diffusion
 
 import jax
 import jax.numpy as jnp
@@ -114,7 +114,7 @@ def evolve(
         ax = fig.gca()
 
         ax.plot(grid.x[s], u0[s], "--", label="$u(0, x)$")
-        ax.plot(grid.x[s], u[s], "--", label="$u(T, x)$")
+        ax.plot(grid.x[s], u[s], "-", label="$u(T, x)$")
         ax.plot(grid.x[s], uhat[s], "k--", label=r"$\hat{u}(T, x)$")
         ax.set_xlabel("$x$")
         ax.legend()
@@ -233,6 +233,52 @@ def test_advection_convergence(scheme, order, resolutions, a=-1.0, b=+1, tfinal=
 
     logger.info("\n%s", eoc)
     assert eoc.estimated_order >= order - 0.5
+
+
+# }}}
+
+
+# {{{ test_diffusion_convergence
+
+
+@pytest.mark.parametrize(
+    ("scheme", "order", "resolutions"),
+    [
+        (diffusion.CenteredScheme(diffusivity=1.0), 2, list(range(80, 160 + 1, 16))),
+    ],
+)
+def test_diffusion_convergence(scheme, order, resolutions, a=-1.0, b=1.0, tfinal=1.0):
+    def ex_sin_exp(grid, t, x):
+        return diffusion.ex_expansion(grid, t, x, diffusivity=scheme.diffusivity)
+
+    def finalize(s, grid, quad):
+        return replace(s, diffusivity=jnp.full_like(grid.x, scheme.diffusivity))
+
+    from pyshocks import EOCRecorder
+
+    eoc = EOCRecorder(name=type(scheme).__name__)
+
+    from pyshocks.timestepping import predict_timestep_from_resolutions
+
+    dt = 0.5 * predict_timestep_from_resolutions(a, b, resolutions, umax=1.0, p=2)
+
+    for n in resolutions:
+        h_max, error = evolve(
+            scheme,
+            ex_sin_exp,
+            n,
+            timestep=dt,
+            a=a,
+            b=b,
+            tfinal=tfinal,
+            finalize=finalize,
+        )
+
+        eoc.add_data_point(h_max, error)
+        logger.info("n %3d h_max %.3e error %.6e", n, h_max, error)
+
+    logger.info("\n%s", eoc)
+    assert eoc.estimated_order >= scheme.order - 0.1
 
 
 # }}}

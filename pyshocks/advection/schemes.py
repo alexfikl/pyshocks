@@ -26,6 +26,8 @@ class Scheme(SchemeBase):
     """
 
     # NOTE: this is Optional just for mypy, but should never be `None` in practice
+    # FIXME: we want this to be a function so that we can evaluate it at
+    # (t, x) every time
     velocity: Optional[jnp.ndarray]
 
 
