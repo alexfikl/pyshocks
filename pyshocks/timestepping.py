@@ -165,7 +165,7 @@ def predict_maxit_from_timestep(tfinal: float, dt: float):
 
 
 def predict_timestep_from_resolutions(
-    a: float, b: float, resolutions: List[int], *, umax: float = 1.0
+    a: float, b: float, resolutions: List[int], *, umax: float = 1.0, p: int = 1
 ) -> float:
     """Determine a maximum time step that is stable for the given domain
     and resolutions. The time step is computed based on the characteristic
@@ -175,7 +175,7 @@ def predict_timestep_from_resolutions(
     """
     dx = (b - a) / max(resolutions)
 
-    return dx / umax
+    return dx**p / umax
 
 
 # }}}

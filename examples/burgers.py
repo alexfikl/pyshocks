@@ -3,12 +3,13 @@
 
 import pathlib
 from functools import partial
+from typing import Optional
 
 import jax
 import jax.numpy as jnp
 
 from pyshocks import make_uniform_grid, apply_operator, predict_timestep
-from pyshocks import burgers, get_logger
+from pyshocks import diffusion, burgers, get_logger
 
 logger = get_logger("burgers")
 
@@ -22,6 +23,7 @@ def main(
     n: int = 256,
     tfinal: float = 1.0,
     theta: float = 1.0,
+    diffusivity: Optional[float] = None,
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
@@ -49,6 +51,13 @@ def main(
     u0 = cell_average(quad, lambda x: solution(0.0, x))
     boundary = dirichlet_boundary(solution)
 
+    if diffusivity is None:
+        scheme_d = None
+    else:
+        scheme_d = diffusion.CenteredScheme(
+            diffusivity=jnp.full_like(grid.x, diffusivity),
+        )
+
     # }}}
 
     # {{{ plotting
@@ -73,13 +82,26 @@ def main(
 
     # {{{ right-hand side
 
-    @jax.jit
-    def _predict_timestep(_t, _u):
-        return theta * predict_timestep(scheme, grid, _t, _u)
+    if scheme_d is None:
 
-    @jax.jit
-    def _apply_operator(_t, _u):
-        return apply_operator(scheme, grid, boundary, _t, _u)
+        def _predict_timestep(_t, _u):
+            return theta * predict_timestep(scheme, grid, _t, _u)
+
+        def _apply_operator(_t, _u):
+            return apply_operator(scheme, grid, boundary, _t, _u)
+
+    else:
+
+        def _predict_timestep(_t, _u):
+            return theta * jnp.minimum(
+                predict_timestep(scheme, grid, _t, _u),
+                predict_timestep(scheme_d, grid, _t, _u),
+            )
+
+        def _apply_operator(_t, _u):
+            return apply_operator(scheme, grid, boundary, _t, _u) + apply_operator(
+                scheme_d, grid, boundary, _t, _u
+            )
 
     # }}}
 
@@ -88,8 +110,8 @@ def main(
     from pyshocks import timestepping
 
     method = timestepping.SSPRK33(
-        predict_timestep=_predict_timestep,
-        source=_apply_operator,
+        predict_timestep=jax.jit(_predict_timestep),
+        source=jax.jit(_apply_operator),
     )
     step = timestepping.step(method, u0, tfinal=tfinal)
 
@@ -168,6 +190,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
     )
+    parser.add_argument(
+        "--diffusivity",
+        type=float,
+        default=None,
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     name_to_scheme = {
@@ -177,4 +208,9 @@ if __name__ == "__main__":
         "wenojs53": burgers.WENOJS53(),
     }
 
-    main(name_to_scheme[args.scheme], outdir=args.outdir)
+    main(
+        name_to_scheme[args.scheme],
+        outdir=args.outdir,
+        diffusivity=args.diffusivity,
+        interactive=args.interactive,
+    )

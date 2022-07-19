@@ -11,7 +11,7 @@ This module implements schemes for the linear advection equation
 
     \frac{\partial u}{\partial t} + a \frac{\partial u}{\partial x} = 0,
 
-where :math:`a(t, x)` is a known velocity field. For a conservative version
+where :math:`a(x)` is a known velocity field. For a conservative version
 of the same equation see :mod:`pyshocks.continuity`, which also provides
 initial conditions.
 

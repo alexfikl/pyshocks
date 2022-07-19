@@ -403,9 +403,10 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
     if use_tex is None:
         import os
         import matplotlib
-        use_tex = (
-            not os.environ.get("GITHUB_REPOSITORY")
-            and matplotlib.checkdep_usetex(True))
+
+        use_tex = not os.environ.get(
+            "GITHUB_REPOSITORY"
+        ) and matplotlib.checkdep_usetex(True)
 
     defaults = {
         "figure": {"figsize": (8, 8), "dpi": 300, "constrained_layout": {"use": True}},
