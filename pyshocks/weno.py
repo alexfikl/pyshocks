@@ -39,10 +39,6 @@ class WENOMixin:
     .. automethod:: set_coefficients
     """
 
-    @property
-    def order(self) -> int:
-        raise NotImplementedError
-
     def set_coefficients(self) -> None:
         """Initialize WENO coefficients."""
         raise NotImplementedError
@@ -86,6 +82,10 @@ class WENOJS32Mixin(WENOJSMixin):
     def order(self):
         return 2
 
+    @property
+    def stencil_width(self):
+        return 2
+
 
 def weno_js_32_coefficients():
     # smoothness indicator coefficients
@@ -121,6 +121,10 @@ class WENOJS53Mixin(WENOJSMixin):
 
     @property
     def order(self):
+        return 3
+
+    @property
+    def stencil_width(self):
         return 3
 
 

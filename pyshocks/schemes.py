@@ -92,6 +92,9 @@ class SchemeBase:
 
         \frac{\partial \mathbf{u}}{\partial t} =
             \mathbf{A}(t, \mathbf{x}, \mathbf{u}, \nabla \mathbf{u}).
+
+    .. attribute:: order
+    .. attribute:: stencil_width
     """
 
 

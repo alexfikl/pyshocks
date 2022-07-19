@@ -58,7 +58,6 @@ class LaxFriedrichs(Scheme):
     viscosity.
 
     .. attribute:: alpha
-    .. attribute:: order
 
     .. automethod:: __init__
     """
@@ -68,6 +67,10 @@ class LaxFriedrichs(Scheme):
     @property
     def order(self):
         return self.alpha
+
+    @property
+    def stencil_width(self):
+        return 1
 
 
 @numerical_flux.register(LaxFriedrichs)
@@ -113,8 +116,6 @@ class EngquistOsher(Scheme):
     Here, :math:`\omega = 0` is the point at which the flux attains its
     minimum.
 
-    .. attribute:: order
-
     .. automethod:: __init__
     """
 
@@ -122,6 +123,10 @@ class EngquistOsher(Scheme):
 
     @property
     def order(self):
+        return 1
+
+    @property
+    def stencil_width(self):
         return 1
 
 

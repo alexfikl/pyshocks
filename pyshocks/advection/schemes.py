@@ -64,13 +64,15 @@ def _apply_operator_advection(
 class Godunov(Scheme):
     """First-order Godunov (upwind) scheme for the advection equation.
 
-    .. attribute:: order
-
     .. automethod:: __init__
     """
 
     @property
     def order(self):
+        return 1
+
+    @property
+    def stencil_width(self):
         return 1
 
 

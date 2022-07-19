@@ -60,13 +60,15 @@ class Godunov(Scheme):
     The flux of the Godunov scheme is given by
     :func:`~pyshocks.scalar.scalar_flux_upwind`.
 
-    .. attribute:: order
-
     .. automethod:: __init__
     """
 
     @property
     def order(self):
+        return 1
+
+    @property
+    def stencil_width(self):
         return 1
 
 
