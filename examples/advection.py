@@ -1,28 +1,31 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-import os
+import pathlib
 from functools import partial
 
 import jax
 import jax.numpy as jnp
 
 from pyshocks import make_uniform_grid, apply_operator, predict_timestep
-from pyshocks import continuity, advection, get_logger
+from pyshocks import advection, get_logger
 
 logger = get_logger("advection")
 
 
 def make_solution(name, grid, a=1.0, x0=1.0):
+    from pyshocks import continuity
+
     if name == "const":
+
+        def ic_sine(x):
+            return x0 + continuity.ic_sine(grid, x)
 
         def velocity(t, x):
             return a * continuity.velocity_const(grid, t, x)
 
         def solution(t, x):
-            return continuity.ex_constant_velocity_field(
-                t, x, a=a, u0=partial(continuity.ic_sine, grid, x0=x0)
-            )
+            return continuity.ex_constant_velocity_field(t, x, a=a, u0=ic_sine)
 
     elif name == "sign":
 
@@ -47,6 +50,8 @@ def make_solution(name, grid, a=1.0, x0=1.0):
 
 
 def make_boundary_conditions(name, solution, *, a=1.0):
+    from pyshocks import continuity
+
     if name == "const":
         from pyshocks.scalar import PeriodicBoundary
 
@@ -75,17 +80,27 @@ def make_boundary_conditions(name, solution, *, a=1.0):
 
 
 def main(
-    scheme,
-    a=-1.0,
-    b=+1.0,
-    n=512,
-    tfinal=0.5,
-    theta=0.5,
-    example_name="sign",
-    interactive=False,
-    visualize=True,
-    verbose=True,
+    scheme: advection.Scheme,
+    *,
+    outdir: pathlib.Path,
+    a: float = -1.0,
+    b: float = +1.0,
+    n: int = 512,
+    tfinal: float = 0.5,
+    theta: float = 0.5,
+    example_name: str = "sign",
+    interactive: bool = False,
+    visualize: bool = True,
+    verbose: bool = True,
 ):
+    r"""
+    :arg a: left boundary of the domain :math:`[a, b]`.
+    :arg b: right boundary of the domain :math:`[a, b]`.
+    :arg n: number of cells the discretize the domain.
+    :arg tfinal: final time horizon :math:`[0, t_{final}]`.
+    :arg theta: Courant number used in time step estimation as
+        :math:`\Delta t = \theta \Delta \tilde{t}`.
+    """
     # {{{ setup
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
@@ -100,7 +115,7 @@ def main(
 
     order = int(max(scheme.order, 1.0)) + 1
     quad = Quadrature(grid=grid, order=order)
-    u = cell_average(quad, lambda x: solution(0.0, x))
+    u0 = cell_average(quad, lambda x: solution(0.0, x))
 
     # update coefficients (i.e. velocity field)
     v = cell_average(quad, lambda x: velocity(0.0, x))
@@ -119,10 +134,10 @@ def main(
         ax = fig.gca()
         plt.ion()
 
-        ln0, ln1 = ax.plot(grid.x[s], u[s], "k--", grid.x[s], u[s], "o-", ms=1)
+        ln0, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
         ax.axhline(1.0, color="k", ls=":", lw=1)
         ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([jnp.min(u) - 1, jnp.max(u) + 1])
+        ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
         ax.grid(True)
@@ -149,7 +164,7 @@ def main(
         predict_timestep=_predict_timestep,
         source=_apply_operator,
     )
-    step = timestepping.step(method, u, tfinal=tfinal)
+    step = timestepping.step(method, u0, tfinal=tfinal)
 
     from pyshocks import IterationTimer
 
@@ -204,10 +219,7 @@ def main(
         ax.grid(True)
 
         scheme_name = type(scheme).__name__.lower()
-        filename = os.path.join(
-            os.path.dirname(__file__), f"advection_{scheme_name}_{example_name}_{n:05d}"
-        )
-        fig.savefig(filename)
+        fig.savefig(outdir / f"advection_{scheme_name}_{example_name}_{n:05d}")
         plt.close(fig)
 
     # }}}
@@ -215,7 +227,13 @@ def main(
     return grid.x[s], event.u[s], uhat[s]
 
 
-def convergence(scheme, visualize=True):
+def convergence(
+    scheme: advection.Scheme,
+    *,
+    outdir: pathlib.Path,
+    example_name: str = "sign",
+    visualize: bool = True,
+):
     if not isinstance(scheme, advection.Scheme):
         raise TypeError("this only works for the non-conservative advection")
 
@@ -243,8 +261,9 @@ def convergence(scheme, visualize=True):
     for n in ncells:
         x, u, uhat = main(
             scheme,
+            outdir=outdir,
             n=n,
-            example_name="sign",
+            example_name=example_name,
             interactive=False,
             visualize=False,
             verbose=False,
@@ -274,18 +293,42 @@ def convergence(scheme, visualize=True):
         ax.grid(True)
 
         scheme_name = type(scheme).__name__.lower()
-        filename = os.path.join(
-            os.path.dirname(__file__), f"advection_{scheme_name}_convergence"
-        )
-        fig.savefig(filename)
+        fig.savefig(outdir / f"advection_{scheme_name}_convergence")
         plt.close(fig)
 
 
 if __name__ == "__main__":
-    # scheme_ = continuity.Godunov(velocity=None)
-    # scheme_ = continuity.WENOJS32(velocity=None)
-    scheme_ = advection.Godunov(velocity=None)
-    # scheme_ = advection.WENOJS53(velocity=None)
+    import argparse
 
-    # main(scheme_)
-    convergence(scheme_)
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-s",
+        "--scheme",
+        default="godunov",
+        type=str.lower,
+        choices=["godunov", "wenojs32", "wenojs53"],
+    )
+    parser.add_argument(
+        "--example",
+        default="sign",
+        type=str.lower,
+        choices=["const", "sign", "double_sign"],
+    )
+    parser.add_argument("--convergence", action="store_true")
+    parser.add_argument(
+        "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
+    )
+    args = parser.parse_args()
+
+    name_to_scheme = {
+        "godunov": advection.Godunov(velocity=None),
+        "wenojs32": advection.WENOJS32(velocity=None),
+        "wenojs53": advection.WENOJS53(velocity=None),
+    }
+
+    if args.convergence:
+        convergence(
+            name_to_scheme[args.scheme], outdir=args.outdir, example_name=args.example
+        )
+    else:
+        main(name_to_scheme[args.scheme], outdir=args.outdir, example_name=args.example)

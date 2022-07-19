@@ -98,12 +98,12 @@ class SchemeBase:
     """
 
     @property
-    def order(self):
-        raise NotImplementedError(type(self).__name__)
+    def order(self) -> int:
+        return -1
 
     @property
-    def stencil_width(self):
-        raise NotImplementedError(type(self).__name__)
+    def stencil_width(self) -> int:
+        return 0
 
 
 @singledispatch

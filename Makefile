@@ -28,6 +28,13 @@ pip-install:
 	$(PYTHON) -m pip install --upgrade pip numpy
 	$(PYTHON) -m pip install -e '.[dev,pyweno]'
 
+run-examples:
+	@for ex in $$(find examples -name "*.py"); do \
+		echo -e "\x1b[1;32m===> \x1b[97mRunning $${ex}\x1b[0m"; \
+		$(PYTHON) "$${ex}"; \
+		sleep 1; \
+	done
+
 ctags:
 	ctags --recurse=yes \
 		--tag-relative=yes \

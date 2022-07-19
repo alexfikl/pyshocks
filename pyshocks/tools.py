@@ -374,13 +374,16 @@ def get_logger(
 
     assert isinstance(level, int)
 
-    formatter = ColoredFormatter(PYSHOCKS_LOG_FORMAT)
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-
     logger = logging.getLogger(module)
-    logger.addHandler(handler)
+    logger.propagate = False
     logger.setLevel(level)
+
+    if not logger.hasHandlers():
+        formatter = ColoredFormatter(PYSHOCKS_LOG_FORMAT)
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+
+        logger.addHandler(handler)
 
     return logger
 

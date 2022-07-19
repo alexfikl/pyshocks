@@ -102,7 +102,7 @@ class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
 
 
 @dataclass(frozen=True)
-class WENOJS32(WENOJS, WENOJS32Mixin):
+class WENOJS32(WENOJS32Mixin, WENOJS):
     """See :class:`pyshocks.burgers.WENOJS32`.
 
     .. automethod:: __init__
@@ -115,7 +115,7 @@ class WENOJS32(WENOJS, WENOJS32Mixin):
 
 
 @dataclass(frozen=True)
-class WENOJS53(WENOJS, WENOJS53Mixin):
+class WENOJS53(WENOJS53Mixin, WENOJS):
     """See :class:`pyshocks.burgers.WENOJS53`.
 
     .. automethod:: __init__

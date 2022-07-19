@@ -71,4 +71,20 @@ jobs:
         make pip-install
         make test
 
+  examples:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    -
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Main Script
+      run: |
+        export JAX_DEFAULT_DTYPE_BITS=32
+
+        make pip-install
+        make run-examples
+
 # vim: set ts=2 sw=2 et:
