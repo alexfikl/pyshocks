@@ -394,11 +394,18 @@ def get_logger(
 # {{{ matplotlib
 
 
-def set_recommended_matplotlib(use_tex: bool = True) -> None:
+def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
     try:
         import matplotlib.pyplot as mp
     except ImportError:
         return
+
+    if use_tex is None:
+        import os
+        import matplotlib
+        use_tex = (
+            not os.environ.get("GITHUB_REPOSITORY")
+            and matplotlib.checkdep_usetex(True))
 
     defaults = {
         "figure": {"figsize": (8, 8), "dpi": 300, "constrained_layout": {"use": True}},
