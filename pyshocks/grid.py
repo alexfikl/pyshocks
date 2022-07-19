@@ -11,8 +11,11 @@ Grid
     :no-show-inheritance:
 .. autoclass:: UniformGrid
 
+.. autofunction:: make_uniform_grid
+
 .. autoclass:: Quadrature
     :no-show-inheritance:
+
 .. autofunction:: cell_average
 
 .. autofunction:: norm
@@ -25,8 +28,6 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from pyshocks.tools import memoize_method
-
 
 # {{{ grids
 
@@ -34,21 +35,38 @@ from pyshocks.tools import memoize_method
 @dataclass(frozen=True)
 class Grid:
     """
+    .. attribute:: a
+    .. attribute:: b
+
+        Domain bounds for :math:`[a, b]`.
+
     .. attribute:: n
 
         Number of (interior) cells.
 
-    .. attribute:: f
+    .. attribute:: nghosts
 
-        Array of face coordinates of size ``(n + 2 g + 1,)``.
+        Number of ghost cells
+
+    .. attribute:: ncells
+
+        Number of total cells (ghost and interior).
+
+    .. attribute:: nfaces
+
+        Number of total faces (ghost and interior).
 
     .. attribute:: x
 
-        Array of cell center coordinates of size ``(n + 2 g,)``.
+        Array of cell center coordinates of shape ``(n + 2 g,)``.
+
+    .. attribute:: f
+
+        Array of face coordinates of shape ``(n + 2 g + 1,)``.
 
     .. attribute:: dx
 
-        Array of cell sizes of same size as :attr:`x`.
+        Array of cell sizes (same shape as :attr:`x`).
 
     .. attribute:: df
 
@@ -56,8 +74,9 @@ class Grid:
         of size ``(n + 2 g - 1,)``.
 
     .. attribute:: dx_min
+    .. attribute:: dx_max
 
-        Smallest :attr:`dx` in the domain.
+        Smallest (and largest) :attr:`dx` in the domain.
 
     .. attribute:: i_
 
@@ -71,42 +90,26 @@ class Grid:
 
     a: float
     b: float
-    n: int
+
+    x: jnp.ndarray
+    f: jnp.ndarray
     nghosts: int
 
-    def __post_init__(self):
-        if self.b < self.a:
-            raise ValueError("incorrect interval: a > b")
+    # NOTE: these are here explicitly because jax.jit does not work well with
+    # caching attributes (they leak outside on the first call to a jitted function)
 
-        if self.n <= 0:
-            raise ValueError("number of cells should be > 0")
-
-    @property
-    def x(self):
-        raise NotImplementedError
+    dx: jnp.ndarray
+    df: jnp.ndarray
+    dx_min: float
+    dx_max: float
 
     @property
-    def f(self):
-        raise NotImplementedError
-
-    @property  # type: ignore[misc]
-    @memoize_method
-    def df(self):
-        return jnp.diff(self.x)
+    def n(self):
+        return self.ncells - 2 * self.nghosts
 
     @property
-    def dx(self):
-        return jnp.diff(self.f)
-
-    @property  # type: ignore[misc]
-    @memoize_method
-    def dx_min(self):
-        return jnp.min(self.dx)
-
-    @property  # type: ignore[misc]
-    @memoize_method
-    def dx_max(self):
-        return jnp.max(self.dx)
+    def ncells(self):
+        return self.x.size
 
     @property
     def nfaces(self):
@@ -123,25 +126,37 @@ class Grid:
 
 @dataclass(frozen=True)
 class UniformGrid(Grid):
+    pass
+
+
+def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> UniformGrid:
     """
-    .. automethod:: __init__
+    :arg a: left boundary of the domain :math:`[a, b]`.
+    :arg b: right boundary of the domain :math:`[a, b]`.
+    :arg n: number of cells the discretize the domain.
+    :arg nghosts: number of ghost cells on each side of the domain.
     """
+    if b < a:
+        raise ValueError(f"incorrect interval a > b: '{a}' > '{b}'")
 
-    @property  # type: ignore[misc]
-    @memoize_method
-    def f(self):
-        dx = (self.b - self.a) / self.n
-        a = self.a - self.nghosts * dx
-        b = self.b + self.nghosts * dx
-        n = self.n + 2 * self.nghosts
+    if n <= 0:
+        raise ValueError(f"number of cells should be > 0: '{n}'")
 
-        return jnp.linspace(a, b, n + 1, dtype=jnp.float64)
+    if nghosts <= 0:
+        raise ValueError(f"number of ghost cells should be > 0: '{nghosts}'")
 
-    @property  # type: ignore[misc]
-    @memoize_method
-    def x(self):
-        return 0.5 * (self.f[1:] + self.f[:-1])
+    dx = (b - a) / n
 
+    f = jnp.linspace(a - nghosts * dx, b + nghosts * dx, n + 2 * nghosts)
+    x = (f[1:] + f[:-1]) / 2
+
+    df = jnp.diff(x)
+    dx = jnp.diff(f)
+    assert jnp.linalg.norm(dx - dx[0], ord=jnp.inf) < 5.0e-14 * abs(dx[0])
+
+    return UniformGrid(
+        a=a, b=b, x=x, f=f, nghosts=nghosts,
+        dx=dx, df=df, dx_min=jnp.min(dx), dx_max=jnp.max(dx))
 
 # }}}
 

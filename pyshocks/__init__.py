@@ -6,9 +6,10 @@ import jax
 
 from pyshocks.grid import (
     Grid,
-    UniformGrid,
     Quadrature,
+    UniformGrid,
     cell_average,
+    make_uniform_grid,
     norm,
     rnorm,
 )
@@ -54,8 +55,8 @@ __all__ = (
     "ScalarFunction",
     "VectorFunction",
     "SpatialFunction",
-    "Grid",
-    "UniformGrid",
+    "Grid", "UniformGrid",
+    "make_uniform_grid",
     "SchemeBase",
     "ConservationLawScheme",
     "flux",
