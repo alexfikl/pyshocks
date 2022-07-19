@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+import pathlib
 from dataclasses import dataclass
 from functools import partial
 
@@ -15,6 +16,7 @@ from pyshocks.timestepping import step, Stepper
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
 
 logger = get_logger("burgers-adjoint")
+dirname = pathlib.Path(__file__).parent
 
 
 @dataclass
@@ -26,6 +28,13 @@ class Simulation:
 
     tfinal: float
     chk: InMemoryCheckpoint
+
+    @property
+    def name(self):
+        n = self.grid.n
+        scheme = type(self.scheme).__name__.lower()
+        stepper = type(self.stepper).__name__.lower()
+        return f"{scheme}_{stepper}_{n:05}"
 
     def save_checkpoint(self, event):
         # NOTE: boundary conditions are applied before the time step, so they
@@ -50,21 +59,6 @@ class Simulation:
         from pyshocks.timestepping import StepCompleted
 
         return StepCompleted(tfinal=self.tfinal, **data)
-
-
-def get_filename(sim: Simulation, basename: str, ext: str = ""):
-    if ext:
-        ext = f".{ext}" if ext[0] != "." else ext
-
-    n = sim.grid.n
-    scheme = type(sim.scheme).__name__.lower()
-    stepper = type(sim.stepper).__name__.lower()
-    suffix = f"{scheme}_{stepper}_{n:05}"
-
-    import os
-
-    dirname = os.path.dirname(__file__)
-    return os.path.join(dirname, f"{basename}_{suffix}{ext}")
 
 
 @timeme
@@ -115,7 +109,7 @@ def evolve_forward(
     ax.set_ylabel("$u$")
     ax.set_title(f"$T = {event.t:.3f}$")
 
-    fig.savefig(get_filename(sim, "burgers_forward"))
+    fig.savefig(dirname / f"burgers_forward_{sim.name}")
     mp.close(fig)
 
     # }}}
@@ -224,7 +218,7 @@ def evolve_adjoint(
     ax.set_xlabel("$x$")
     ax.set_ylabel("$p$")
 
-    fig.savefig(get_filename(sim, "burgers_adjoint"))
+    fig.savefig(dirname / f"burgers_adjoint_{sim.name}")
 
     # }}}
 
