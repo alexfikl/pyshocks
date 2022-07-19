@@ -49,10 +49,9 @@ def test_advection_vs_continuity(
 
     # {{{ setup
 
-    from pyshocks import UniformGrid, Boundary
+    from pyshocks import make_uniform_grid, Boundary
 
-    order = int(ascheme.order) + 1
-    grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=ascheme.stencil_width)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary
@@ -142,10 +141,9 @@ def test_advection_finite_difference_jacobian(
 
     # {{{ setup
 
-    from pyshocks import UniformGrid, Boundary
+    from pyshocks import make_uniform_grid, Boundary
 
-    order = int(scheme.order)
-    grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary

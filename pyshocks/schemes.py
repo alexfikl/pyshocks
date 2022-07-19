@@ -97,6 +97,14 @@ class SchemeBase:
     .. attribute:: stencil_width
     """
 
+    @property
+    def order(self):
+        raise NotImplementedError(type(self).__name__)
+
+    @property
+    def stencil_width(self):
+        raise NotImplementedError(type(self).__name__)
+
 
 @singledispatch
 def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:

@@ -1,37 +1,47 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-import os
+import pathlib
 from functools import partial
 
 import jax
 import jax.numpy as jnp
 
-from pyshocks import UniformGrid, apply_operator, predict_timestep
+from pyshocks import make_uniform_grid, apply_operator, predict_timestep
 from pyshocks import burgers
 
 
 def main(
-    scheme,
-    a=-1.0,
-    b=+1.0,
-    n=256,
-    tfinal=1.0,
-    theta=1.0,
-    interactive=False,
-    visualize=True,
-    verbose=True,
+    scheme: burgers.Scheme,
+    *,
+    outdir: pathlib.Path,
+    a: float = -1.0,
+    b: float = +1.0,
+    n: int = 256,
+    tfinal: float = 1.0,
+    theta: float = 1.0,
+    interactive: bool = False,
+    visualize: bool = True,
+    verbose: bool = True,
 ):
+    r"""
+    :arg a: left boundary of the domain :math:`[a, b]`.
+    :arg b: right boundary of the domain :math:`[a, b]`.
+    :arg n: number of cells the discretize the domain.
+    :arg tfinal: final time horizon :math:`[0, t_{final}]`.
+    :arg theta: Courant number used in time step estimation as
+        :math:`\Delta t = \theta \Delta \tilde{t}`.
+    """
     # {{{ setup
 
-    order = int(max(scheme.order, 1.0)) + 1
-    grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
-
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     solution = partial(burgers.ex_shock, grid)
 
     from pyshocks import Quadrature, cell_average
 
+    order = int(max(scheme.order, 1.0)) + 1
     quad = Quadrature(grid=grid, order=order)
+
     u = cell_average(quad, lambda x: solution(0.0, x))
 
     from pyshocks.scalar import dirichlet_boundary
@@ -62,13 +72,14 @@ def main(
 
     # {{{ right-hand side
 
-    @jax.jit
     def _predict_timestep(_t, _u):
         return theta * predict_timestep(scheme, grid, _t, _u)
 
-    @jax.jit
     def _apply_operator(_t, _u):
         return apply_operator(scheme, grid, boundary, _t, _u)
+
+    # _predict_timestep(0.0, u)
+    # _apply_operator(0.0, u)
 
     # }}}
 
@@ -77,14 +88,16 @@ def main(
     from pyshocks import timestepping
 
     method = timestepping.SSPRK33(
-        predict_timestep=_predict_timestep,
-        source=_apply_operator,
+        predict_timestep=jax.jit(_predict_timestep),
+        source=jax.jit(_apply_operator),
     )
     step = timestepping.step(method, u, tfinal=tfinal)
 
     from pyshocks import IterationTimer
 
     timer = IterationTimer(name="burgers")
+
+    method.predict_timestep(0.0, u)
 
     try:
         while True:
@@ -129,18 +142,35 @@ def main(
         ax.grid(True)
 
         scheme_name = type(scheme).__name__.lower()
-        filename = os.path.join(
-            os.path.dirname(__file__), f"burgers_{scheme_name}_{n:05d}"
-        )
-        fig.savefig(filename)
+        fig.savefig(outdir / f"burgers_{scheme_name}_{n:05d}")
 
     # }}}
 
 
 if __name__ == "__main__":
-    main(
-        scheme=burgers.LaxFriedrichs(alpha=1),
-        # scheme=burgers.EngquistOsher(),
-        # scheme=burgers.WENOJS32(),
-        # scheme=burgers.WENOJS53(),
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-s",
+        "--scheme",
+        default="lf",
+        type=str.lower,
+        choices=["lf", "eo", "wenojs32", "wenojs53"],
     )
+    parser.add_argument(
+        "--alpha", default=1.0, type=float, help="Lax-Friedrichs scheme parameter"
+    )
+    parser.add_argument(
+        "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
+    )
+    args = parser.parse_args()
+
+    name_to_scheme = {
+        "lf": burgers.LaxFriedrichs(alpha=args.alpha),
+        "eo": burgers.EngquistOsher(),
+        "wenojs32": burgers.WENOJS32(),
+        "wenojs53": burgers.WENOJS53(),
+    }
+
+    main(name_to_scheme[args.scheme], outdir=args.outdir)

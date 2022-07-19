@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
 from functools import partial

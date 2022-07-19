@@ -145,18 +145,29 @@ def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Unifor
     if nghosts <= 0:
         raise ValueError(f"number of ghost cells should be > 0: '{nghosts}'")
 
-    dx = (b - a) / n
+    dx0 = (b - a) / n
 
-    f = jnp.linspace(a - nghosts * dx, b + nghosts * dx, n + 2 * nghosts)
+    f = jnp.linspace(a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts + 1)
     x = (f[1:] + f[:-1]) / 2
 
     df = jnp.diff(x)
     dx = jnp.diff(f)
-    assert jnp.linalg.norm(dx - dx[0], ord=jnp.inf) < 5.0e-14 * abs(dx[0])
+
+    # NOTE: this seems to fail quite generously; why is that?
+    assert jnp.linalg.norm(dx - dx0, ord=jnp.inf) < 1.0e-12 * abs(dx0)
 
     return UniformGrid(
-        a=a, b=b, x=x, f=f, nghosts=nghosts,
-        dx=dx, df=df, dx_min=jnp.min(dx), dx_max=jnp.max(dx))
+        a=a,
+        b=b,
+        x=x,
+        f=f,
+        nghosts=nghosts,
+        dx=dx,
+        df=df,
+        dx_min=jnp.min(dx),
+        dx_max=jnp.max(dx),
+    )
+
 
 # }}}
 

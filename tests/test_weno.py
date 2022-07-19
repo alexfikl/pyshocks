@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
 from itertools import product
@@ -190,9 +190,9 @@ def test_weno_reference(scheme, order, n, visualize=False):
 
     # {{{ reference values
 
-    from pyshocks import UniformGrid
+    from pyshocks import make_uniform_grid
 
-    grid = UniformGrid(a=0, b=2.0 * jnp.pi, n=n, nghosts=scheme.order)
+    grid = make_uniform_grid(a=0, b=2.0 * jnp.pi, n=n, nghosts=scheme.stencil_width)
 
     from pyshocks import Quadrature, cell_average
 

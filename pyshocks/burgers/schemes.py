@@ -146,7 +146,7 @@ def _numerical_flux_burgers_engquist_osher(
 
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):          # pylint: disable=abstract-method
+class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
     """Classic (finite volume) WENO schemes by Jiang and Shu. Implementation
     follows the steps from [Shu2009]_.
 

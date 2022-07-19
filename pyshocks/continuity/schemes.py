@@ -93,7 +93,7 @@ def _numerical_flux_continuity_godunov(
 
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):          # pylint: disable=abstract-method
+class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
     """See :class:`pyshocks.burgers.WENOJS`."""
 
 

@@ -9,7 +9,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
 from pyshocks import burgers, get_logger
-from pyshocks import UniformGrid, Boundary, norm, timeme
+from pyshocks import make_uniform_grid, UniformGrid, Boundary, norm, timeme
 from pyshocks import apply_boundary, apply_operator, predict_timestep
 from pyshocks.timestepping import step, Stepper
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
@@ -241,11 +241,11 @@ def main(
 ):
     # {{{ setup
 
-    order = int(max(scheme.order, 1.0)) + 1
-    grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
     from pyshocks import Quadrature
 
+    order = int(max(scheme.order, 1.0)) + 1
     quad = Quadrature(grid=grid, order=order)
 
     # }}}

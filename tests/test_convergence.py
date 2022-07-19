@@ -38,15 +38,16 @@ def evolve(
     # {{{ grid
 
     if order is None:
-        order = int(max(scheme.order, 1)) + 1
+        order = scheme.order
+    order = int(max(order, 1.0))
 
-    from pyshocks import UniformGrid, Boundary
+    from pyshocks import make_uniform_grid, Boundary
 
-    grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
     from pyshocks import Quadrature
 
-    quad = Quadrature(grid=grid, order=order)
+    quad = Quadrature(grid=grid, order=order + 1)
 
     if finalize is not None:
         scheme = finalize(scheme, grid, quad)

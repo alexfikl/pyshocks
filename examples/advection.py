@@ -7,7 +7,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from pyshocks import UniformGrid, apply_operator, predict_timestep
+from pyshocks import make_uniform_grid, apply_operator, predict_timestep
 from pyshocks import continuity, advection, get_logger
 
 logger = get_logger("advection")
@@ -88,8 +88,7 @@ def main(
 ):
     # {{{ setup
 
-    order = int(max(scheme.order, 1.0)) + 1
-    grid = UniformGrid(a=a, b=b, n=n, nghosts=order)
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
     from dataclasses import replace
 
@@ -99,7 +98,8 @@ def main(
     # initial condition
     from pyshocks import Quadrature, cell_average
 
-    quad = Quadrature(grid=grid, order=4)
+    order = int(max(scheme.order, 1.0)) + 1
+    quad = Quadrature(grid=grid, order=order)
     u = cell_average(quad, lambda x: solution(0.0, x))
 
     # update coefficients (i.e. velocity field)

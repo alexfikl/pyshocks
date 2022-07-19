@@ -97,7 +97,7 @@ def _numerical_flux_advection_godunov(
 
 
 @dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):      # pylint: disable=abstract-method
+class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
     """See :class:`pyshocks.burgers.WENOJS`."""
 
 
