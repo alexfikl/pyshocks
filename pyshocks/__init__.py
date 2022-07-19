@@ -35,6 +35,7 @@ from pyshocks.tools import (
     IterationTimer,
     timeme,
     get_logger,
+    set_recommended_matplotlib,
 )
 
 # {{{ config
@@ -78,4 +79,5 @@ __all__ = (
     "IterationTimer",
     "timeme",
     "get_logger",
+    "set_recommended_matplotlib",
 )

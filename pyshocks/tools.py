@@ -389,3 +389,48 @@ def get_logger(
 
 
 # }}}
+
+
+# {{{ matplotlib
+
+
+def set_recommended_matplotlib(use_tex: bool = True) -> None:
+    try:
+        import matplotlib.pyplot as mp
+    except ImportError:
+        return
+
+    defaults = {
+        "figure": {"figsize": (8, 8), "dpi": 300, "constrained_layout": {"use": True}},
+        "text": {"usetex": use_tex},
+        "legend": {"fontsize": 32},
+        "lines": {"linewidth": 2, "markersize": 10},
+        "axes": {
+            "labelsize": 32,
+            "titlesize": 32,
+            "grid": True,
+            # NOTE: preserve existing colors (the ones in "science" are ugly)
+            "prop_cycle": mp.rcParams["axes.prop_cycle"],
+        },
+        "xtick": {"labelsize": 24, "direction": "inout"},
+        "ytick": {"labelsize": 24, "direction": "inout"},
+        "axes.grid": {"axis": "both", "which": "both"},
+        "xtick.major": {"size": 6.5, "width": 1.5},
+        "ytick.major": {"size": 6.5, "width": 1.5},
+        "xtick.minor": {"size": 4.0},
+        "ytick.minor": {"size": 4.0},
+    }
+
+    if "science" in mp.style.available:
+        mp.style.use(["science", "ieee"])
+    else:
+        mp.style.use("seaborn-white")
+
+    for group, params in defaults.items():
+        try:
+            mp.rc(group, **params)
+        except KeyError:
+            pass
+
+
+# }}}

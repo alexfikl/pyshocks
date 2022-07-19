@@ -4,7 +4,7 @@
 from dataclasses import replace
 from functools import partial
 
-from pyshocks import timeme, get_logger
+from pyshocks import timeme, get_logger, set_recommended_matplotlib
 from pyshocks import burgers, advection, continuity
 
 import jax
@@ -13,6 +13,7 @@ import jax.numpy as jnp
 import pytest
 
 logger = get_logger("test_convergence")
+set_recommended_matplotlib()
 
 
 @timeme
@@ -112,14 +113,25 @@ def evolve(
         fig = mp.figure()
         ax = fig.gca()
 
-        ax.grid()
-        ax.plot(grid.x[s], jnp.log10(jnp.abs(u[s] - uhat[s])))
-        ax.plot(grid.x[s], u0[s], "--")
-        ax.plot(grid.x[s], u[s], "--")
-        ax.plot(grid.x[s], uhat[s], "k--")
+        ax.plot(grid.x[s], u0[s], "--", label="$u(0, x)$")
+        ax.plot(grid.x[s], u[s], "--", label="$u(T, x)$")
+        ax.plot(grid.x[s], uhat[s], "k--", label=r"$\hat{u}(T, x)$")
+        ax.set_xlabel("$x$")
+        ax.legend()
 
-        filename = f"convergence_{equation_name}_{scheme_name}_{n:04}"
+        filename = f"convergence_{equation_name}_{scheme_name}_{n:04}_solution"
         fig.savefig(filename)
+        fig.clf()
+
+        ax = fig.gca()
+        ax.semilogy(grid.x[s], jnp.abs(u[s] - uhat[s]))
+        ax.set_xlabel("$x$")
+        ax.set_ylabel(r"$|u - \hat{u}|$")
+
+        filename = f"convergence_{equation_name}_{scheme_name}_{n:04}_error"
+        fig.savefig(filename)
+        fig.clf()
+
         mp.close(fig)
 
     # }}}
