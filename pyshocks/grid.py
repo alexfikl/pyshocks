@@ -148,8 +148,8 @@ def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Unifor
     dx0 = (b - a) / n
 
     f = jnp.linspace(
-        a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts + 1,
-        dtype=jnp.float64)
+        a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts + 1, dtype=jnp.float64
+    )
     x = (f[1:] + f[:-1]) / 2
 
     df = jnp.diff(x)
