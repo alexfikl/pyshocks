@@ -43,7 +43,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
     n = n + 2 * nghosts
     m = jnp.s_[nghosts:-nghosts]
 
-    theta = jnp.linspace(0.0, 2.0 * jnp.pi, n)
+    theta = jnp.linspace(0.0, 2.0 * jnp.pi, n, dtype=jnp.float64)
     u = jnp.sin(theta)
 
     # }}}
@@ -119,7 +119,7 @@ def test_weno_smoothness_indicator(scheme, n, is_smooth):
     n = n + 2 * nghosts
     m = jnp.s_[nghosts:-nghosts]
 
-    theta = jnp.linspace(0.0, 2.0 * jnp.pi, n)
+    theta = jnp.linspace(0.0, 2.0 * jnp.pi, n, dtype=jnp.float64)
     if is_smooth:
         u = jnp.sin(theta)
     else:
