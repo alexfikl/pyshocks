@@ -66,8 +66,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Main Script
       run: |
-        export JAX_DEFAULT_DTYPE_BITS=32
-
         make pip-install
         make test
 
@@ -82,8 +80,6 @@ jobs:
         python-version: '3.x'
     - name: Main Script
       run: |
-        export JAX_DEFAULT_DTYPE_BITS=32
-
         make pip-install
         make run-examples
 

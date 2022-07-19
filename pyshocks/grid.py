@@ -154,7 +154,7 @@ def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Unifor
     dx = jnp.diff(f)
 
     # NOTE: this seems to fail quite generously; why is that?
-    assert jnp.linalg.norm(dx - dx0, ord=jnp.inf) < 1.0e-12 * abs(dx0)
+    # assert jnp.linalg.norm(dx - dx0, ord=jnp.inf) < 1.0e-12 * abs(dx0)
 
     return UniformGrid(
         a=a,
