@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
+from typing import Optional
 
 import jax.numpy as jnp
 
@@ -18,15 +19,16 @@ class Scheme(ConservationLawScheme):
     .. attribute:: diffusivity
     """
 
-    diffusivity: jnp.ndarray
+    diffusivity: Optional[jnp.ndarray]
 
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_diffusion(
     scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
 ) -> float:
-    dmax = jnp.max(jnp.abs(scheme.diffusivity[grid.i_]))
+    assert scheme.diffusivity is not None
 
+    dmax = jnp.max(jnp.abs(scheme.diffusivity[grid.i_]))
     return 0.5 * grid.dx_min**2 / dmax
 
 
@@ -51,6 +53,8 @@ class CenteredScheme(Scheme):
 def _numerical_flux_diffusion_centered_scheme(
     scheme: CenteredScheme, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
+    assert scheme.diffusivity is not None
+
     # FIXME: higher order?
     d = scheme.diffusivity
     davg = (d[1:] + d[:-1]) / 2

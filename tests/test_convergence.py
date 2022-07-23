@@ -244,15 +244,17 @@ def test_advection_convergence(scheme, order, resolutions, a=-1.0, b=+1, tfinal=
 @pytest.mark.parametrize(
     ("scheme", "order", "resolutions"),
     [
-        (diffusion.CenteredScheme(diffusivity=1.0), 2, list(range(80, 160 + 1, 16))),
+        (diffusion.CenteredScheme(diffusivity=None), 2, list(range(80, 160 + 1, 16))),
     ],
 )
-def test_diffusion_convergence(scheme, order, resolutions, a=-1.0, b=1.0, tfinal=1.0):
+def test_diffusion_convergence(
+    scheme, order, resolutions, a=-1.0, b=1.0, tfinal=1.0, diffusivity=1.0
+):
     def ex_sin_exp(grid, t, x):
-        return diffusion.ex_expansion(grid, t, x, diffusivity=scheme.diffusivity)
+        return diffusion.ex_expansion(grid, t, x, diffusivity=diffusivity)
 
     def finalize(s, grid, quad):
-        return replace(s, diffusivity=jnp.full_like(grid.x, scheme.diffusivity))
+        return replace(s, diffusivity=jnp.full_like(grid.x, diffusivity))
 
     from pyshocks import EOCRecorder
 

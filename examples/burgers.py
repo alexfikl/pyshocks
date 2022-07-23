@@ -8,14 +8,19 @@ from typing import Optional
 import jax
 import jax.numpy as jnp
 
-from pyshocks import make_uniform_grid, apply_operator, predict_timestep
+from pyshocks import (
+    ConservationLawScheme,
+    make_uniform_grid,
+    apply_operator,
+    predict_timestep,
+)
 from pyshocks import diffusion, burgers, get_logger
 
 logger = get_logger("burgers")
 
 
 def main(
-    scheme: burgers.Scheme,
+    scheme: ConservationLawScheme,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
@@ -51,12 +56,14 @@ def main(
     u0 = cell_average(quad, lambda x: solution(0.0, x))
     boundary = dirichlet_boundary(solution)
 
-    if diffusivity is None:
-        scheme_d = None
-    else:
+    if diffusivity is not None:
         scheme_d = diffusion.CenteredScheme(
             diffusivity=jnp.full_like(grid.x, diffusivity),
         )
+
+        from pyshocks.schemes import CombineConservationLawScheme
+
+        scheme = CombineConservationLawScheme((scheme, scheme_d))
 
     # }}}
 
@@ -82,26 +89,11 @@ def main(
 
     # {{{ right-hand side
 
-    if scheme_d is None:
+    def _predict_timestep(_t, _u):
+        return theta * predict_timestep(scheme, grid, _t, _u)
 
-        def _predict_timestep(_t, _u):
-            return theta * predict_timestep(scheme, grid, _t, _u)
-
-        def _apply_operator(_t, _u):
-            return apply_operator(scheme, grid, boundary, _t, _u)
-
-    else:
-
-        def _predict_timestep(_t, _u):
-            return theta * jnp.minimum(
-                predict_timestep(scheme, grid, _t, _u),
-                predict_timestep(scheme_d, grid, _t, _u),
-            )
-
-        def _apply_operator(_t, _u):
-            return apply_operator(scheme, grid, boundary, _t, _u) + apply_operator(
-                scheme_d, grid, boundary, _t, _u
-            )
+    def _apply_operator(_t, _u):
+        return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}
 
