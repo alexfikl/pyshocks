@@ -10,6 +10,7 @@ Schemes
 .. autoclass:: SchemeBase
     :no-show-inheritance:
 .. autoclass:: ConservationLawScheme
+.. autoclass:: CombineConservationLawScheme
 
 .. autofunction:: flux
 .. autofunction:: numerical_flux
@@ -36,7 +37,7 @@ Protocols
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Optional, Protocol
+from typing import Optional, Protocol, Tuple
 
 import jax.numpy as jnp
 
@@ -214,6 +215,69 @@ class ConservationLawScheme(SchemeBase):
 @apply_operator.register(ConservationLawScheme)
 def _apply_operator_conservation_law(
     scheme: ConservationLawScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
+):
+    u = apply_boundary(bc, grid, t, u)
+    f = numerical_flux(scheme, grid, t, u)
+
+    return -(f[1:] - f[:-1]) / grid.dx
+
+
+@dataclass(frozen=True)
+class CombineConservationLawScheme(ConservationLawScheme):
+    r"""Implements a combined operator of conservation laws.
+
+    In this case, we consider a conservation law in the form
+
+    .. math::
+
+        \frac{\partial \mathbf{u}}{\partial t}
+        + \sum_{k = 0}^M \nabla \cdot \mathbf{f}_k(\mathbf{u}) = 0,
+
+    where each flux :math:`\mathbf{f}_k` is defined by an element of
+    :attr:`schemes`. The main benefit of using this class is that it avoids
+    applying the boundary conditions on every call to :func:`apply_operator`
+    (and the additional convenience).
+
+    .. attribute:: schemes
+
+        A tuple of :class:`ConservationLawScheme` objects.
+    """
+    schemes: Tuple[ConservationLawScheme, ...]
+
+    def __post_init__(self):
+        assert len(self.schemes) > 1
+        assert all(isinstance(s, ConservationLawScheme) for s in self.schemes)
+
+
+@predict_timestep.register(CombineConservationLawScheme)
+def _predict_time_combine_conservation_law(
+    scheme: CombineConservationLawScheme, grid: Grid, t: float, u: jnp.ndarray
+):
+    dt = jnp.inf
+    for s in scheme.schemes:
+        dt = jnp.minimum(dt, predict_timestep(s, grid, t, u))
+
+    return dt
+
+
+@numerical_flux.register(CombineConservationLawScheme)
+def _numerical_flux_combine_conversation_law(
+    scheme: CombineConservationLawScheme, grid: Grid, t: float, u: jnp.ndarray
+):
+    f = numerical_flux(scheme.schemes[0], grid, t, u)
+    for s in scheme.schemes[1:]:
+        f = f + numerical_flux(s, grid, t, u)
+
+    return f
+
+
+@apply_operator.register(CombineConservationLawScheme)
+def _apply_operator_combine_conservation_law(
+    scheme: CombineConservationLawScheme,
+    grid: Grid,
+    bc: "Boundary",
+    t: float,
+    u: jnp.ndarray,
 ):
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, t, u)

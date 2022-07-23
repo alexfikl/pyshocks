@@ -41,15 +41,19 @@ def ex_expansion(
     amplitudes: Tuple[float, ...] = (1.0,),
     diffusivity: float = 1.0,
 ) -> jnp.ndarray:
+    assert len(modes) > 0
     assert len(modes) == len(amplitudes)
     assert diffusivity > 0
 
     L = grid.b - grid.a  # noqa: N806
     return sum(
-        a
-        * jnp.sin(jnp.pi * n * x / L)
-        * jnp.exp(-diffusivity * (n * jnp.pi / L) ** 2 * t)
-        for a, n in zip(amplitudes, modes)
+        [
+            a
+            * jnp.sin(jnp.pi * n * x / L)
+            * jnp.exp(-diffusivity * (n * jnp.pi / L) ** 2 * t)
+            for a, n in zip(amplitudes, modes)
+        ],
+        jnp.zeros_like(x),
     )
 
 
