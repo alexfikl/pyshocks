@@ -34,18 +34,20 @@ from functools import wraps
 from typing import (
     Any,
     Callable,
-    Concatenate,
-    Dict,
-    Hashable,
     List,
     Optional,
-    ParamSpec,
     Protocol,
     Union,
     Tuple,
     Type,
     TypeVar,
 )
+
+try:
+    from typing import ParamSpec  # noqa: F811
+except ImportError:
+    from typing_extensions import ParamSpec
+
 from types import TracebackType
 import logging
 
@@ -92,59 +94,6 @@ class SpatialFunction(Protocol):
 # }}}
 
 
-# {{{ memoize method
-
-
-class _NotProvided:
-    pass
-
-
-def memoize_on_first_arg(
-    function: Callable[Concatenate[T, P], R], cache_dict_name: Optional[str] = None
-) -> Callable[Concatenate[T, P], R]:
-    if cache_dict_name is None:
-        cache_dict_name = f"_memoize_dict_{function.__module__}{function.__name__}"
-
-    def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
-        if kwargs:
-            raise RuntimeError("keyword arguments are not supported")
-
-        key = args
-        assert cache_dict_name is not None
-
-        if not hasattr(obj, cache_dict_name):
-            object.__setattr__(obj, cache_dict_name, {})
-        cache: Dict[Hashable, R] = getattr(obj, cache_dict_name)
-
-        if key in cache:
-            result = cache[key]
-        else:
-            result = function(obj, *args, **kwargs)
-            cache[key] = result
-
-        return result
-
-    def clear_cache(obj: T) -> None:
-        assert cache_dict_name is not None
-        object.__delattr__(obj, cache_dict_name)
-
-    from functools import update_wrapper
-
-    new_wrapper = update_wrapper(wrapper, function)
-    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
-
-    return new_wrapper  # type: ignore[return-value]
-
-
-def memoize_method(
-    method: Callable[Concatenate[T, P], R]
-) -> Callable[Concatenate[T, P], R]:
-    return memoize_on_first_arg(method, f"_memoize_dict_{method.__name__}")
-
-
-# }}}
-
-
 # {{{ eoc
 
 
@@ -179,7 +128,7 @@ def estimate_gliding_order_of_convergence(
         gliding_mean = x.size
 
     npoints = x.size - gliding_mean + 1
-    return jnp.array(           # type: ignore[no-untyped-call]
+    return jnp.array(  # type: ignore[no-untyped-call]
         [
             estimate_order_of_convergence(
                 x[i : i + gliding_mean], y[i : i + gliding_mean]
