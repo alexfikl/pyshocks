@@ -291,9 +291,9 @@ def main(
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # FIXME: this only works for LF and EO, not WENO!
-    from pyshocks.timestepping import ForwardEuler as TimeStepper
+    from pyshocks.timestepping import SSPRK33
 
-    stepper = TimeStepper(
+    stepper = SSPRK33(
         predict_timestep=forward_predict_timestep,
         source=forward_operator,
     )
