@@ -19,15 +19,15 @@ class Checkpoint:
     basename: str = "Iteration"
     count: int = field(default=0, init=False, repr=False)
 
-    def index_to_key(self, i):
+    def index_to_key(self, i: int) -> str:
         return f"{self.basename}_{i:09d}"
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.count
 
 
 @singledispatch
-def save(chk: Checkpoint, idx: int, values: Dict[str, Any]):
+def save(chk: Checkpoint, idx: int, values: Dict[str, Any]) -> None:
     raise NotImplementedError(type(chk).__name__)
 
 
@@ -47,7 +47,7 @@ class InMemoryCheckpoint(Checkpoint):
 
 
 @save.register(InMemoryCheckpoint)
-def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]):
+def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]) -> None:
     key = chk.index_to_key(idx)
     if key in chk.storage:
         raise KeyError(f"cannot set existing checkpoint at '{idx}'")
@@ -86,7 +86,7 @@ class AutoAdjoint(SchemeBase):
 
     index: int = field(init=False, repr=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         object.__setattr__(self, "index", self.checkpoints.count - 1)
 
 
@@ -100,7 +100,7 @@ def _numerical_flux_adjoint(
 @predict_timestep.register(AutoAdjoint)
 def _predict_time_step_adjoint(
     scheme: AutoAdjoint, grid: Grid, t: float, u: jnp.ndarray
-) -> float:
+) -> jnp.ndarray:
     dt = load(scheme.checkpoints, scheme.index, include=["dt"])["dt"]
     object.__setattr__(scheme, "index", scheme.index - 1)
 
