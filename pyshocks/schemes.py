@@ -101,7 +101,7 @@ def numerical_flux(
 @singledispatch
 def apply_operator(
     scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
-):
+) -> jnp.ndarray:
     r"""Applies right-hand side operator for a "Method of Lines" approach.
     For any PDE, we have that
 
@@ -127,7 +127,9 @@ def apply_operator(
 
 
 @singledispatch
-def predict_timestep(scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray) -> float:
+def predict_timestep(
+    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     r"""Estimate the time step based on the current solution. This time step
     prediction can then be used together with a Courant number to give
     the final time step
@@ -172,7 +174,7 @@ class ConservationLawScheme(SchemeBase):
 @apply_operator.register(ConservationLawScheme)
 def _apply_operator_conservation_law(
     scheme: ConservationLawScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
-):
+) -> jnp.ndarray:
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, t, u)
 
@@ -201,7 +203,7 @@ class CombineConservationLawScheme(ConservationLawScheme):
     """
     schemes: Tuple[ConservationLawScheme, ...]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         assert len(self.schemes) > 1
         assert all(isinstance(s, ConservationLawScheme) for s in self.schemes)
 
@@ -209,7 +211,7 @@ class CombineConservationLawScheme(ConservationLawScheme):
 @predict_timestep.register(CombineConservationLawScheme)
 def _predict_time_combine_conservation_law(
     scheme: CombineConservationLawScheme, grid: Grid, t: float, u: jnp.ndarray
-):
+) -> jnp.ndarray:
     dt = jnp.inf
     for s in scheme.schemes:
         dt = jnp.minimum(dt, predict_timestep(s, grid, t, u))
@@ -220,7 +222,7 @@ def _predict_time_combine_conservation_law(
 @numerical_flux.register(CombineConservationLawScheme)
 def _numerical_flux_combine_conversation_law(
     scheme: CombineConservationLawScheme, grid: Grid, t: float, u: jnp.ndarray
-):
+) -> jnp.ndarray:
     f = numerical_flux(scheme.schemes[0], grid, t, u)
     for s in scheme.schemes[1:]:
         f = f + numerical_flux(s, grid, t, u)
@@ -235,7 +237,7 @@ def _apply_operator_combine_conservation_law(
     bc: "Boundary",
     t: float,
     u: jnp.ndarray,
-):
+) -> jnp.ndarray:
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, t, u)
 
@@ -293,11 +295,11 @@ class TwoSidedBoundary(Boundary):
     left: Optional[OneSidedBoundary] = None
     right: Optional[OneSidedBoundary] = None
 
-    def __post_init__(self):
-        if self.left is not None and self.left.side != -1:
+    def __post_init__(self) -> None:
+        if isinstance(self.left, OneSidedBoundary) and self.left.side != -1:
             raise ValueError("left boundary has incorrect side")
 
-        if self.right is not None and self.right.side != +1:
+        if isinstance(self.right, OneSidedBoundary) and self.right.side != +1:
             raise ValueError("right boundary has incorrect side")
 
 
