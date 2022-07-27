@@ -39,7 +39,7 @@ def test_advection_vs_continuity(
     a: float = -1.0,
     b: float = +1.0,
     n: int = 256,
-    visualize: bool = True,
+    visualize: bool = False,
 ) -> None:
     if visualize:
         try:
@@ -133,7 +133,7 @@ def test_advection_finite_difference_jacobian(
     a: float = -1.0,
     b: float = +1.0,
     n: int = 32,
-    visualize: bool = True,
+    visualize: bool = False,
 ) -> None:
     if visualize:
         try:
