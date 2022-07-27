@@ -24,10 +24,12 @@ Grid
 
 from dataclasses import dataclass, field
 from functools import partial
+from typing import Optional, Tuple
 
 import jax
 import jax.numpy as jnp
 
+from pyshocks.tools import SpatialFunction
 
 # {{{ grids
 
@@ -84,8 +86,9 @@ class Grid:
 
     .. attribute:: g_
 
-        A :class:`slice` of ghost indices. ``Grid.g_[+1]`` and ``Grid.g_[-1]``
-        give the ghost indices on the right and left sides, respectively.
+        A :class:`tuple` of ghost indices. ``Grid.g_[+1]`` and ``Grid.g_[-1]``
+        give a :class:`slice` for the ghost indices on the right and left sides,
+        respectively.
     """
 
     a: float
@@ -104,23 +107,23 @@ class Grid:
     dx_max: float
 
     @property
-    def n(self):
+    def n(self) -> int:
         return self.ncells - 2 * self.nghosts
 
     @property
-    def ncells(self):
-        return self.x.size
+    def ncells(self) -> int:
+        return int(self.x.size)
 
     @property
-    def nfaces(self):
-        return self.f.size
+    def nfaces(self) -> int:
+        return int(self.f.size)
 
     @property
-    def g_(self):
+    def g_(self) -> Tuple[Optional[int], slice, slice]:
         return (None, jnp.s_[: +self.nghosts], jnp.s_[-self.nghosts :])
 
     @property
-    def i_(self):
+    def i_(self) -> slice:
         return jnp.s_[self.nghosts : -self.nghosts]
 
 
@@ -202,14 +205,14 @@ class Quadrature:
     x: jnp.ndarray = field(init=False, repr=False)
     w: jnp.ndarray = field(init=False, repr=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.order < 1:
             raise ValueError(f"invalid order: '{self.order}'")
 
         # get Gauss-Legendre quadrature nodes and weights
         from numpy.polynomial.legendre import leggauss
 
-        xi, wi = leggauss(self.order)
+        xi, wi = leggauss(self.order)  # type: ignore[no-untyped-call]
         xi = jax.device_put(xi).reshape(-1, 1)
         wi = jax.device_put(wi).reshape(-1, 1)
 
@@ -224,12 +227,14 @@ class Quadrature:
         object.__setattr__(self, "x", xi)
         object.__setattr__(self, "w", wi)
 
-    def __call__(self, fn):
+    def __call__(self, fn: SpatialFunction) -> jnp.ndarray:
         """Integral over the grid of the function."""
         return jnp.sum(fn(self.x) * self.w)
 
 
-def cell_average(quad: Quadrature, fn, staggered=False) -> jnp.ndarray:
+def cell_average(
+    quad: Quadrature, fn: SpatialFunction, staggered: bool = False
+) -> jnp.ndarray:
     r"""Computes the cell average of the callable *fn* as
 
     .. math::
@@ -251,7 +256,7 @@ def cell_average(quad: Quadrature, fn, staggered=False) -> jnp.ndarray:
 
 
 @partial(jax.jit, static_argnums=(2,))
-def _norm(x, dx, p):
+def _norm(x: jnp.ndarray, dx: jnp.ndarray, p: float) -> jnp.ndarray:
     if p == 1:
         return jnp.sum(x * dx)
 
@@ -272,7 +277,9 @@ def _norm(x, dx, p):
     raise ValueError(f"unrecognized 'p': {p}")
 
 
-def norm(grid: Grid, x: jnp.ndarray, *, p: float = 2, weighted: bool = False) -> float:
+def norm(
+    grid: Grid, x: jnp.ndarray, *, p: float = 2, weighted: bool = False
+) -> jnp.ndarray:
     r"""Computes the interior :math:`\ell^p` norm of *x*."""
     dx = grid.dx[grid.i_] if weighted else 1.0
     x = jnp.abs(x[grid.i_])
@@ -288,7 +295,7 @@ def rnorm(
     p: float = 2,
     weighted: bool = False,
     atol: float = 1.0e-14,
-) -> float:
+) -> jnp.ndarray:
     r"""Computes the interior :math:`\ell^p` relative error norm of *x* and *y*
     as
 
