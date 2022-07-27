@@ -31,7 +31,7 @@ def _flux_burgers(
 @predict_timestep.register(Scheme)
 def _predict_timestep_burgers(
     scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
-) -> float:
+) -> jnp.ndarray:
     # largest wave speed i.e. max |f'(u)|
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
@@ -65,11 +65,11 @@ class LaxFriedrichs(Scheme):
     alpha: float = 1.0
 
     @property
-    def order(self):
-        return self.alpha
+    def order(self) -> int:
+        return 1
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 1
 
 
@@ -85,7 +85,7 @@ def _numerical_flux_burgers_lax_friedrichs(
 @predict_timestep.register(LaxFriedrichs)
 def _predict_timestep_burgers_lax_friedrichs(
     scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray
-) -> float:
+) -> jnp.ndarray:
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
     return 0.5 * grid.dx_min ** (2 - scheme.alpha) / smax
@@ -124,11 +124,11 @@ class EngquistOsher(Scheme):
     omega: float = field(default=0, init=False, repr=False)
 
     @property
-    def order(self):
+    def order(self) -> int:
         return 1
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 1
 
 
@@ -169,7 +169,7 @@ class WENOJS32(WENOJS32Mixin, WENOJS):
 
     eps: float = 1.0e-6
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.set_coefficients()
 
 
@@ -179,7 +179,7 @@ class WENOJS53(WENOJS53Mixin, WENOJS):
 
     eps: float = 1.0e-12
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.set_coefficients()
 
 
@@ -204,7 +204,7 @@ def _numerical_flux_burgers_wenojs(
     umax = jnp.max(jnp.abs(u[grid.i_]))
     fnum = 0.5 * (fp[:-1] + fm[1:] + umax * (up[:-1] - um[1:]))
 
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}

@@ -31,8 +31,11 @@ Data
 .. autofunction:: ex_shock
 """
 
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple, Type
 
+import jax.numpy as jnp
+
+from pyshocks import Grid
 from pyshocks.burgers.schemes import (
     Scheme,
     LaxFriedrichs,
@@ -42,10 +45,8 @@ from pyshocks.burgers.schemes import (
     WENOJS53,
 )
 
-import numpy as np
 
-
-_SCHEMES = {
+_SCHEMES: Dict[str, Type[Scheme]] = {
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,
     "wenojs32": WENOJS32,
@@ -77,30 +78,28 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 # {{{ initial conditions
 
 
-def ic_tophat(grid, x):
+def ic_tophat(grid: Grid, x: jnp.ndarray) -> jnp.ndarray:
     # TODO: this looks like it should have a solution for all t
     size = grid.b - grid.a
     lb = grid.a + size / 3.0
     rb = grid.b - size / 3.0
 
-    return (lb < x < rb).astype(np.float64)
+    return (lb < x < rb).astype(x.dtype)
 
 
-def ic_rarefaction(grid, x):
+def ic_rarefaction(grid: Grid, x: jnp.ndarray) -> jnp.ndarray:
     # TODO: this looks like it should have a solution for all t
     mid = 0.5 * (grid.a + grid.b)
 
-    return (x > mid).astype(np.float64)
+    return (x > mid).astype(x.dtype)
 
 
-def ic_sine(grid, x):
-    import jax.numpy as jnp
-
+def ic_sine(grid: Grid, x: jnp.ndarray) -> jnp.ndarray:
     dx = (grid.b - grid.a) / 3.0
     lb = grid.a + dx
     rb = grid.b - dx
 
-    return jnp.where(
+    return jnp.where(  # type: ignore[no-untyped-call]
         jnp.logical_and(lb < x, x < rb),
         1.0 + jnp.sin(2.0 * jnp.pi * (x - lb) / dx),
         1.0,
@@ -113,13 +112,13 @@ def ic_sine(grid, x):
 # {{{ forward analytic solutions
 
 
-def ex_shock(grid, t, x):
+def ex_shock(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
     # shock velocity
     s = 0.5
     # initial shock location
     x0 = 0.5 * (grid.a + grid.b)
 
-    return (x < (x0 + s * t)).astype(np.float64)
+    return (x < (x0 + s * t)).astype(x.dtype)
 
 
 # }}}
