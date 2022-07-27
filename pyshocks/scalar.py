@@ -112,11 +112,15 @@ def scalar_flux_engquist_osher(
     scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
 ) -> jnp.ndarray:
     assert u.shape[0] == grid.x.size
-    omega = jnp.full_like(grid.df, omega)  # type: ignore[no-untyped-call]
 
     fp = flux(scheme, t, grid.x, jnp.maximum(u, omega))
     fm = flux(scheme, t, grid.x, jnp.minimum(u, omega))
-    fo = flux(scheme, t, grid.x, omega)
+    fo = flux(
+        scheme,
+        t,
+        grid.x,
+        jnp.full_like(grid.df, omega),  # type: ignore[no-untyped-call]
+    )
 
     fnum = fp[:-1] + fm[1:] - fo
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]

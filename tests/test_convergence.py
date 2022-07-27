@@ -37,7 +37,7 @@ def evolve(
     tfinal: float = 0.5,
     order: Optional[int] = None,
     finalize: Optional[Callable[[SchemeBase, Grid, Quadrature], SchemeBase]] = None,
-    visualize: bool = True,
+    visualize: bool = False,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     if visualize:
         try:

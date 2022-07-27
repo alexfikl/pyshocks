@@ -17,7 +17,7 @@ pylint:
 	@echo -e "\e[1;32mpylint clean!\e[0m"
 
 mypy:
-	$(PYTHON) -m mypy --show-error-codes pyshocks tests examples
+	$(PYTHON) -m mypy --strict --show-error-codes pyshocks tests examples
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 
 reuse:

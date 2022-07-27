@@ -17,7 +17,7 @@ from pyshocks import (
 )
 from pyshocks import burgers, get_logger
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
-from pyshocks.timestepping import step, Stepper
+from pyshocks.timestepping import step, Stepper, StepCompleted
 
 logger = get_logger("burgers-adjoint")
 dirname = pathlib.Path(__file__).parent
@@ -34,13 +34,13 @@ class Simulation:
     chk: InMemoryCheckpoint
 
     @property
-    def name(self):
+    def name(self) -> str:
         n = self.grid.n
         scheme = type(self.scheme).__name__.lower()
         stepper = type(self.stepper).__name__.lower()
         return f"{scheme}_{stepper}_{n:05}"
 
-    def save_checkpoint(self, event):
+    def save_checkpoint(self, event: StepCompleted) -> None:
         from pyshocks import apply_boundary
 
         # NOTE: boundary conditions are applied before the time step, so they
@@ -58,11 +58,9 @@ class Simulation:
             },
         )
 
-    def load_checkpoint(self):
+    def load_checkpoint(self) -> StepCompleted:
         self.chk.count -= 1
         data = load(self.chk, self.chk.count)
-
-        from pyshocks.timestepping import StepCompleted
 
         return StepCompleted(tfinal=self.tfinal, **data)
 
@@ -74,7 +72,7 @@ def evolve_forward(
     *,
     interactive: bool = False,
     visualize: bool = True,
-) -> None:
+) -> jnp.ndarray:
     grid = sim.grid
     stepper = sim.stepper
 
@@ -138,7 +136,9 @@ def evolve_adjoint(
 
     from pyshocks.scalar import dirichlet_boundary
 
-    bc = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
+    bc = dirichlet_boundary(
+        lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
+    )
 
     chk = sim.load_checkpoint()
     p = p0
@@ -282,20 +282,17 @@ def main(
 
     from pyshocks import predict_timestep, apply_operator
 
-    @jax.jit
-    def forward_predict_timestep(_t, _u):
+    def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return theta * predict_timestep(scheme, grid, _t, _u)
 
-    @jax.jit
-    def forward_operator(_t, _u):
+    def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
-    # FIXME: this only works for LF and EO, not WENO!
     from pyshocks.timestepping import SSPRK33
 
     stepper = SSPRK33(
-        predict_timestep=forward_predict_timestep,
-        source=forward_operator,
+        predict_timestep=jax.jit(forward_predict_timestep),
+        source=jax.jit(forward_operator),
     )
 
     # }}}

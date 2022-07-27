@@ -3,44 +3,54 @@
 
 import pathlib
 from functools import partial
+from typing import Tuple
 
 import jax
 import jax.numpy as jnp
 
-from pyshocks import make_uniform_grid, apply_operator, predict_timestep
+from pyshocks import (
+    Grid,
+    Boundary,
+    VectorFunction,
+    make_uniform_grid,
+    apply_operator,
+    predict_timestep,
+)
 from pyshocks import advection, get_logger
 
 logger = get_logger("advection")
 
 
-def make_solution(name, grid, a=1.0, x0=1.0):
+def make_solution(
+    name: str, grid: Grid, a: float = 1.0, x0: float = 1.0
+) -> Tuple[VectorFunction, VectorFunction]:
     from pyshocks import continuity
 
     if name == "const":
 
-        def ic_sine(x):
+        def ic_sine(x: jnp.ndarray) -> jnp.ndarray:
             return x0 + continuity.ic_sine(grid, x)
 
-        def velocity(t, x):
+        def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return a * continuity.velocity_const(grid, t, x)
 
-        def solution(t, x):
+        def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return continuity.ex_constant_velocity_field(t, x, a=a, u0=ic_sine)
 
     elif name == "sign":
 
-        def velocity(t, x):
+        def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return a * continuity.velocity_sign(grid, t, x)
 
-        def solution(t, x):
+        def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return x0 + continuity.ic_sine(grid, x)
 
     elif name == "double_sign":
 
-        def velocity(t, x):
+        def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return a * continuity.velocity_sign(grid, t, x)
 
-        def solution(t, x):
+        def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return a * continuity.velocity_sign(grid, t, x)
 
     else:
@@ -49,30 +59,31 @@ def make_solution(name, grid, a=1.0, x0=1.0):
     return jax.jit(velocity), jax.jit(solution)
 
 
-def make_boundary_conditions(name, solution, *, a=1.0):
+def make_boundary_conditions(
+    name: str, solution: VectorFunction, *, a: float = 1.0
+) -> Boundary:
     from pyshocks import continuity
 
+    bc: Boundary
     if name == "const":
         from pyshocks.scalar import PeriodicBoundary
 
         bc = PeriodicBoundary()
     elif name in ["sign", "double_sign"]:
 
-        @jax.jit
-        def bc_left(t, x):
+        def bc_left(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return continuity.ex_constant_velocity_field(
                 t, x, a=-a, u0=partial(solution, t)
             )
 
-        @jax.jit
-        def bc_right(t, x):
+        def bc_right(t: float, x: jnp.ndarray) -> jnp.ndarray:
             return continuity.ex_constant_velocity_field(
                 t, x, a=+a, u0=partial(solution, t)
             )
 
         from pyshocks.scalar import dirichlet_boundary
 
-        bc = dirichlet_boundary(fa=bc_left, fb=bc_right)
+        bc = dirichlet_boundary(fa=jax.jit(bc_left), fb=jax.jit(bc_right))
     else:
         raise ValueError(f"unknown example: '{name}'")
 
@@ -92,7 +103,7 @@ def main(
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
-):
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     r"""
     :arg a: left boundary of the domain :math:`[a, b]`.
     :arg b: right boundary of the domain :math:`[a, b]`.
@@ -146,12 +157,10 @@ def main(
 
     # {{{ right-hand side
 
-    @jax.jit
-    def _predict_timestep(_t, _u):
+    def _predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return theta * predict_timestep(scheme, grid, _t, _u)
 
-    @jax.jit
-    def _apply_operator(_t, _u):
+    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}
@@ -161,8 +170,8 @@ def main(
     from pyshocks import timestepping
 
     method = timestepping.SSPRK33(
-        predict_timestep=_predict_timestep,
-        source=_apply_operator,
+        predict_timestep=jax.jit(_predict_timestep),
+        source=jax.jit(_apply_operator),
     )
     step = timestepping.step(method, u0, tfinal=tfinal)
 
@@ -233,7 +242,7 @@ def convergence(
     outdir: pathlib.Path,
     example_name: str = "sign",
     visualize: bool = True,
-):
+) -> None:
     if not isinstance(scheme, advection.Scheme):
         raise TypeError("this only works for the non-conservative advection")
 
@@ -257,7 +266,9 @@ def convergence(
     # All of this seems to be solved if we compute the cell averages to higher
     # order, likely because it actually averages something.
 
-    ncells = 3 + jnp.array([64, 128, 256, 512, 1024, 2048])
+    ncells = 3 + jnp.array(  # type: ignore[no-untyped-call]
+        [64, 128, 256, 512, 1024, 2048]
+    )
     for n in ncells:
         x, u, uhat = main(
             scheme,

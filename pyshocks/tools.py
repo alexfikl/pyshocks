@@ -179,14 +179,14 @@ def estimate_gliding_order_of_convergence(
         gliding_mean = x.size
 
     npoints = x.size - gliding_mean + 1
-    eocs = jnp.zeros((npoints, 2), dtype=x.dtype)  # type: ignore[no-untyped-call]
-
-    for i in range(npoints):
-        eocs[i] = estimate_order_of_convergence(
-            x[i : i + gliding_mean], y[i : i + gliding_mean]
-        )
-
-    return eocs
+    return jnp.array(           # type: ignore[no-untyped-call]
+        [
+            estimate_order_of_convergence(
+                x[i : i + gliding_mean], y[i : i + gliding_mean]
+            )
+            for i in range(npoints)
+        ]
+    )
 
 
 class EOCRecorder:

@@ -4,6 +4,7 @@
 import numpy as np
 
 import jax
+import jax.numpy as jnp
 import jax.numpy.linalg as jla
 
 from pyshocks import get_logger
@@ -11,16 +12,20 @@ from pyshocks import get_logger
 logger = get_logger("example-autodiff")
 
 
-def scalar_fn(A, x, b):  # noqa: N803
+def scalar_fn(
+    A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray  # noqa: N803
+) -> jnp.ndarray:
     y = A @ x + b
-    return y.dot(y) / 2.0
+    return (y @ y) / 2.0
 
 
-def vector_fn(A, x, b):  # noqa: N803
+def vector_fn(
+    A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray  # noqa: N803
+) -> jnp.ndarray:
     return A @ x + b
 
 
-def main(n=128):
+def main(n: int = 128) -> None:
     key = jax.random.PRNGKey(42)
     A = jax.random.uniform(key, shape=(n, n), dtype=np.float64)  # noqa: N806
     b = jax.random.uniform(key, shape=(n,), dtype=np.float64)
@@ -76,7 +81,9 @@ def main(n=128):
 
     # {{{ test reverse jacobian product: df_i/dx_j y0_i
 
-    _, jax_jac = jax.vjp(lambda x: vector_fn(A, x, b), x0)
+    _, jax_jac = jax.vjp(
+        lambda x: vector_fn(A, x, b), x0  # type: ignore[no-any-return]
+    )
     jax_jac = jax_jac(y0)[0]
     our_jac = A.T @ y0
 

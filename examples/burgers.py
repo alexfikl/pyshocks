@@ -57,9 +57,8 @@ def main(
     boundary = dirichlet_boundary(solution)
 
     if diffusivity is not None:
-        scheme_d = diffusion.CenteredScheme(
-            diffusivity=jnp.full_like(grid.x, diffusivity),
-        )
+        d = jnp.full_like(grid.x, diffusivity)  # type: ignore[no-untyped-call]
+        scheme_d = diffusion.CenteredScheme(diffusivity=d)
 
         from pyshocks.schemes import CombineConservationLawScheme
 
@@ -89,10 +88,10 @@ def main(
 
     # {{{ right-hand side
 
-    def _predict_timestep(_t, _u):
+    def _predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return theta * predict_timestep(scheme, grid, _t, _u)
 
-    def _apply_operator(_t, _u):
+    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}

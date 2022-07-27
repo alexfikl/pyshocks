@@ -11,7 +11,7 @@ import matplotlib.pyplot as mp
 
 from pyshocks import make_uniform_grid, UniformGrid, Boundary, norm, timeme, get_logger
 from pyshocks import advection, apply_boundary, apply_operator, predict_timestep
-from pyshocks.timestepping import Stepper, step
+from pyshocks.timestepping import Stepper, StepCompleted, step
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
 
 logger = get_logger("advection-adjoint")
@@ -29,13 +29,13 @@ class Simulation:
     chk: InMemoryCheckpoint
 
     @property
-    def name(self):
+    def name(self) -> str:
         n = self.grid.n
         scheme = type(self.scheme).__name__.lower()
         stepper = type(self.stepper).__name__.lower()
         return f"{scheme}_{stepper}_{n:05}"
 
-    def save_checkpoint(self, event):
+    def save_checkpoint(self, event: StepCompleted) -> None:
         # NOTE: boundary conditions are applied before the time step, so they
         # are not actually enforced after, which seems to mess with the adjoint
         u = apply_boundary(self.bc, self.grid, event.t, event.u)
@@ -51,11 +51,9 @@ class Simulation:
             },
         )
 
-    def load_checkpoint(self):
+    def load_checkpoint(self) -> StepCompleted:
         self.chk.count -= 1
         data = load(self.chk, self.chk.count)
-
-        from pyshocks.timestepping import StepCompleted
 
         return StepCompleted(tfinal=self.tfinal, **data)
 
@@ -117,7 +115,7 @@ def evolve_forward(
 @timeme
 def evolve_adjoint(
     sim: Simulation, *, interactive: bool = False, visualize: bool = True
-):
+) -> None:
     grid = sim.grid
     stepper = sim.stepper
 
@@ -128,7 +126,9 @@ def evolve_adjoint(
     if isinstance(sim.bc, PeriodicBoundary):
         bc: Boundary = sim.bc
     else:
-        bc = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
+        bc = dirichlet_boundary(
+            lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
+        )
 
     chk = sim.load_checkpoint()
     p = chk.u
@@ -219,16 +219,16 @@ def evolve_adjoint(
 
 
 def main(
-    scheme,
-    a=-1.0,
-    b=+1.0,
-    n=1024,
-    tfinal=1.0,
-    theta=1.0,
-    bctype="dirichlet",
-    interactive=False,
-    visualize=False,
-):
+    scheme: advection.Scheme,
+    a: float = -1.0,
+    b: float = +1.0,
+    n: int = 1024,
+    tfinal: float = 1.0,
+    theta: float = 1.0,
+    bctype: str = "dirichlet",
+    interactive: bool = False,
+    visualize: bool = False,
+) -> None:
     # {{{ geometry
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
@@ -252,6 +252,7 @@ def main(
 
     u0 = cell_average(quad, ic)
 
+    boundary: Boundary
     if bctype == "periodic":
         from pyshocks.scalar import PeriodicBoundary
 
@@ -267,19 +268,17 @@ def main(
 
     # {{{ forward time stepping
 
-    @jax.jit
-    def forward_predict_timestep(_t, _u):
+    def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return theta * predict_timestep(scheme, grid, _t, _u)
 
-    @jax.jit
-    def forward_operator(_t, _u):
+    def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     from pyshocks.timestepping import ForwardEuler as TimeStepper
 
     stepper = TimeStepper(
-        predict_timestep=forward_predict_timestep,
-        source=forward_operator,
+        predict_timestep=jax.jit(forward_predict_timestep),
+        source=jax.jit(forward_operator),
     )
 
     # }}}
