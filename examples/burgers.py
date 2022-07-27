@@ -32,7 +32,7 @@ def main(
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
-):
+) -> None:
     r"""
     :arg a: left boundary of the domain :math:`[a, b]`.
     :arg b: right boundary of the domain :math:`[a, b]`.
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         "--scheme",
         default="lf",
         type=str.lower,
-        choices=["lf", "eo", "wenojs32", "wenojs53"],
+        choices=burgers.scheme_ids(),
     )
     parser.add_argument(
         "--alpha", default=1.0, type=float, help="Lax-Friedrichs scheme parameter"
@@ -193,15 +193,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    name_to_scheme = {
-        "lf": burgers.LaxFriedrichs(alpha=args.alpha),
-        "eo": burgers.EngquistOsher(),
-        "wenojs32": burgers.WENOJS32(),
-        "wenojs53": burgers.WENOJS53(),
-    }
+    from pyshocks.tools import set_recommended_matplotlib
 
+    set_recommended_matplotlib()
     main(
-        name_to_scheme[args.scheme],
+        burgers.make_scheme_from_name(args.scheme, alpha=args.alpha),
         outdir=args.outdir,
         diffusivity=args.diffusivity,
         interactive=args.interactive,

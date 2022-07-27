@@ -31,6 +31,8 @@ Data
 .. autofunction:: ex_shock
 """
 
+from typing import Any, Tuple
+
 from pyshocks.burgers.schemes import (
     Scheme,
     LaxFriedrichs,
@@ -41,6 +43,35 @@ from pyshocks.burgers.schemes import (
 )
 
 import numpy as np
+
+
+_SCHEMES = {
+    "lf": LaxFriedrichs,
+    "eo": EngquistOsher,
+    "wenojs32": WENOJS32,
+    "wenojs53": WENOJS53,
+}
+
+
+def scheme_ids() -> Tuple[str, ...]:
+    return tuple(_SCHEMES.keys())
+
+
+def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
+    """
+    :arg name: name of the scheme used to solve Burgers' equation.
+    :arg kwargs: additional arguments to pass to the scheme. Any arguments
+        that are not in the scheme's fields are ignored.
+    """
+    cls = _SCHEMES.get(name)
+    if cls is None:
+        raise ValueError(
+            f"scheme '{name}' not found; try one of {tuple(_SCHEMES.keys())}"
+        )
+
+    from dataclasses import fields
+
+    return cls(**{f.name: kwargs[f.name] for f in fields(cls) if f.name in kwargs})
 
 
 # {{{ initial conditions
@@ -101,6 +132,8 @@ __all__ = (
     "WENOJS",
     "WENOJS32",
     "WENOJS53",
+    "scheme_ids",
+    "make_scheme_from_name",
     "ic_tophat",
     "ic_rarefaction",
     "ic_sine",

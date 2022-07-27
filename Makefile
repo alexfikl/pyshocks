@@ -6,7 +6,7 @@ test:
 	$(PYTHON) -m pytest -rswx -v -s --durations=25
 
 black:
-	$(PYTHON) -m black pyshocks tests examples
+	$(PYTHON) -m black --safe --target-version py38 pyshocks tests examples
 
 flake8:
 	$(PYTHON) -m flake8 pyshocks examples tests docs

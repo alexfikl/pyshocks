@@ -9,11 +9,15 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
+from pyshocks import (
+    UniformGrid,
+    Boundary,
+    ConservationLawScheme,
+    timeme,
+)
 from pyshocks import burgers, get_logger
-from pyshocks import make_uniform_grid, UniformGrid, Boundary, norm, timeme
-from pyshocks import apply_boundary, apply_operator, predict_timestep
-from pyshocks.timestepping import step, Stepper
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
+from pyshocks.timestepping import step, Stepper
 
 logger = get_logger("burgers-adjoint")
 dirname = pathlib.Path(__file__).parent
@@ -37,6 +41,8 @@ class Simulation:
         return f"{scheme}_{stepper}_{n:05}"
 
     def save_checkpoint(self, event):
+        from pyshocks import apply_boundary
+
         # NOTE: boundary conditions are applied before the time step, so they
         # are not actually enforced after, which seems to mess with the adjoint
         u = apply_boundary(self.bc, self.grid, event.t, event.u)
@@ -74,6 +80,8 @@ def evolve_forward(
 
     # {{{ evolve
 
+    from pyshocks import norm
+
     event = None
     for event in step(stepper, u0, tfinal=sim.tfinal):
         umax = norm(sim.grid, event.u, p=jnp.inf)
@@ -92,32 +100,36 @@ def evolve_forward(
 
     # {{{ plot
 
-    if not visualize:
-        return
+    if visualize:
+        umax = jnp.max(event.u[grid.i_])
+        umin = jnp.min(event.u[grid.i_])
+        umag = jnp.max(jnp.abs(event.u[grid.i_]))
 
-    umax = jnp.max(event.u[grid.i_])
-    umin = jnp.min(event.u[grid.i_])
-    umag = jnp.max(jnp.abs(event.u[grid.i_]))
+        fig = mp.figure()
+        ax = fig.gca()
+        ax.plot(grid.x[grid.i_], event.u[grid.i_], label="$u(T)$")
+        ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
 
-    fig = mp.figure()
-    ax = fig.gca()
-    ax.plot(grid.x[grid.i_], event.u[grid.i_], label="$u(T)$")
-    ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
+        ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
+        ax.set_xlabel("$x$")
+        ax.set_ylabel("$u$")
+        ax.set_title(f"$T = {event.t:.3f}$")
 
-    ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
-    ax.set_xlabel("$x$")
-    ax.set_ylabel("$u$")
-    ax.set_title(f"$T = {event.t:.3f}$")
-
-    fig.savefig(dirname / f"burgers_forward_{sim.name}")
-    mp.close(fig)
+        fig.savefig(dirname / f"burgers_forward_{sim.name}")
+        mp.close(fig)
 
     # }}}
+
+    return event.u
 
 
 @timeme
 def evolve_adjoint(
-    sim: Simulation, *, interactive: bool = False, visualize: bool = True
+    sim: Simulation,
+    p0: jnp.ndarray,
+    *,
+    interactive: bool = False,
+    visualize: bool = True,
 ) -> None:
     grid = sim.grid
     stepper = sim.stepper
@@ -129,11 +141,14 @@ def evolve_adjoint(
     bc = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
 
     chk = sim.load_checkpoint()
-    p = chk.u
+    p = p0
 
     maxit = chk.iteration
     t = chk.t
     dt = chk.dt
+
+    assert jnp.linalg.norm(p0 - chk.u) < 1.0e-15
+    assert abs(t - sim.tfinal) < 1.0e-15
 
     # }}}
 
@@ -178,7 +193,13 @@ def evolve_adjoint(
         ax.set_xlabel("$x$")
         ax.grid(True)
 
+    from pyshocks import apply_boundary, norm
+
     for n in range(maxit, 0, -1):
+        # load next forward state
+        chk = sim.load_checkpoint()
+        t = chk.t
+
         # compute jacobian at current forward state
         jac = jac_fun(dt, t, chk.u)
 
@@ -186,11 +207,7 @@ def evolve_adjoint(
         p = apply_boundary(bc, grid, t, p)
         p = jac.T @ p
 
-        # load next forward state
-        chk = sim.load_checkpoint()
-        t = chk.t
         dt = chk.dt
-
         pmax = norm(grid, p, p=jnp.inf)
         logger.info(
             "[%4d] t = %.5e / %.5e dt %.5e pmax = %.5e", n - 1, t, sim.tfinal, dt, pmax
@@ -224,16 +241,20 @@ def evolve_adjoint(
 
 
 def main(
-    scheme,
-    a=-1.0,
-    b=+1.0,
-    n=256,
-    tfinal=1.0,
-    theta=1.0,
-    interactive=False,
-    visualize=True,
-):
+    scheme: ConservationLawScheme,
+    *,
+    outdir: pathlib.Path,
+    a: float = -1.0,
+    b: float = +1.0,
+    n: int = 256,
+    tfinal: float = 1.0,
+    theta: float = 0.5,
+    interactive: bool = False,
+    visualize: bool = True,
+) -> None:
     # {{{ setup
+
+    from pyshocks import make_uniform_grid
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
@@ -258,6 +279,8 @@ def main(
     # }}}
 
     # {{{ time stepping
+
+    from pyshocks import predict_timestep, apply_operator
 
     @jax.jit
     def forward_predict_timestep(_t, _u):
@@ -287,7 +310,7 @@ def main(
         chk=InMemoryCheckpoint(),
     )
 
-    evolve_forward(
+    uf = evolve_forward(
         sim,
         u0,
         interactive=interactive,
@@ -300,6 +323,7 @@ def main(
 
     evolve_adjoint(
         sim,
+        uf,
         interactive=False,
         visualize=visualize,
     )
@@ -308,17 +332,34 @@ def main(
 
 
 if __name__ == "__main__":
-    try:
-        # https://github.com/nschloe/matplotx
-        import matplotx
+    import argparse
 
-        mp.style.use(matplotx.styles.dufte)
-    except ImportError:
-        pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-s",
+        "--scheme",
+        default="lf",
+        type=str.lower,
+        choices=burgers.scheme_ids(),
+    )
+    parser.add_argument(
+        "--alpha", default=0.995, type=float, help="Lax-Friedrichs scheme parameter"
+    )
+    parser.add_argument(
+        "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+    )
+    args = parser.parse_args()
+
+    from pyshocks.tools import set_recommended_matplotlib
+
+    set_recommended_matplotlib()
 
     main(
-        scheme=burgers.LaxFriedrichs(alpha=0.995),
-        # scheme=burgers.EngquistOsher(),
-        # scheme=burgers.WENOJS32(),
-        # scheme=burgers.WENOJS53(),
+        burgers.make_scheme_from_name(args.scheme, alpha=args.alpha),
+        outdir=args.outdir,
+        interactive=args.interactive,
     )
