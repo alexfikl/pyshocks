@@ -19,7 +19,7 @@
 .. autofunction:: reconstruct
 """
 from functools import singledispatch
-from typing import ClassVar
+from typing import ClassVar, Tuple
 
 import jax.numpy as jnp
 import numpy as np
@@ -69,7 +69,7 @@ class WENOJSMixin(WENOMixin):  # pylint: disable=abstract-method
 
 
 class WENOJS32Mixin(WENOJSMixin):
-    def set_coefficients(self):
+    def set_coefficients(self) -> None:
         a, b, c, d = weno_js_32_coefficients()
 
         # NOTE: hack to keep the class frozen
@@ -79,18 +79,20 @@ class WENOJS32Mixin(WENOJSMixin):
         object.__setattr__(self, "d", d)
 
     @property
-    def order(self):
+    def order(self) -> int:
         return 2
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 2
 
 
-def weno_js_32_coefficients():
+def weno_js_32_coefficients() -> Tuple[
+    jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray
+]:
     # smoothness indicator coefficients
-    a = jnp.array([1.0], dtype=jnp.float64)
-    b = jnp.array(
+    a = jnp.array([1.0], dtype=jnp.float64)  # type: ignore[no-untyped-call]
+    b = jnp.array(  # type: ignore[no-untyped-call]
         [
             [[0.0, -1.0, 1.0]],
             [[-1.0, 1.0, 0.0]],
@@ -99,18 +101,20 @@ def weno_js_32_coefficients():
     )
 
     # stencil coefficients
-    c = jnp.array(
+    c = jnp.array(  # type: ignore[no-untyped-call]
         [[0.0, 3.0 / 2.0, -1.0 / 2.0], [1.0 / 2.0, 1.0 / 2.0, 0.0]], dtype=jnp.float64
     )
 
     # weights coefficients
-    d = jnp.array([[1.0 / 3.0, 2.0 / 3.0]], dtype=jnp.float64).T
+    d = jnp.array(  # type: ignore[no-untyped-call]
+        [[1.0 / 3.0, 2.0 / 3.0]], dtype=jnp.float64
+    ).T
 
     return a, b, c, d
 
 
 class WENOJS53Mixin(WENOJSMixin):
-    def set_coefficients(self):
+    def set_coefficients(self) -> None:
         a, b, c, d = weno_js_53_coefficients()
 
         # NOTE: hack to keep the class frozen
@@ -120,23 +124,27 @@ class WENOJS53Mixin(WENOJSMixin):
         object.__setattr__(self, "d", d)
 
     @property
-    def order(self):
+    def order(self) -> int:
         return 3
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 3
 
 
-def weno_js_53_coefficients():
+def weno_js_53_coefficients() -> Tuple[
+    jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray
+]:
     # NOTE: the arrays here are slightly modified from [Shu2009] by
     # * zero padding to the full stencil length
     # * flipping the stencils
     # so that they can be directly used with jnp.convolve for vectorization
 
     # equation 2.17 [Shu2009]
-    a = jnp.array([13.0 / 12.0, 1.0 / 4.0], dtype=np.float64)
-    b = jnp.array(
+    a = jnp.array(  # type: ignore[no-untyped-call]
+        [13.0 / 12.0, 1.0 / 4.0], dtype=np.float64
+    )
+    b = jnp.array(  # type: ignore[no-untyped-call]
         [
             [[0.0, 0.0, 1.0, -2.0, 1.0], [0.0, 0.0, 3.0, -4.0, 1.0]],
             [[0.0, 1.0, -2.0, 1.0, 0.0], [0.0, 1.0, 0.0, -1.0, 0.0]],
@@ -146,7 +154,7 @@ def weno_js_53_coefficients():
     )
 
     # equation 2.11, 2.12, 2.13 [Shu2009]
-    c = jnp.array(
+    c = jnp.array(  # type: ignore[no-untyped-call]
         [
             [0.0, 0.0, 11.0 / 6.0, -7.0 / 6.0, 2.0 / 6.0],
             [0.0, 2.0 / 6.0, 5.0 / 6.0, -1.0 / 6.0, 0.0],
@@ -156,7 +164,9 @@ def weno_js_53_coefficients():
     )
 
     # equation 2.15 [Shu2009]
-    d = jnp.array([[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=jnp.float64).T
+    d = jnp.array(  # type: ignore[no-untyped-call]
+        [[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=jnp.float64
+    ).T
 
     return a, b, c, d
 
@@ -186,7 +196,7 @@ def reconstruct(grid: Grid, scheme: WENOMixin, u: jnp.ndarray) -> jnp.ndarray:
 # {{{ uniform grid reconstruction
 
 
-def _weno_js_smoothness(u, a, b):
+def _weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack(
         [
             sum(
@@ -198,7 +208,7 @@ def _weno_js_smoothness(u, a, b):
     )
 
 
-def _weno_js_reconstruct(u, c):
+def _weno_js_reconstruct(u: jnp.ndarray, c: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack([jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])])
 
 
