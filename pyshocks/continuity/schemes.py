@@ -40,7 +40,7 @@ def _flux_continuity(
 @predict_timestep.register(Scheme)
 def _predict_timestep_continuity(
     scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
-) -> float:
+) -> jnp.ndarray:
     assert scheme.velocity is not None
 
     amax = jnp.max(jnp.abs(scheme.velocity[grid.i_]))
@@ -64,11 +64,11 @@ class Godunov(Scheme):
     """
 
     @property
-    def order(self):
+    def order(self) -> int:
         return 1
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 1
 
 
@@ -83,7 +83,7 @@ def _numerical_flux_continuity_godunov(
     ap = jnp.maximum(+scheme.velocity, 0.0)
 
     fnum = ap[:-1] * u[:-1] - am[1:] * u[1:]
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -106,7 +106,7 @@ class WENOJS32(WENOJS32Mixin, WENOJS):
 
     eps: float = 1.0e-6
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.set_coefficients()
 
 
@@ -119,7 +119,7 @@ class WENOJS53(WENOJS53Mixin, WENOJS):
 
     eps: float = 1.0e-12
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.set_coefficients()
 
 
@@ -143,7 +143,7 @@ def _numerical_flux_continuity_wenojs(
     amax = jnp.max(jnp.abs(a))
 
     fnum = (fp[:-1] + fm[1:]) / 2 + amax * (up[:-1] - um[1:]) / 2
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}

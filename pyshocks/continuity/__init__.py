@@ -46,7 +46,7 @@ from pyshocks.continuity.schemes import Scheme, Godunov, WENOJS, WENOJS32, WENOJ
 import jax.numpy as jnp
 
 
-def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> float:
+def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> jnp.ndarray:
     r"""Check the One-sided Lipschitz Continuous condition.
 
     A function :math:`f(t, x)` is called one-sided Lipschitz continuous if
@@ -76,7 +76,7 @@ def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> float:
 
 def velocity_const(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
     """Evaluates a constant velocity field on *grid*."""
-    return jnp.ones_like(x)
+    return jnp.ones_like(x)  # type: ignore[no-untyped-call]
 
 
 def velocity_sign(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
@@ -92,9 +92,9 @@ def velocity_sign(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
     """
 
     x0 = 0.5 * (grid.a + grid.b)
-    a0 = jnp.ones_like(x)
+    a0 = jnp.ones_like(x)  # type: ignore[no-untyped-call]
 
-    return jnp.where(x - x0 < 0, -a0, a0)
+    return jnp.where(x - x0 < 0, -a0, a0)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -176,9 +176,9 @@ def ic_tophat(
         x0 = 0.5 * (grid.a + grid.b)
 
     width = width * (grid.b - grid.a)
-    value = jnp.ones_like(x)
+    value = jnp.ones_like(x)  # type: ignore[no-untyped-call]
 
-    return jnp.where(
+    return jnp.where(  # type: ignore[no-untyped-call]
         jnp.logical_and((x0 - width / 2) < x, x < (x0 + width / 2)), value, -value
     )
 
