@@ -33,14 +33,14 @@ import pytest
     ],
 )
 def test_advection_vs_continuity(
-    ascheme,
-    cscheme,
-    bc_type,
+    ascheme: advection.Scheme,
+    cscheme: continuity.Scheme,
+    bc_type: str,
     a: float = -1.0,
     b: float = +1.0,
     n: int = 256,
     visualize: bool = True,
-):
+) -> None:
     if visualize:
         try:
             import matplotlib.pyplot as plt
@@ -60,13 +60,15 @@ def test_advection_vs_continuity(
     elif bc_type == "dirichlet":
         from pyshocks.scalar import dirichlet_boundary
 
-        boundary = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
+        boundary = dirichlet_boundary(
+            lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
+        )
     else:
         raise ValueError(f"unknown 'bc_type': {bc_type}")
 
     # NOTE: the two schemes are only similar if the velocity is
     # divergence free; in 1d, that means it has to be constant
-    velocity = jnp.ones(grid.x.shape, dtype=np.float64)
+    velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
     ascheme = replace(ascheme, velocity=velocity)
     cscheme = replace(cscheme, velocity=velocity)
 
@@ -79,7 +81,7 @@ def test_advection_vs_continuity(
 
     i = grid.i_
 
-    def dot(x, y):
+    def dot(x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
         return (x[i] * grid.dx[i]) @ y[i]
 
     from pyshocks import apply_operator
@@ -126,13 +128,13 @@ def test_advection_vs_continuity(
 )
 @pytest.mark.parametrize("bc_type", ["periodic", "dirichlet"])
 def test_advection_finite_difference_jacobian(
-    scheme,
-    bc_type,
+    scheme: advection.Scheme,
+    bc_type: str,
     a: float = -1.0,
     b: float = +1.0,
     n: int = 32,
     visualize: bool = True,
-):
+) -> None:
     if visualize:
         try:
             import matplotlib.pyplot as plt
@@ -152,7 +154,9 @@ def test_advection_finite_difference_jacobian(
     elif bc_type == "dirichlet":
         from pyshocks.scalar import dirichlet_boundary
 
-        boundary = dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
+        boundary = dirichlet_boundary(
+            lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
+        )
     else:
         raise ValueError(f"unknown 'bc_type': {bc_type}")
 

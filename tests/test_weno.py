@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: MIT
 
 from itertools import product
+from typing import Tuple
 
 from pyshocks import get_logger
-from pyshocks.burgers import WENOJS32, WENOJS53
+from pyshocks.burgers import WENOJS, WENOJS32, WENOJS53
 
 import jax
 import jax.numpy as jnp
@@ -25,7 +26,9 @@ logger = get_logger("test_weno")
         WENOJS53(),
     ],
 )
-def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
+def test_weno_smoothness_indicator_vectorization(
+    scheme: WENOJS, rtol: float = 2.0e-15, n: int = 64
+) -> None:
     """Tests that the vectorized version of the smoothness indicator matches
     the explicitly looped version.
     """
@@ -107,7 +110,7 @@ def test_weno_smoothness_indicator_vectorization(scheme, rtol=2.0e-15, n=64):
     ],
 )
 @pytest.mark.parametrize("is_smooth", [True, False])
-def test_weno_smoothness_indicator(scheme, n, is_smooth):
+def test_weno_smoothness_indicator(scheme: WENOJS, n: int, is_smooth: bool) -> None:
     """Tests that the smoothness indicator actually works."""
 
     # {{{ setup
@@ -160,7 +163,9 @@ def test_weno_smoothness_indicator(scheme, n, is_smooth):
 # {{{
 
 
-def _pyweno_reconstruct(u, order, side):
+def _pyweno_reconstruct(
+    u: jnp.ndarray, order: int, side: str
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
     import pyweno
 
     ul, sl = pyweno.weno.reconstruct(
@@ -178,7 +183,9 @@ def _pyweno_reconstruct(u, order, side):
         (WENOJS53(), 5, 512),
     ],
 )
-def test_weno_reference(scheme, order, n, visualize=False):
+def test_weno_reference(
+    scheme: WENOJS, order: int, n: int, visualize: bool = False
+) -> None:
     """Compares our weno reconstruction to PyWENO"""
     pytest.importorskip("pyweno")
 

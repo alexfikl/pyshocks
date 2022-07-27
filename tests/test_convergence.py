@@ -3,8 +3,17 @@
 
 from dataclasses import replace
 from functools import partial
+from typing import Callable, List, Optional, Tuple
 
-from pyshocks import timeme, get_logger, set_recommended_matplotlib
+from pyshocks import (
+    SchemeBase,
+    Grid,
+    Quadrature,
+    T,
+    timeme,
+    get_logger,
+    set_recommended_matplotlib,
+)
 from pyshocks import burgers, advection, continuity, diffusion
 
 import jax
@@ -18,18 +27,18 @@ set_recommended_matplotlib()
 
 @timeme
 def evolve(
-    scheme,
-    solution,
+    scheme: SchemeBase,
+    solution: Callable[[Grid, float, jnp.ndarray], jnp.ndarray],
     n: int,
     *,
     timestep: float,
     a: float = -1.0,
     b: float = 1.0,
     tfinal: float = 0.5,
-    order: int = None,
-    finalize=None,
+    order: Optional[int] = None,
+    finalize: Optional[Callable[[SchemeBase, Grid, Quadrature], SchemeBase]] = None,
     visualize: bool = True,
-):
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
     if visualize:
         try:
             import matplotlib.pyplot as mp
@@ -45,9 +54,6 @@ def evolve(
     from pyshocks import make_uniform_grid, Boundary
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
-
-    from pyshocks import Quadrature
-
     quad = Quadrature(grid=grid, order=order + 1)
 
     if finalize is not None:
@@ -62,10 +68,12 @@ def evolve(
 
     # {{{ initial/boundary conditions
 
+    def solution_wrap(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        return solution(grid, t, x)
+
     from pyshocks import cell_average
 
-    solution = partial(solution, grid)
-    u0 = cell_average(quad, lambda x: solution(0.0, x))
+    u0 = cell_average(quad, lambda x: solution_wrap(0.0, x))
 
     if isinstance(scheme, advection.Scheme):
         from pyshocks.scalar import PeriodicBoundary
@@ -74,7 +82,7 @@ def evolve(
     else:
         from pyshocks.scalar import dirichlet_boundary
 
-        boundary = dirichlet_boundary(solution)
+        boundary = dirichlet_boundary(solution_wrap)
 
     # }}}
 
@@ -83,7 +91,7 @@ def evolve(
     from pyshocks import apply_operator
 
     @jax.jit
-    def _apply_operator(_t, _u):
+    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     import pyshocks.timestepping as ts
@@ -95,15 +103,12 @@ def evolve(
         source=_apply_operator,
     )
 
-    t = 0.0
+    u = u0
     for event in ts.step(stepper, u0, maxit=maxit):
         u = event.u
-        t = event.t
-        # logger.info("[%05d] t = %.5e / %.5e dt = %.5e",
-        #         event.iteration, event.t, tfinal, event.dt)
 
     # exact solution
-    uhat = cell_average(quad, lambda x: solution(t, x))
+    uhat = cell_average(quad, lambda x: solution_wrap(tfinal, x))
 
     # }}}
 
@@ -154,7 +159,13 @@ def evolve(
         (burgers.EngquistOsher(), list(range(32, 128 + 1, 16))),
     ],
 )
-def test_burgers_convergence(scheme, resolutions, a=-1.0, b=1.0, tfinal=1.0):
+def test_burgers_convergence(
+    scheme: burgers.Scheme,
+    resolutions: List[int],
+    a: float = -1.0,
+    b: float = 1.0,
+    tfinal: float = 1.0,
+) -> None:
     from pyshocks import EOCRecorder
 
     eoc = EOCRecorder(name=type(scheme).__name__)
@@ -189,17 +200,24 @@ def test_burgers_convergence(scheme, resolutions, a=-1.0, b=1.0, tfinal=1.0):
         (advection.WENOJS53(velocity=None), 5, list(range(32, 256 + 1, 32))),
     ],
 )
-def test_advection_convergence(scheme, order, resolutions, a=-1.0, b=+1, tfinal=1.0):
+def test_advection_convergence(
+    scheme: advection.Scheme,
+    order: int,
+    resolutions: List[int],
+    a: float = -1.0,
+    b: float = +1.0,
+    tfinal: float = 1.0,
+) -> None:
     # NOTE: WENOJS53 convergence is very finicky with respect to what initial
     # conditions / time steps / whatever we give it. This has to do with the
     # critical points in the solutions, eps, and other things (JS is not the
     # most robust of the WENO family of schemes). The choice here seems to work!
 
-    def solution(grid, t, x):
+    def solution(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
         u0 = partial(continuity.ic_sine_sine, grid)
         return continuity.ex_constant_velocity_field(t, x, a=1.0, u0=u0)
 
-    def finalize(s, grid, quad):
+    def finalize(s: T, grid: Grid, quad: Quadrature) -> T:
         from pyshocks import cell_average
 
         velocity = cell_average(
@@ -248,13 +266,20 @@ def test_advection_convergence(scheme, order, resolutions, a=-1.0, b=+1, tfinal=
     ],
 )
 def test_diffusion_convergence(
-    scheme, order, resolutions, a=-1.0, b=1.0, tfinal=1.0, diffusivity=1.0
-):
-    def ex_sin_exp(grid, t, x):
+    scheme: diffusion.Scheme,
+    order: int,
+    resolutions: List[int],
+    a: float = -1.0,
+    b: float = 1.0,
+    tfinal: float = 1.0,
+    diffusivity: float = 1.0,
+) -> None:
+    def ex_sin_exp(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
         return diffusion.ex_expansion(grid, t, x, diffusivity=diffusivity)
 
-    def finalize(s, grid, quad):
-        return replace(s, diffusivity=jnp.full_like(grid.x, diffusivity))
+    def finalize(s: T, grid: Grid, quad: Quadrature) -> T:
+        d = jnp.full_like(grid.x, diffusivity)  # type: ignore[no-untyped-call]
+        return replace(s, diffusivity=d)
 
     from pyshocks import EOCRecorder
 

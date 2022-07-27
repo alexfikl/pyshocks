@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from functools import partial
+from typing import Type
 
 from pyshocks import get_logger
 from pyshocks import timestepping as ts
@@ -22,7 +23,9 @@ logger = get_logger("test_timestepping")
         (ts.RK44, 4),
     ],
 )
-def test_time_convergence(cls, order, visualize=False):
+def test_time_convergence(
+    cls: Type[ts.Stepper], order: int, visualize: bool = False
+) -> None:
     if visualize:
         try:
             import matplotlib.pyplot as plt
@@ -32,16 +35,16 @@ def test_time_convergence(cls, order, visualize=False):
     # {{{ ode
 
     @jax.jit
-    def predict_timestep(t, u, *, dt):
+    def predict_timestep(t: float, u: jnp.ndarray, *, dt: float) -> float:
         return dt
 
     @jax.jit
-    def source(t, u):
-        return jnp.array([jnp.exp(-t)])
+    def source(t: float, u: jnp.ndarray) -> jnp.ndarray:
+        return jnp.array([jnp.exp(-t)])  # type: ignore[no-untyped-call]
 
-    def solution(t):
+    def solution(t: float) -> jnp.ndarray:
         # pylint: disable=invalid-unary-operand-type
-        return -source(t, jnp.array([0.0]))
+        return -source(t, jnp.array([0.0]))  # type: ignore[no-untyped-call]
 
     tfinal = 4.0
     u0 = solution(0.0)
@@ -74,8 +77,8 @@ def test_time_convergence(cls, order, visualize=False):
             u.append(event.u[0])
             t.append(event.t)
 
-        u = jnp.array(u)
-        t = jnp.array(t)
+        u = jnp.array(u)  # type: ignore[no-untyped-call]
+        t = jnp.array(t)  # type: ignore[no-untyped-call]
 
         if visualize:
             ax.plot(t, u)
