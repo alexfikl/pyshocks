@@ -34,7 +34,7 @@ class Scheme(SchemeBase):
 @predict_timestep.register(Scheme)
 def _predict_timestep_advection(
     scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
-) -> float:
+) -> jnp.ndarray:
     assert scheme.velocity is not None
 
     # NOTE: keep in sync with pyshocks.continuity.schemes.predict_timestep
@@ -45,7 +45,7 @@ def _predict_timestep_advection(
 @apply_operator.register(Scheme)
 def _apply_operator_advection(
     scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-):
+) -> jnp.ndarray:
     assert scheme.velocity is not None
 
     from pyshocks import apply_boundary
@@ -70,11 +70,11 @@ class Godunov(Scheme):
     """
 
     @property
-    def order(self):
+    def order(self) -> int:
         return 1
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 1
 
 
@@ -87,9 +87,9 @@ def _numerical_flux_advection_godunov(
 
     a = scheme.velocity
     aavg = (a[1:] + a[:-1]) / 2
-    fnum = jnp.where(aavg > 0, u[:-1], u[1:])
+    fnum = jnp.where(aavg > 0, u[:-1], u[1:])  # type: ignore[no-untyped-call]
 
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -112,7 +112,7 @@ class WENOJS32(WENOJS32Mixin, WENOJS):
 
     eps: float = 1.0e-6
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.set_coefficients()
 
 
@@ -125,7 +125,7 @@ class WENOJS53(WENOJS53Mixin, WENOJS):
 
     eps: float = 1.0e-12
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.set_coefficients()
 
 
@@ -146,9 +146,9 @@ def _numerical_flux_advection_wenojs(
 
     # NOTE: this uses an upwind flux
     aavg = (ap[:-1] + am[1:]) / 2
-    fnum = jnp.where(aavg > 0, up[:-1], um[1:])
+    fnum = jnp.where(aavg > 0, up[:-1], um[1:])  # type: ignore[no-untyped-call]
 
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
