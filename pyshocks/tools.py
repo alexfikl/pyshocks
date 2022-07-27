@@ -17,53 +17,77 @@
 
 from dataclasses import dataclass, field
 from functools import wraps
-from typing import Any, Callable, Optional, Union, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Concatenate,
+    Dict,
+    Hashable,
+    List,
+    Optional,
+    ParamSpec,
+    Union,
+    Tuple,
+    Type,
+    TypeVar,
+)
+from types import TracebackType
 import logging
 
 import jax.numpy as jnp
 
-F = TypeVar("F", bound=Callable[..., Any])
+T = TypeVar("T")
+R = TypeVar("R")
+P = ParamSpec("P")
 
 
 # {{{ memoize method
 
 
-def memoize_on_first_arg(function, cache_dict_name=None):
+class _NotProvided:
+    pass
+
+
+def memoize_on_first_arg(
+    function: Callable[Concatenate[T, P], R], cache_dict_name: Optional[str] = None
+) -> Callable[Concatenate[T, P], R]:
     if cache_dict_name is None:
         cache_dict_name = f"_memoize_dict_{function.__module__}{function.__name__}"
 
-    def wrapper(obj, *args, **kwargs):
+    def wrapper(obj: T, *args: P.args, **kwargs: P.kwargs) -> R:
         if kwargs:
             raise RuntimeError("keyword arguments are not supported")
 
         key = args
-        try:
-            return getattr(obj, cache_dict_name)[key]
-        except AttributeError:
-            attribute_error = True
-        except KeyError:
-            attribute_error = False
+        assert cache_dict_name is not None
 
-        result = function(obj, *args, **kwargs)
-        if attribute_error:  # pylint: disable=no-else-return
-            object.__setattr__(obj, cache_dict_name, {key: result})
-            return result
+        if not hasattr(obj, cache_dict_name):
+            object.__setattr__(obj, cache_dict_name, {})
+        cache: Dict[Hashable, R] = getattr(obj, cache_dict_name)
+
+        if key in cache:
+            result = cache[key]
         else:
-            getattr(obj, cache_dict_name)[key] = result
-            return result
+            result = function(obj, *args, **kwargs)
+            cache[key] = result
 
-    def clear_cache(obj):
+        return result
+
+    def clear_cache(obj: T) -> None:
+        assert cache_dict_name is not None
         object.__delattr__(obj, cache_dict_name)
 
     from functools import update_wrapper
 
     new_wrapper = update_wrapper(wrapper, function)
-    new_wrapper.clear_cache = clear_cache
+    new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
 
-    return new_wrapper
+    return new_wrapper      # type: ignore[return-value]
 
 
-def memoize_method(method: F) -> F:
+def memoize_method(
+    method: Callable[Concatenate[T, P], R]
+) -> Callable[Concatenate[T, P], R]:
     return memoize_on_first_arg(method, f"_memoize_dict_{method.__name__}")
 
 
@@ -73,7 +97,9 @@ def memoize_method(method: F) -> F:
 # {{{ eoc
 
 
-def estimate_order_of_convergence(x, y):
+def estimate_order_of_convergence(
+    x: jnp.ndarray, y: jnp.ndarray
+) -> Tuple[float, float]:
     """Computes an estimate of the order of convergence in the least-square sense.
     This assumes that the :math:`(x, y)` pair follows a law of the form
 
@@ -87,13 +113,13 @@ def estimate_order_of_convergence(x, y):
     if x.size <= 1:
         raise RuntimeError("need at least two values to estimate order")
 
-    import numpy as np
-
-    c = np.polyfit(np.log10(x), np.log10(y), 1)
+    c = jnp.polyfit(jnp.log10(x), jnp.log10(y), 1)
     return 10 ** c[-1], c[-2]
 
 
-def estimate_gliding_order_of_convergence(x, y, *, gliding_mean=None):
+def estimate_gliding_order_of_convergence(
+    x: jnp.ndarray, y: jnp.ndarray, *, gliding_mean: Optional[int] = None
+) -> jnp.ndarray:
     assert x.size == y.size
     if x.size <= 1:
         raise RuntimeError("need at least two values to estimate order")
@@ -101,10 +127,8 @@ def estimate_gliding_order_of_convergence(x, y, *, gliding_mean=None):
     if gliding_mean is None:
         gliding_mean = x.size
 
-    import numpy as np
-
     npoints = x.size - gliding_mean + 1
-    eocs = np.zeros((npoints, 2), dtype=np.float64)
+    eocs = jnp.zeros((npoints, 2), dtype=x.dtype)  # type: ignore[no-untyped-call]
 
     for i in range(npoints):
         eocs[i] = estimate_order_of_convergence(
@@ -132,11 +156,11 @@ class EOCRecorder:
     .. automethod:: as_table
     """
 
-    def __init__(self, *, name="Error"):
+    def __init__(self, *, name: str = "Error") -> None:
         self.name = name
-        self.history = []
+        self.history: List[Tuple[float, float]] = []
 
-    def add_data_point(self, h: float, error: float):
+    def add_data_point(self, h: float, error: float) -> None:
         """
         :param h: abscissa, a value representative of the "grid size"
         :param error: error at given *h*.
@@ -144,7 +168,7 @@ class EOCRecorder:
         self.history.append((h, error))
 
     @property
-    def estimated_order(self):
+    def estimated_order(self) -> float:
         import numpy as np
 
         h, error = np.array(self.history).T
@@ -152,7 +176,7 @@ class EOCRecorder:
         return eoc
 
     @property
-    def max_error(self):
+    def max_error(self) -> float:
         return max(error for _, error in self.history)
 
     def as_table(self) -> str:
@@ -195,7 +219,7 @@ class EOCRecorder:
             ]
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.as_table()
 
 
@@ -227,7 +251,7 @@ class BlockTimer:
     """
 
     name: str = "block"
-    callback: object = None
+    callback: Optional[Callable[["BlockTimer"], None]] = None
 
     t_wall: float = field(default=-1, init=False)
     t_wall_start: float = field(default=-1, init=False)
@@ -236,17 +260,22 @@ class BlockTimer:
     t_proc_start: float = field(default=-1, init=False)
 
     @property
-    def t_cpu(self):
+    def t_cpu(self) -> float:
         return self.t_proc / self.t_wall
 
-    def __enter__(self):
+    def __enter__(self) -> "BlockTimer":
         import time
 
         self.t_wall_start = time.perf_counter()
         self.t_proc_start = time.process_time()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         import time
 
         self.t_wall = time.perf_counter() - self.t_wall_start
@@ -255,7 +284,7 @@ class BlockTimer:
         if self.callback is not None:
             self.callback(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"{self.name}: completed "
             f"({self.t_wall:.3}s wall, {self.t_cpu:.3f}x cpu)"
@@ -287,9 +316,9 @@ class IterationTimer:
     """
 
     name: str = "iteration"
-    t_deltas: list = field(default_factory=list, init=False, repr=False)
+    t_deltas: List[float] = field(default_factory=list, init=False, repr=False)
 
-    def tick(self):
+    def tick(self) -> BlockTimer:
         """
         :returns: a :class:`BlockTimer` that can be used to time a single
             iteration.
@@ -300,29 +329,29 @@ class IterationTimer:
         )
 
     @property
-    def total(self):
-        return jnp.sum(self.t_deltas)
+    def total(self) -> float:
+        return float(jnp.sum(self.t_deltas))
 
-    def stats(self):
+    def stats(self) -> Tuple[float, float, float]:
         """Compute statistics across all the iterations.
 
         :returns: a :class:`tuple` of ``(total, mean, std)``.
         """
 
-        t_deltas = jnp.array(self.t_deltas)
+        t_deltas = jnp.array(self.t_deltas)  # type: ignore[no-untyped-call]
 
         # NOTE: skipping the first few iterations because they mostly measure
         # the jit warming up, so they'll skew the standard deviation
         return (jnp.sum(t_deltas), jnp.mean(t_deltas[5:-1]), jnp.std(t_deltas[5:-1]))
 
 
-def timeme(fun):
+def timeme(func: Callable[P, T]) -> Callable[P, T]:
     """Decorator that applies :class:`BlockTimer`."""
 
-    @wraps(fun)
-    def wrapper(*args, **kwargs):
-        with BlockTimer(fun.__qualname__) as t:
-            ret = fun(*args, **kwargs)
+    @wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        with BlockTimer(func.__qualname__) as t:
+            ret = func(*args, **kwargs)
 
         print(t)
         return ret
@@ -353,7 +382,7 @@ PYSHOCKS_LOG_FORMAT = (
 
 
 class ColoredFormatter(logging.Formatter):
-    def format(self, record):
+    def format(self, record: Any) -> Any:
         levelname = record.levelname
 
         if levelname in LOGLEVEL_TO_COLOR:
