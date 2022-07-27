@@ -25,7 +25,7 @@ dirname = pathlib.Path(__file__).parent
 
 @dataclass
 class Simulation:
-    scheme: burgers.Scheme
+    scheme: ConservationLawScheme
     grid: UniformGrid
     bc: Boundary
     stepper: Stepper
@@ -290,6 +290,7 @@ def main(
     def forward_operator(_t, _u):
         return apply_operator(scheme, grid, boundary, _t, _u)
 
+    # FIXME: this only works for LF and EO, not WENO!
     from pyshocks.timestepping import ForwardEuler as TimeStepper
 
     stepper = TimeStepper(
