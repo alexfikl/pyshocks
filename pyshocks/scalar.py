@@ -19,6 +19,7 @@ Boundary Conditions
 """
 
 from dataclasses import dataclass
+from typing import Optional
 
 import jax.numpy as jnp
 
@@ -40,15 +41,15 @@ from pyshocks.tools import VectorFunction
 
 
 def scalar_flux_upwind(
-    scheme: SchemeBase, grid: Grid, t: float, a: "jnp.ndarray", u: "jnp.ndarray"
+    scheme: SchemeBase, grid: Grid, t: float, a: jnp.ndarray, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert u.shape[0] == grid.x.size
 
     am = 0.5 * (a[1:] + a[:-1])
-    um = jnp.where(am > 0, u[:-1], u[1:])
+    um = jnp.where(am > 0, u[:-1], u[1:])  # type: ignore[no-untyped-call]
 
     fnum = flux(scheme, t, grid.f, um)
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -64,7 +65,7 @@ def scalar_flux_rusanov(
     a: jnp.ndarray,
     u: jnp.ndarray,
     alpha: float = 1.0,
-):
+) -> jnp.ndarray:
     assert u.shape[0] == grid.x.size
     f = flux(scheme, 0.0, grid.x, u)
 
@@ -80,7 +81,7 @@ def scalar_flux_rusanov(
         a = jnp.maximum(a[1:], a[:-1])
 
     fnum = 0.5 * (f[1:] + f[:-1]) - 0.5 * a * nu * (u[1:] - u[:-1])
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -111,12 +112,14 @@ def scalar_flux_engquist_osher(
     scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
 ) -> jnp.ndarray:
     assert u.shape[0] == grid.x.size
+    omega = jnp.full_like(grid.df, omega)  # type: ignore[no-untyped-call]
+
     fp = flux(scheme, t, grid.x, jnp.maximum(u, omega))
     fm = flux(scheme, t, grid.x, jnp.minimum(u, omega))
-    fo = flux(scheme, t, grid.x, jnp.full_like(grid.df, omega))
+    fo = flux(scheme, t, grid.x, omega)
 
     fnum = fp[:-1] + fm[1:] - fo
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -127,13 +130,15 @@ def scalar_flux_engquist_osher(
 # {{{ boundary conditions
 
 
-def dirichlet_boundary(fa, fb=None) -> TwoSidedBoundary:
+def dirichlet_boundary(
+    fa: VectorFunction, fb: Optional[VectorFunction] = None
+) -> TwoSidedBoundary:
     if fb is None:
         fb = fa
 
-    fa = DirichletBoundary(side=-1, f=fa)
-    fb = DirichletBoundary(side=+1, f=fb)
-    return TwoSidedBoundary(left=fa, right=fb)
+    ba = DirichletBoundary(side=-1, f=fa)
+    bb = DirichletBoundary(side=+1, f=fb)
+    return TwoSidedBoundary(left=ba, right=bb)
 
 
 # {{{ Dirichlet
@@ -177,7 +182,7 @@ class PeriodicBoundary(Boundary):
 @apply_boundary.register(PeriodicBoundary)
 def _apply_boundary_scalar_periodic(
     bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray
-):
+) -> jnp.ndarray:
     assert u.size == grid.x.size
     g = grid.nghosts
 
