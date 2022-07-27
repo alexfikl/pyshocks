@@ -9,13 +9,12 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
-from pyshocks import make_uniform_grid, UniformGrid, Boundary, norm, timeme, get_logger
-from pyshocks import advection, apply_boundary, apply_operator, predict_timestep
+from pyshocks import UniformGrid, Boundary, timeme
+from pyshocks import advection, get_logger
 from pyshocks.timestepping import Stepper, StepCompleted, step
 from pyshocks.adjoint import InMemoryCheckpoint, save, load
 
 logger = get_logger("advection-adjoint")
-dirname = pathlib.Path(__file__).parent
 
 
 @dataclass
@@ -36,6 +35,8 @@ class Simulation:
         return f"{scheme}_{stepper}_{n:05}"
 
     def save_checkpoint(self, event: StepCompleted) -> None:
+        from pyshocks import apply_boundary
+
         # NOTE: boundary conditions are applied before the time step, so they
         # are not actually enforced after, which seems to mess with the adjoint
         u = apply_boundary(self.bc, self.grid, event.t, event.u)
@@ -63,13 +64,16 @@ def evolve_forward(
     sim: Simulation,
     u0: jnp.ndarray,
     *,
-    interactive: bool = False,
-    visualize: bool = True,
-) -> None:
+    dirname: pathlib.Path,
+    interactive: bool,
+    visualize: bool,
+) -> jnp.ndarray:
     grid = sim.grid
     stepper = sim.stepper
 
     # {{{ evolve
+
+    from pyshocks import norm
 
     event = None
     for event in step(stepper, u0, tfinal=sim.tfinal):
@@ -90,31 +94,36 @@ def evolve_forward(
     # {{{ plot
 
     if not visualize:
-        return
+        umax = jnp.max(event.u[grid.i_])
+        umin = jnp.min(event.u[grid.i_])
+        umag = jnp.max(jnp.abs(event.u[grid.i_]))
 
-    umax = jnp.max(event.u[grid.i_])
-    umin = jnp.min(event.u[grid.i_])
-    umag = jnp.max(jnp.abs(event.u[grid.i_]))
+        fig = mp.figure()
+        ax = fig.gca()
+        ax.plot(grid.x[grid.i_], event.u[grid.i_], label="$u(T)$")
+        ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
 
-    fig = mp.figure()
-    ax = fig.gca()
-    ax.plot(grid.x[grid.i_], event.u[grid.i_], label="$u(T)$")
-    ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
+        ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
+        ax.set_xlabel("$x$")
+        ax.set_ylabel("$u$")
+        ax.set_title(f"$T = {event.t:.3f}$")
 
-    ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
-    ax.set_xlabel("$x$")
-    ax.set_ylabel("$u$")
-    ax.set_title(f"$T = {event.t:.3f}$")
-
-    fig.savefig(dirname / f"advection_forward_{sim.name}")
-    mp.close(fig)
+        fig.savefig(dirname / f"advection_forward_{sim.name}")
+        mp.close(fig)
 
     # }}}
+
+    return event.u
 
 
 @timeme
 def evolve_adjoint(
-    sim: Simulation, *, interactive: bool = False, visualize: bool = True
+    sim: Simulation,
+    p0: jnp.ndarray,
+    *,
+    dirname: pathlib.Path,
+    interactive: bool,
+    visualize: bool,
 ) -> None:
     grid = sim.grid
     stepper = sim.stepper
@@ -131,11 +140,14 @@ def evolve_adjoint(
         )
 
     chk = sim.load_checkpoint()
-    p = chk.u
+    p = p0
 
     maxit = chk.iteration
     t = chk.t
     dt = chk.dt
+
+    assert jnp.linalg.norm(p0 - chk.u) < 1.0e-15
+    assert abs(t - sim.tfinal) < 1.0e-15
 
     # }}}
 
@@ -173,9 +185,14 @@ def evolve_adjoint(
         ax.set_xlim([grid.a, grid.b])
         ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
         ax.set_xlabel("$x$")
-        ax.grid(True)
+
+    from pyshocks import apply_boundary, norm
 
     for n in range(maxit, 0, -1):
+        # load next forward state
+        chk = sim.load_checkpoint()
+        t = chk.t
+
         # compute jacobian at current forward state
         jac = jac_fun(dt, t, chk.u)
 
@@ -183,11 +200,7 @@ def evolve_adjoint(
         p = apply_boundary(bc, grid, t, p)
         p = jac.T @ p
 
-        # load next forward state
-        chk = sim.load_checkpoint()
-        t = chk.t
         dt = chk.dt
-
         pmax = norm(grid, p, p=jnp.inf)
         logger.info(
             "[%4d] t = %.5e / %.5e dt %.5e pmax = %.5e", n - 1, t, sim.tfinal, dt, pmax
@@ -220,16 +233,23 @@ def evolve_adjoint(
 
 def main(
     scheme: advection.Scheme,
+    *,
+    outdir: pathlib.Path,
     a: float = -1.0,
     b: float = +1.0,
-    n: int = 1024,
+    n: int = 256,
     tfinal: float = 1.0,
     theta: float = 1.0,
     bctype: str = "dirichlet",
     interactive: bool = False,
-    visualize: bool = False,
+    visualize: bool = True,
 ) -> None:
+    if not outdir.exists():
+        outdir.mkdir()
+
     # {{{ geometry
+
+    from pyshocks import make_uniform_grid
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
@@ -268,6 +288,8 @@ def main(
 
     # {{{ forward time stepping
 
+    from pyshocks import predict_timestep, apply_operator
+
     def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return theta * predict_timestep(scheme, grid, _t, _u)
 
@@ -294,9 +316,10 @@ def main(
         chk=InMemoryCheckpoint(),
     )
 
-    evolve_forward(
+    uf = evolve_forward(
         sim,
         u0,
+        dirname=outdir,
         interactive=interactive,
         visualize=visualize,
     )
@@ -307,6 +330,8 @@ def main(
 
     evolve_adjoint(
         sim,
+        uf,
+        dirname=outdir,
         interactive=False,
         visualize=visualize,
     )
@@ -315,16 +340,31 @@ def main(
 
 
 if __name__ == "__main__":
-    try:
-        # https://github.com/nschloe/matplotx
-        import matplotx
+    import argparse
 
-        mp.style.use(matplotx.styles.dufte)
-    except ImportError:
-        pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-s",
+        "--scheme",
+        default="godunov",
+        type=str.lower,
+        choices=advection.scheme_ids(),
+    )
+    parser.add_argument(
+        "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+    )
+    args = parser.parse_args()
+
+    from pyshocks.tools import set_recommended_matplotlib
+
+    set_recommended_matplotlib()
 
     main(
-        scheme=advection.Godunov(velocity=None),
-        # scheme=advection.WENOJS32(velocity=None),
-        # scheme=advection.WENOJS53(velocity=None),
+        advection.make_scheme_from_name(args.scheme),
+        outdir=args.outdir,
+        interactive=args.interactive,
     )

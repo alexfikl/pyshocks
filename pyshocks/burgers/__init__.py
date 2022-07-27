@@ -22,6 +22,9 @@ Schemes
 .. autoclass:: WENOJS32
 .. autoclass:: WENOJS53
 
+.. autofunction:: scheme_ids
+.. autofunction:: make_scheme_from_name
+
 Data
 ^^^^
 
@@ -55,6 +58,9 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
 
 
 def scheme_ids() -> Tuple[str, ...]:
+    """
+    :returns: a :class:`tuple` of available schemes.
+    """
     return tuple(_SCHEMES.keys())
 
 

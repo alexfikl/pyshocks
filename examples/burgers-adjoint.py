@@ -20,7 +20,6 @@ from pyshocks.adjoint import InMemoryCheckpoint, save, load
 from pyshocks.timestepping import step, Stepper, StepCompleted
 
 logger = get_logger("burgers-adjoint")
-dirname = pathlib.Path(__file__).parent
 
 
 @dataclass
@@ -70,8 +69,9 @@ def evolve_forward(
     sim: Simulation,
     u0: jnp.ndarray,
     *,
-    interactive: bool = False,
-    visualize: bool = True,
+    dirname: pathlib.Path,
+    interactive: bool,
+    visualize: bool,
 ) -> jnp.ndarray:
     grid = sim.grid
     stepper = sim.stepper
@@ -82,7 +82,7 @@ def evolve_forward(
 
     event = None
     for event in step(stepper, u0, tfinal=sim.tfinal):
-        umax = norm(sim.grid, event.u, p=jnp.inf)
+        umax = norm(grid, event.u, p=jnp.inf)
         logger.info(
             "[%4d] t = %.5e / %.5e dt %.5e umax = %.5e",
             event.iteration,
@@ -126,8 +126,9 @@ def evolve_adjoint(
     sim: Simulation,
     p0: jnp.ndarray,
     *,
-    interactive: bool = False,
-    visualize: bool = True,
+    dirname: pathlib.Path,
+    interactive: bool,
+    visualize: bool,
 ) -> None:
     grid = sim.grid
     stepper = sim.stepper
@@ -169,7 +170,6 @@ def evolve_adjoint(
 
     # {{{ evolve
 
-    grid = sim.grid
     s = grid.i_
 
     if interactive or visualize:
@@ -191,7 +191,6 @@ def evolve_adjoint(
         ax.set_xlim([grid.a, grid.b])
         ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
         ax.set_xlabel("$x$")
-        ax.grid(True)
 
     from pyshocks import apply_boundary, norm
 
@@ -252,6 +251,9 @@ def main(
     interactive: bool = False,
     visualize: bool = True,
 ) -> None:
+    if not outdir.exists():
+        outdir.mkdir()
+
     # {{{ setup
 
     from pyshocks import make_uniform_grid
@@ -311,6 +313,7 @@ def main(
     uf = evolve_forward(
         sim,
         u0,
+        dirname=outdir,
         interactive=interactive,
         visualize=visualize,
     )
@@ -322,6 +325,7 @@ def main(
     evolve_adjoint(
         sim,
         uf,
+        dirname=outdir,
         interactive=False,
         visualize=visualize,
     )
