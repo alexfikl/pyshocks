@@ -27,7 +27,8 @@ from pyshocks.schemes import (
     apply_boundary,
 )
 from pyshocks.tools import (
-    T, P,
+    T,
+    P,
     ScalarFunction,
     VectorFunction,
     SpatialFunction,
@@ -55,6 +56,8 @@ jax.config.update("jax_platform_name", "cpu")
 # }}}
 
 __all__ = (
+    "T",
+    "P",
     "ScalarFunction",
     "VectorFunction",
     "SpatialFunction",

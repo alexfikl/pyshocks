@@ -17,7 +17,7 @@
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import List, Optional
+from typing import Iterator, List, Optional, Tuple
 
 import jax.numpy as jnp
 
@@ -43,7 +43,7 @@ class StepCompleted:
     iteration: int
     u: jnp.ndarray
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"[{self.iteration:5d}] "
             f"t = {self.t:.5e} / {self.tfinal:.5e} dt {self.dt:.5e}"
@@ -75,7 +75,7 @@ def step(
     maxit: Optional[int] = None,
     tstart: float = 0.0,
     tfinal: Optional[float] = None,
-):
+) -> Iterator[StepCompleted]:
     """Advance a given ODE description in time to *tfinal*.
 
     This function is a generator and is meant to be used as
@@ -144,7 +144,7 @@ def advance(stepper: Stepper, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarra
 # {{{ fixed time step
 
 
-def predict_timestep_from_maxit(tfinal: float, maxit: int):
+def predict_timestep_from_maxit(tfinal: float, maxit: int) -> Tuple[int, float]:
     """Determine time step from *tfinal* and *maxit*.
 
     :returns: a tuple of ``(maxit, dt)`` with the approximated values.
@@ -153,7 +153,7 @@ def predict_timestep_from_maxit(tfinal: float, maxit: int):
     return maxit, dt
 
 
-def predict_maxit_from_timestep(tfinal: float, dt: float):
+def predict_maxit_from_timestep(tfinal: float, dt: float) -> Tuple[int, float]:
     """Determine the maximum number of iteration for a fixed time step *dt*.
 
     :returns: a tuple ``(maxit, dt)`` with the approximated values.
@@ -208,7 +208,9 @@ class SSPRK33(Stepper):
 
 
 @advance.register(SSPRK33)
-def _advance_ssprk33(stepper: SSPRK33, dt: float, t: float, u: jnp.ndarray):
+def _advance_ssprk33(
+    stepper: SSPRK33, dt: float, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
     fn = stepper.source
 
     k1 = u + dt * fn(t, u)
@@ -228,7 +230,7 @@ class RK44(Stepper):
 
 
 @advance.register(RK44)
-def _advance_rk44(stepper: RK44, dt: float, t: float, u: jnp.ndarray):
+def _advance_rk44(stepper: RK44, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarray:
     fn = stepper.source
 
     k1 = dt * fn(t, u)
