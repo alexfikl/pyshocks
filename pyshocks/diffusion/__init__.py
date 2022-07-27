@@ -26,6 +26,7 @@ from typing import Tuple
 
 import jax.numpy as jnp
 
+from pyshocks import Grid
 from pyshocks.diffusion.schemes import Scheme, CenteredScheme
 
 
@@ -33,7 +34,7 @@ from pyshocks.diffusion.schemes import Scheme, CenteredScheme
 
 
 def ex_expansion(
-    grid,
+    grid: Grid,
     t: float,
     x: jnp.ndarray,
     *,
@@ -53,7 +54,7 @@ def ex_expansion(
             * jnp.exp(-diffusivity * (n * jnp.pi / L) ** 2 * t)
             for a, n in zip(amplitudes, modes)
         ],
-        jnp.zeros_like(x),
+        jnp.zeros_like(x),  # type: ignore[no-untyped-call]
     )
 
 

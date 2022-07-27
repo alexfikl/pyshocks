@@ -25,7 +25,7 @@ class Scheme(ConservationLawScheme):
 @predict_timestep.register(Scheme)
 def _predict_timestep_diffusion(
     scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
-) -> float:
+) -> jnp.ndarray:
     assert scheme.diffusivity is not None
 
     dmax = jnp.max(jnp.abs(scheme.diffusivity[grid.i_]))
@@ -41,11 +41,11 @@ def _predict_timestep_diffusion(
 @dataclass(frozen=True)
 class CenteredScheme(Scheme):
     @property
-    def order(self):
+    def order(self) -> int:
         return 2
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 1
 
 
@@ -61,7 +61,7 @@ def _numerical_flux_diffusion_centered_scheme(
 
     fnum = -davg * (u[1:] - u[:-1]) / grid.df
 
-    return jnp.pad(fnum, 1)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
