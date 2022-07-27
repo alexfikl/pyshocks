@@ -40,7 +40,7 @@ Data
 from typing import Optional
 
 from pyshocks.grid import Grid
-from pyshocks.schemes import SpatialFunction
+from pyshocks.tools import SpatialFunction
 from pyshocks.continuity.schemes import Scheme, Godunov, WENOJS, WENOJS32, WENOJS53
 
 import jax.numpy as jnp

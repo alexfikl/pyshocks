@@ -24,7 +24,6 @@ import jax.numpy as jnp
 
 from pyshocks.grid import Grid
 from pyshocks.schemes import (
-    VectorFunction,
     SchemeBase,
     flux,
     Boundary,
@@ -32,6 +31,7 @@ from pyshocks.schemes import (
     TwoSidedBoundary,
     apply_boundary,
 )
+from pyshocks.tools import VectorFunction
 
 
 # {{{ fluxes

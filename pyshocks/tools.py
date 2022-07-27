@@ -4,6 +4,20 @@
 """
 .. currentmodule:: pyshocks
 
+.. class:: T
+    :canonical: pyshocks.tools.T
+
+    Generic unbound invariant :class:`typing.TypeVar`.
+
+.. class:: P
+    :canonical: pyshocks.tools.P
+
+    Generic unbound invariant :class:`typing.ParamSpec`.
+
+.. autoclass:: ScalarFunction
+.. autoclass:: VectorFunction
+.. autoclass:: SpatialFunction
+
 .. autoclass:: EOCRecorder
     :no-show-inheritance:
 .. autofunction:: estimate_order_of_convergence
@@ -26,6 +40,7 @@ from typing import (
     List,
     Optional,
     ParamSpec,
+    Protocol,
     Union,
     Tuple,
     Type,
@@ -39,6 +54,42 @@ import jax.numpy as jnp
 T = TypeVar("T")
 R = TypeVar("R")
 P = ParamSpec("P")
+
+
+# {{{ callable protocols
+
+
+class ScalarFunction(Protocol):
+    r"""A generic callable that can be evaluated at :math:`(t, \mathbf{x})`.
+
+    .. automethod:: __call__
+    """
+
+    def __call__(self, t: float, x: jnp.ndarray) -> float:
+        ...
+
+
+class VectorFunction(Protocol):
+    r"""A generic callable that can be evaluated at :math:`(t, \mathbf{x})`.
+
+    .. automethod:: __call__
+    """
+
+    def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
+        ...
+
+
+class SpatialFunction(Protocol):
+    r"""A generic callable that can be evaluated at :math:`\mathbf{x}`.
+
+    .. automethod:: __call__
+    """
+
+    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        ...
+
+
+# }}}
 
 
 # {{{ memoize method
@@ -82,7 +133,7 @@ def memoize_on_first_arg(
     new_wrapper = update_wrapper(wrapper, function)
     new_wrapper.clear_cache = clear_cache  # type: ignore[attr-defined]
 
-    return new_wrapper      # type: ignore[return-value]
+    return new_wrapper  # type: ignore[return-value]
 
 
 def memoize_method(
@@ -99,7 +150,7 @@ def memoize_method(
 
 def estimate_order_of_convergence(
     x: jnp.ndarray, y: jnp.ndarray
-) -> Tuple[float, float]:
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """Computes an estimate of the order of convergence in the least-square sense.
     This assumes that the :math:`(x, y)` pair follows a law of the form
 
@@ -158,9 +209,9 @@ class EOCRecorder:
 
     def __init__(self, *, name: str = "Error") -> None:
         self.name = name
-        self.history: List[Tuple[float, float]] = []
+        self.history: List[Tuple[jnp.ndarray, jnp.ndarray]] = []
 
-    def add_data_point(self, h: float, error: float) -> None:
+    def add_data_point(self, h: jnp.ndarray, error: jnp.ndarray) -> None:
         """
         :param h: abscissa, a value representative of the "grid size"
         :param error: error at given *h*.
@@ -168,7 +219,7 @@ class EOCRecorder:
         self.history.append((h, error))
 
     @property
-    def estimated_order(self) -> float:
+    def estimated_order(self) -> jnp.ndarray:
         import numpy as np
 
         h, error = np.array(self.history).T
@@ -176,7 +227,7 @@ class EOCRecorder:
         return eoc
 
     @property
-    def max_error(self) -> float:
+    def max_error(self) -> jnp.ndarray:
         return max(error for _, error in self.history)
 
     def as_table(self) -> str:
@@ -316,7 +367,7 @@ class IterationTimer:
     """
 
     name: str = "iteration"
-    t_deltas: List[float] = field(default_factory=list, init=False, repr=False)
+    t_deltas: List[jnp.ndarray] = field(default_factory=list, init=False, repr=False)
 
     def tick(self) -> BlockTimer:
         """
@@ -329,10 +380,10 @@ class IterationTimer:
         )
 
     @property
-    def total(self) -> float:
-        return float(jnp.sum(self.t_deltas))
+    def total(self) -> jnp.ndarray:
+        return jnp.sum(self.t_deltas)
 
-    def stats(self) -> Tuple[float, float, float]:
+    def stats(self) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         """Compute statistics across all the iterations.
 
         :returns: a :class:`tuple` of ``(total, mean, std)``.

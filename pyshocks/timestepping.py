@@ -21,7 +21,7 @@ from typing import List, Optional
 
 import jax.numpy as jnp
 
-from pyshocks.schemes import ScalarFunction, VectorFunction
+from pyshocks.tools import ScalarFunction, VectorFunction
 
 
 # {{{ interface

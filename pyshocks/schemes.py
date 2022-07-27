@@ -26,58 +26,15 @@ Boundary Conditions
 .. autoclass:: TwoSidedBoundary
 
 .. autofunction:: apply_boundary
-
-Protocols
-^^^^^^^^^
-
-.. autoclass:: ScalarFunction
-.. autoclass:: VectorFunction
-.. autoclass:: SpatialFunction
 """
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Optional, Protocol, Tuple
+from typing import Optional, Tuple
 
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
-
-
-# {{{
-
-
-class ScalarFunction(Protocol):
-    r"""A generic callable that can be evaluated at :math:`(t, \mathbf{x})`.
-
-    .. automethod:: __call__
-    """
-
-    def __call__(self, t: float, x: jnp.ndarray) -> float:
-        ...
-
-
-class VectorFunction(Protocol):
-    r"""A generic callable that can be evaluated at :math:`(t, \mathbf{x})`.
-
-    .. automethod:: __call__
-    """
-
-    def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
-        ...
-
-
-class SpatialFunction(Protocol):
-    r"""A generic callable that can be evaluated at :math:`\mathbf{x}`.
-
-    .. automethod:: __call__
-    """
-
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
-        ...
-
-
-# }}}
 
 
 # {{{ schemes

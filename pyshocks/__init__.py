@@ -14,11 +14,9 @@ from pyshocks.grid import (
     rnorm,
 )
 from pyshocks.schemes import (
-    ScalarFunction,
-    VectorFunction,
-    SpatialFunction,
     SchemeBase,
     ConservationLawScheme,
+    CombineConservationLawScheme,
     flux,
     numerical_flux,
     apply_operator,
@@ -29,6 +27,10 @@ from pyshocks.schemes import (
     apply_boundary,
 )
 from pyshocks.tools import (
+    T, P,
+    ScalarFunction,
+    VectorFunction,
+    SpatialFunction,
     EOCRecorder,
     estimate_order_of_convergence,
     BlockTimer,
@@ -61,6 +63,7 @@ __all__ = (
     "make_uniform_grid",
     "SchemeBase",
     "ConservationLawScheme",
+    "CombineConservationLawScheme",
     "flux",
     "numerical_flux",
     "apply_operator",
