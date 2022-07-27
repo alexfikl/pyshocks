@@ -71,6 +71,23 @@ def evolve_forward(
     grid = sim.grid
     stepper = sim.stepper
 
+    # {{{ plotting
+
+    s = grid.i_
+
+    if interactive:
+        fig = mp.figure()
+        ax = fig.gca()
+        mp.ion()
+
+        _, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
+        ax.set_xlim([grid.a, grid.b])
+        ax.set_ylim([jnp.min(u0) - 1.0, jnp.max(u0) + 1.0])
+        ax.set_xlabel("$x$")
+        ax.set_ylabel("$u$")
+
+    # }}}
+
     # {{{ evolve
 
     from pyshocks import norm
@@ -88,10 +105,16 @@ def evolve_forward(
         )
 
         sim.save_checkpoint(event)
+        if interactive:
+            ln1.set_ydata(event.u[s])
+            mp.pause(0.01)
 
     # }}}
 
     # {{{ plot
+
+    if interactive:
+        mp.close(fig)
 
     if not visualize:
         umax = jnp.max(event.u[grid.i_])
@@ -183,10 +206,11 @@ def evolve_adjoint(
         ln0, ln1 = ax.plot(grid.x[s], chk.u[s], "k--", grid.x[s], p[s], "o-", ms=1)
 
         ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
+        ax.set_ylim([pmin - 0.25 * pmag, pmax + 0.25 * pmag])
         ax.set_xlabel("$x$")
 
     from pyshocks import apply_boundary, norm
+    p = apply_boundary(bc, grid, t, p)
 
     for n in range(maxit, 0, -1):
         # load next forward state
@@ -197,8 +221,8 @@ def evolve_adjoint(
         jac = jac_fun(dt, t, chk.u)
 
         # evolve adjoint state
-        p = apply_boundary(bc, grid, t, p)
         p = jac.T @ p
+        p = apply_boundary(bc, grid, t, p)
 
         dt = chk.dt
         pmax = norm(grid, p, p=jnp.inf)
@@ -221,6 +245,7 @@ def evolve_adjoint(
     fig = mp.figure()
     ax = fig.gca()
     ax.plot(grid.x[s], p[s])
+    ax.plot(grid.x[s], p0[s], "k--")
 
     ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
     ax.set_xlabel("$x$")
@@ -238,8 +263,8 @@ def main(
     a: float = -1.0,
     b: float = +1.0,
     n: int = 256,
-    tfinal: float = 1.0,
-    theta: float = 1.0,
+    tfinal: float = jnp.pi / 3,
+    theta: float = 0.75,
     bctype: str = "dirichlet",
     interactive: bool = False,
     visualize: bool = True,
@@ -296,9 +321,9 @@ def main(
     def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
-    from pyshocks.timestepping import ForwardEuler as TimeStepper
+    from pyshocks.timestepping import SSPRK33
 
-    stepper = TimeStepper(
+    stepper = SSPRK33(
         predict_timestep=jax.jit(forward_predict_timestep),
         source=jax.jit(forward_operator),
     )
@@ -320,7 +345,7 @@ def main(
         sim,
         u0,
         dirname=outdir,
-        interactive=interactive,
+        interactive=False,
         visualize=visualize,
     )
 
@@ -332,7 +357,7 @@ def main(
         sim,
         uf,
         dirname=outdir,
-        interactive=False,
+        interactive=interactive,
         visualize=visualize,
     )
 

@@ -82,7 +82,6 @@ def main(
         ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
     # }}}
 
