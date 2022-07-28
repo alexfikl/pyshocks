@@ -217,6 +217,7 @@ def evolve_adjoint(
         ax.set_xlabel("$x$")
 
     from pyshocks import apply_boundary, norm
+
     p = apply_boundary(bc, grid, t, p)
 
     for n in range(maxit, 0, -1):

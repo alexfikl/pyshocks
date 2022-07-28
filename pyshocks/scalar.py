@@ -5,6 +5,11 @@
 Fluxes
 ^^^^^^
 
+These fluxes are based on the seminal work of [LeVeque2002]_.
+
+.. [LeVeque2002] R. J. LeVeque, *Finite Volume Methods for Hyperbolic Problems*,
+    Cambridge University Press, 2002.
+
 .. autofunction:: scalar_flux_upwind
 .. autofunction:: scalar_flux_rusanov
 .. autofunction:: scalar_flux_lax_friedrichs
@@ -43,6 +48,24 @@ from pyshocks.tools import VectorFunction
 def scalar_flux_upwind(
     scheme: SchemeBase, grid: Grid, t: float, a: jnp.ndarray, u: jnp.ndarray
 ) -> jnp.ndarray:
+    r"""Implements the classic upwind flux (see [LeVeque2002]_).
+
+    The flux is given by
+
+    .. math::
+
+        f(u_L, u_R) =
+        \begin{cases}
+        u_L, & \quad S(a_L, a_R) > 0, \\
+        u_R, & \quad \text{otherwise},
+        \end{cases}
+
+    where the speed :math:`S` is taken as a simple average, i.e.
+
+    .. math::
+
+        S(a_L, a_R) = \frac{1}{2} (a_L + a_R).
+    """
     assert u.shape[0] == grid.x.size
 
     am = 0.5 * (a[1:] + a[:-1])
@@ -66,6 +89,33 @@ def scalar_flux_rusanov(
     u: jnp.ndarray,
     alpha: float = 1.0,
 ) -> jnp.ndarray:
+    r"""Implements the Rusanov flux (also referred to as the *local* Lax-Friedrichs)
+    flux for scalar conservation laws (see Section 12.5 in [LeVeque2002]_).
+
+    The flux is given by
+
+    .. math::
+
+        f(u_L, u_R) = \frac{1}{2} (f(u_L) + f(u_R))
+            - \frac{1}{2} s(a_L, a_R) \nu (u_R - u_L),
+
+    where the choice of speed :math:`s` gives rise to different versions of
+    this scheme. Here, we choose
+
+    .. math::
+
+        s(a_L, a_R) = \max(|a_L|, |a_R|).
+
+    Finally, the artificial dissipation is given by
+
+    .. math::
+
+        \nu = \Delta x^{\alpha - 1},
+
+    where values of :math:`\alpha < 1` are more dissipative than the standard
+    version.
+    """
+
     assert u.shape[0] == grid.x.size
     f = flux(scheme, 0.0, grid.x, u)
 
@@ -98,6 +148,16 @@ def scalar_flux_lax_friedrichs(
     u: jnp.ndarray,
     alpha: float = 1.0,
 ) -> jnp.ndarray:
+    r"""Implements the *global* Lax-Friedrichs flux (see Section 12.5 from
+    [LeVeque2002]_).
+
+    This flux is the same as :func:`scalar_flux_rusanov`, where the speed
+    is taken as the maximum over the entire domain, i.e.
+
+    .. math::
+
+        S(a_L, a_R) = \max_i a_i.
+    """
     amax = jnp.max(jnp.abs(a))
     return scalar_flux_rusanov(scheme, grid, t, amax, u, alpha=alpha)
 
@@ -111,6 +171,15 @@ def scalar_flux_lax_friedrichs(
 def scalar_flux_engquist_osher(
     scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
 ) -> jnp.ndarray:
+    r"""Implements the Engquist-Osher flux (see Section 12.6 in [LeVeque2002]_).
+
+    The flux is given by
+
+    .. math::
+
+        f(u_L, u_R) = \frac{1}{2} (f(u_L) + f(u_R))
+            - \frac{1}{2} \int_{u_L}^{u_R} |f'(u)| \,\mathrm{d}u.
+    """
     assert u.shape[0] == grid.x.size
 
     fp = flux(scheme, t, grid.x, jnp.maximum(u, omega))

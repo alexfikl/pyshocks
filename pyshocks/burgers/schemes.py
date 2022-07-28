@@ -41,21 +41,13 @@ def _predict_timestep_burgers(
 # }}}
 
 
-# {{{ Lax-Friedrichs
+# {{{ Rusanov
 
 
 @dataclass(frozen=True)
-class LaxFriedrichs(Scheme):
-    r"""Modified Lax-Friedrichs scheme with the flux
-
-    .. math::
-
-        f(u_l, u_r) = \frac{1}{2 \Delta x_{lr}} (f(u_l) + f(u_r))
-            + \frac{1}{2} \frac{\Delta x^\alpha}{\Delta x^2} (u_r - u_l),
-
-    where :math:`\alpha \le 1`. The limit case of :math:`\alpha = 1` gives the
-    classic scheme. An :math:`\alpha < 1` acts as additional artificial
-    viscosity.
+class Rusanov(Scheme):
+    r"""Modified Rusanov scheme with the flux given by
+    :func:`~pyshocks.scalar.scalar_flux_rusanov`.
 
     .. attribute:: alpha
 
@@ -73,6 +65,41 @@ class LaxFriedrichs(Scheme):
         return 1
 
 
+@numerical_flux.register(Rusanov)
+def _numerical_flux_burgers_rusanov(
+    scheme: Rusanov, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.scalar import scalar_flux_rusanov
+
+    return scalar_flux_rusanov(scheme, grid, t, u, u, alpha=scheme.alpha)
+
+
+@predict_timestep.register(Rusanov)
+def _predict_timestep_burgers_rusanov(
+    scheme: Rusanov, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    smax = jnp.max(jnp.abs(u[grid.i_]))
+
+    return 0.5 * grid.dx_min ** (2 - scheme.alpha) / smax
+
+
+# }}}
+
+
+# {{{ Lax-Friedrichs
+
+
+@dataclass(frozen=True)
+class LaxFriedrichs(Rusanov):
+    r"""Modified Lax-Friedrichs scheme with the flux given by
+    :func:`~pyshocks.scalar.scalar_flux_lax_friedrichs`.
+
+    .. attribute:: alpha
+
+    .. automethod:: __init__
+    """
+
+
 @numerical_flux.register(LaxFriedrichs)
 def _numerical_flux_burgers_lax_friedrichs(
     scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray
@@ -80,15 +107,6 @@ def _numerical_flux_burgers_lax_friedrichs(
     from pyshocks.scalar import scalar_flux_lax_friedrichs
 
     return scalar_flux_lax_friedrichs(scheme, grid, t, u, u, alpha=scheme.alpha)
-
-
-@predict_timestep.register(LaxFriedrichs)
-def _predict_timestep_burgers_lax_friedrichs(
-    scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    smax = jnp.max(jnp.abs(u[grid.i_]))
-
-    return 0.5 * grid.dx_min ** (2 - scheme.alpha) / smax
 
 
 # }}}

@@ -15,6 +15,7 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+.. autoclass:: Rusanov
 .. autoclass:: LaxFriedrichs
 .. autoclass:: EngquistOsher
 
@@ -41,6 +42,7 @@ import jax.numpy as jnp
 from pyshocks import Grid
 from pyshocks.burgers.schemes import (
     Scheme,
+    Rusanov,
     LaxFriedrichs,
     EngquistOsher,
     WENOJS,
@@ -50,6 +52,7 @@ from pyshocks.burgers.schemes import (
 
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
+    "rusanov": Rusanov,
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,
     "wenojs32": WENOJS32,
