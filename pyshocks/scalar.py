@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 """
-Fluxes
-^^^^^^
+Scalar Equation Helpers
+^^^^^^^^^^^^^^^^^^^^^^^
 
 These fluxes are based on the seminal work of [LeVeque2002]_.
 
@@ -14,9 +14,6 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autofunction:: scalar_flux_rusanov
 .. autofunction:: scalar_flux_lax_friedrichs
 .. autofunction:: scalar_flux_engquist_osher
-
-Boundary Conditions
-^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: DirichletBoundary
 .. autoclass:: PeriodicBoundary

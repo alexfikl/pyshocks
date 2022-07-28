@@ -10,45 +10,12 @@ Welcome
     :maxdepth: 2
     :hidden:
 
-Equations
-=========
+    equations.rst
+    schemes.rst
+    timestepping.rst
+    misc.rst
 
-.. automodule:: pyshocks.continuity
-
-.. automodule:: pyshocks.advection
-
-.. automodule:: pyshocks.burgers
-
-.. .. automodule:: pyshocks.euler
-
-Infrastructure
-==============
-
-Interfaces
-----------
-
-.. automodule:: pyshocks.schemes
-.. automodule:: pyshocks.grid
-
-Scalar
-------
-
-.. automodule:: pyshocks.scalar
-
-WENO
-----
-
-.. automodule:: pyshocks.weno
-
-Timestepping
-------------
-
-.. automodule:: pyshocks.timestepping
-
-Utilities
----------
-
-.. automodule:: pyshocks.tools
+.. include:: tutorial.rst
 
 Indices and tables
 ==================

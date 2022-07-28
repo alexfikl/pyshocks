@@ -1,0 +1,4 @@
+Utilities
+=========
+
+.. automodule:: pyshocks.tools
