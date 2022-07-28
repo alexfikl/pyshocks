@@ -10,12 +10,11 @@ Welcome
     :maxdepth: 2
     :hidden:
 
+    tutorial.rst
     equations.rst
     schemes.rst
     timestepping.rst
     misc.rst
-
-.. include:: tutorial.rst
 
 Indices and tables
 ==================

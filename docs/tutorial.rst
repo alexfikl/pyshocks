@@ -9,7 +9,7 @@ law. There are existing examples of this in the code that cover Burgers' equatio
 the continuity equation, the heat equation, etc. For some diversity, we will
 look at the traffic flow model
 
-.. math
+.. math::
 
     \begin{cases}
     u_t + f(u)_x = 0, \\
