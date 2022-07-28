@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+import jax
 import jax.numpy as jnp
 
 from pyshocks import ConservationLawScheme, Grid, flux, numerical_flux
@@ -7,11 +9,11 @@ from pyshocks import ConservationLawScheme, Grid, flux, numerical_flux
 @dataclass(frozen=True)
 class TrafficFlowScheme(ConservationLawScheme):
     @property
-    def order(self):
+    def order(self) -> int:
         return 1
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 1
 
 
@@ -35,7 +37,7 @@ def _numerical_flux_traffic_flow(
     u_avg = (u[1:] + u[:-1]) / 2
     f = (1 - u_avg) * u[:-1]
 
-    return jnp.pad(f, 1)
+    return jnp.pad(f, 1)  # type: ignore[no-untyped-call]
 
 
 def main(
@@ -54,8 +56,8 @@ def main(
     from pyshocks.scalar import dirichlet_boundary
 
     boundary = dirichlet_boundary(
-        fa=lambda t, x: jnp.ones_like(x),
-        fb=lambda t, x: jnp.zeros_like(x),
+        fa=lambda t, x: jnp.ones_like(x),  # type: ignore[no-untyped-call]
+        fb=lambda t, x: jnp.zeros_like(x),  # type: ignore[no-untyped-call]
     )
 
     mid = (grid.a + grid.b) / 2.0
@@ -67,13 +69,14 @@ def main(
 
     from pyshocks import apply_operator
 
-    def right_hand_side(t, u):
+    def right_hand_side(t: float, u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, t, u)
 
     from pyshocks import timestepping
 
     integrator = timestepping.ForwardEuler(
-        predict_timestep=lambda t, u: 1.0e-2, source=right_hand_side
+        predict_timestep=lambda t, u: 1.0e-2,
+        source=jax.jit(right_hand_side),
     )
 
     for event in timestepping.step(integrator, u0, tfinal=1.0):
