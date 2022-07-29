@@ -6,6 +6,7 @@ Checkpointing
 -------------
 
 .. autoclass:: Checkpoint
+    :no-show-inheritance:
 .. autofunction:: save
 .. autofunction:: load
 
@@ -137,7 +138,7 @@ def _load_in_memory(
 @dataclass(frozen=True)
 class PickleCheckpoint(Checkpoint):
     """A class that stores checkpoints in a compressed format with the
-    :mod:`pickle` module.
+    :mod:`pickle` module. The data is compressed using :mod:`lzma`.
 
     .. attribute:: dirname
 

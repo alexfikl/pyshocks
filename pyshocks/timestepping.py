@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 """
+Integrators
+-----------
+
 .. autoclass:: Stepper
     :no-show-inheritance:
 .. autoclass:: ForwardEuler
