@@ -172,6 +172,7 @@ def main(
     method = timestepping.SSPRK33(
         predict_timestep=jax.jit(_predict_timestep),
         source=jax.jit(_apply_operator),
+        checkpoint=None,
     )
     step = timestepping.step(method, u0, tfinal=tfinal)
 

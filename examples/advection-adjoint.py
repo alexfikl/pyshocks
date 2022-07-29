@@ -11,8 +11,8 @@ import matplotlib.pyplot as mp
 
 from pyshocks import UniformGrid, Boundary, timeme
 from pyshocks import advection, get_logger
-from pyshocks.timestepping import Stepper, StepCompleted, step
-from pyshocks.checkpointing import InMemoryCheckpoint, save, load
+from pyshocks.checkpointing import InMemoryCheckpoint
+from pyshocks.timestepping import Stepper, step, adjoint_step
 
 logger = get_logger("advection-adjoint")
 
@@ -23,10 +23,7 @@ class Simulation:
     grid: UniformGrid
     bc: Boundary
     stepper: Stepper
-
     tfinal: float
-    chk: InMemoryCheckpoint
-    count: int = 0
 
     @property
     def name(self) -> str:
@@ -34,31 +31,6 @@ class Simulation:
         scheme = type(self.scheme).__name__.lower()
         stepper = type(self.stepper).__name__.lower()
         return f"{scheme}_{stepper}_{n:05}"
-
-    def save_checkpoint(self, event: StepCompleted) -> None:
-        from pyshocks import apply_boundary
-
-        # NOTE: boundary conditions are applied before the time step, so they
-        # are not actually enforced after, which seems to mess with the adjoint
-        u = apply_boundary(self.bc, self.grid, event.t, event.u)
-
-        self.count += 1
-        save(
-            self.chk,
-            event.iteration,
-            {
-                "iteration": event.iteration,
-                "t": event.t,
-                "dt": event.dt,
-                "u": u,
-            },
-        )
-
-    def load_checkpoint(self) -> StepCompleted:
-        self.count -= 1
-        data = load(self.chk, self.count)
-
-        return StepCompleted(tfinal=self.tfinal, **data)
 
 
 @timeme
@@ -106,7 +78,6 @@ def evolve_forward(
             umax,
         )
 
-        sim.save_checkpoint(event)
         if interactive:
             ln1.set_ydata(event.u[s])
             mp.pause(0.01)
@@ -138,116 +109,93 @@ def evolve_forward(
 
     # }}}
 
-    return event.u
+    return event.u, event.iteration
 
 
 @timeme
 def evolve_adjoint(
     sim: Simulation,
+    uf: jnp.ndarray,
     p0: jnp.ndarray,
     *,
     dirname: pathlib.Path,
+    maxit: int,
     interactive: bool,
     visualize: bool,
 ) -> None:
     grid = sim.grid
     stepper = sim.stepper
 
-    # {{{ setup
+    # {{{ boundary
 
-    from pyshocks.scalar import PeriodicBoundary, dirichlet_boundary
+    # FIXME: this is not the correct boundary for the adjoint! we should not be
+    # setting both left and right boundaries!
 
-    if isinstance(sim.bc, PeriodicBoundary):
-        bc: Boundary = sim.bc
-    else:
-        bc = dirichlet_boundary(
-            lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
-        )
+    from pyshocks import apply_boundary
+    from pyshocks.scalar import dirichlet_boundary
 
-    chk = sim.load_checkpoint()
-    p = p0
+    bc = dirichlet_boundary(
+        lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
+    )
 
-    maxit = chk.iteration
-    t = chk.t
-    dt = chk.dt
+    @jax.jit
+    def _apply_boundary(t: float, u: jnp.ndarray, p: jnp.ndarray) -> jnp.ndarray:
+        return apply_boundary(bc, grid, t, p)
 
-    assert jnp.linalg.norm(p0 - chk.u) < 1.0e-15
-    assert abs(t - sim.tfinal) < 1.0e-15
-
-    # }}}
-
-    # {{{ jacobians
-
-    # NOTE: jacfwd generates the whole Jacobian matrix of size `n x n`, but it
-    # seems to be *a lot* faster than using vjp as a matrix free method;
-    # possibly because this is all nicely jitted beforehand
-    #
-    # should not be too big of a problem because we don't plan to do huge
-    # problems -- mostly n < 1024
-
-    from pyshocks.timestepping import advance
-
-    jac_fun = jax.jit(jax.jacfwd(partial(advance, stepper), argnums=2))
-
-    # }}}
+    # }}
 
     # {{{ evolve
 
     s = grid.i_
 
     if interactive or visualize:
-        pmax = jnp.max(p[s])
-        pmin = jnp.min(p[s])
-        pmag = jnp.max(jnp.abs(p[s]))
+        pmax = jnp.max(p0[s])
+        pmin = jnp.min(p0[s])
+        pmag = jnp.max(jnp.abs(p0[s]))
 
     if interactive:
         fig = mp.figure()
         ax = fig.gca()
         mp.ion()
 
-        ln0, ln1 = ax.plot(grid.x[s], chk.u[s], "k--", grid.x[s], p[s], "o-", ms=1)
+        ln0, ln1 = ax.plot(grid.x[s], uf[s], "k--", grid.x[s], p0[s], "o-", ms=1)
 
         ax.set_xlim([grid.a, grid.b])
         ax.set_ylim([pmin - 0.25 * pmag, pmax + 0.25 * pmag])
         ax.set_xlabel("$x$")
 
-    from pyshocks import apply_boundary, norm
+    from pyshocks import norm
 
-    p = apply_boundary(bc, grid, t, p)
-
-    for n in range(maxit, 0, -1):
-        # load next forward state
-        chk = sim.load_checkpoint()
-        t = chk.t
-
-        # compute jacobian at current forward state
-        jac = jac_fun(dt, t, chk.u)
-
-        # evolve adjoint state
-        p = jac.T @ p
-        p = apply_boundary(bc, grid, t, p)
-
-        dt = chk.dt
-        pmax = norm(grid, p, p=jnp.inf)
+    event = None
+    for event in adjoint_step(stepper, p0, maxit=maxit, apply_boundary=_apply_boundary):
+        pmax = norm(grid, event.p, p=jnp.inf)
         logger.info(
-            "[%4d] t = %.5e / %.5e dt %.5e pmax = %.5e", n - 1, t, sim.tfinal, dt, pmax
+            "[%4d] t = %.5e / %.5e dt %.5e pmax = %.5e",
+            event.iteration,
+            event.t,
+            event.tfinal,
+            event.dt,
+            pmax,
         )
 
         if interactive:
-            ln0.set_ydata(chk.u[s])
-            ln1.set_ydata(p[s])
+            ln0.set_ydata(event.u[s])
+            ln1.set_ydata(event.p[s])
             mp.pause(0.01)
 
     # }}}
 
     # {{{ plot
 
+    if interactive:
+        mp.close(fig)
+
     if not visualize:
         return
 
     fig = mp.figure()
     ax = fig.gca()
-    ax.plot(grid.x[s], p[s])
+    ax.plot(grid.x[s], event.p[s])
     ax.plot(grid.x[s], p0[s], "k--")
 
     ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
@@ -266,7 +214,7 @@ def main(
     a: float = -1.0,
     b: float = +1.0,
     n: int = 256,
-    tfinal: float = jnp.pi / 3,
+    tfinal: float = 1.0,
     theta: float = 0.75,
     bctype: str = "dirichlet",
     interactive: bool = False,
@@ -329,6 +277,7 @@ def main(
     stepper = SSPRK33(
         predict_timestep=jax.jit(forward_predict_timestep),
         source=jax.jit(forward_operator),
+        checkpoint=InMemoryCheckpoint(basename="Iteration"),
     )
 
     # }}}
@@ -341,10 +290,9 @@ def main(
         bc=boundary,
         stepper=stepper,
         tfinal=tfinal,
-        chk=InMemoryCheckpoint(basename="Iteration"),
     )
 
-    uf = evolve_forward(
+    uf, maxit = evolve_forward(
         sim,
         u0,
         dirname=outdir,
@@ -359,6 +307,8 @@ def main(
     evolve_adjoint(
         sim,
         uf,
+        uf,
+        maxit=maxit,
         dirname=outdir,
         interactive=interactive,
         visualize=visualize,

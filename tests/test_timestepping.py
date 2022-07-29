@@ -69,6 +69,7 @@ def test_time_convergence(
         stepper = cls(
             predict_timestep=partial(predict_timestep, dt=dt),
             source=source,
+            checkpoint=None,
         )
 
         u = []

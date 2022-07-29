@@ -10,17 +10,21 @@
 
 .. autoclass:: StepCompleted
     :no-show-inheritance:
+.. autoclass:: AdjointStepCompleted
 
 .. autofunction:: step
+.. autofunction:: adjoint_step
 .. autofunction:: advance
 """
 
 from dataclasses import dataclass
-from functools import singledispatch
-from typing import Iterator, List, Optional, Tuple
+from functools import partial, singledispatch
+from typing import Callable, Iterator, List, Optional, Tuple
 
+import jax
 import jax.numpy as jnp
 
+from pyshocks.checkpointing import Checkpoint, save, load
 from pyshocks.tools import ScalarFunction, VectorFunction
 
 
@@ -51,6 +55,15 @@ class StepCompleted:
 
 
 @dataclass(frozen=True)
+class AdjointStepCompleted(StepCompleted):
+    """
+    .. attribute:: p
+    """
+
+    p: jnp.ndarray
+
+
+@dataclass(frozen=True)
 class Stepper:
     """Generic time stepping method for first-order ODEs.
 
@@ -62,10 +75,16 @@ class Stepper:
     .. attribute:: source
 
         A callable taking ``(t, u)`` that acts as a source term to the ODE.
+
+    .. attribute:: checkpoint
+
+        A :class:`~pyshocks.checkpointing.Checkpoint` used to save the solution
+        values at every timestep.
     """
 
     predict_timestep: ScalarFunction
     source: VectorFunction
+    checkpoint: Optional[Checkpoint]
 
 
 def step(
@@ -103,6 +122,10 @@ def step(
     yield StepCompleted(t=t, tfinal=tfinal, dt=0.0, iteration=m, u=u)
 
     while True:
+        # NOTE: this checkpoints both the initial condition and the final state
+        if stepper.checkpoint is not None:
+            save(stepper.checkpoint, m, {"m": m, "t": t, "u": u})
+
         if tfinal is not None and t >= tfinal:
             break
 
@@ -118,6 +141,66 @@ def step(
         t += dt
 
         yield StepCompleted(t=t, tfinal=tfinal, dt=dt, iteration=m, u=u)
+
+
+def adjoint_step(
+    stepper: Stepper,
+    p0: jnp.ndarray,
+    *,
+    maxit: int,
+    apply_boundary: Optional[
+        Callable[[float, jnp.ndarray, jnp.ndarray], jnp.ndarray]
+    ] = None,
+) -> Iterator[AdjointStepCompleted]:
+    if stepper.checkpoint is None:
+        raise ValueError("adjoint time stepping requires a checkpoint")
+
+    # {{{ construct jacobian
+
+    # NOTE: jacfwd generates the whole Jacobian matrix of size `n x n`, but it
+    # seems to be *a lot* faster than using vjp as a matrix free method;
+    # possibly because this is all nicely jitted beforehand
+    #
+    # should not be too big of a problem because we don't plan to do huge
+    # problems -- mostly n < 1024
+
+    jac_fun = jax.jit(jax.jacfwd(partial(advance, stepper), argnums=2))
+
+    # }}}
+
+    # NOTE: chk["u"] was supposedly already used to compute p0, so this just
+    # gets this checkpoints out of the way and checks consistency
+    chk = load(stepper.checkpoint, maxit)
+    assert chk["m"] == maxit
+
+    t = tfinal = chk["t"]
+
+    p = p0
+    if apply_boundary is not None:
+        p = apply_boundary(chk["t"], chk["u"], p)
+
+    yield AdjointStepCompleted(
+        t=t, tfinal=tfinal, dt=0.0, iteration=maxit, u=chk["u"], p=p
+    )
+
+    for m in range(maxit - 1, -1, -1):
+        # load forward state
+        chk = load(stepper.checkpoint, m)
+        dt = t - chk["t"]
+        assert chk["m"] == m
+
+        # advance adjoint
+        jac = jac_fun(dt, chk["t"], chk["u"])
+        p = jac.T @ p
+
+        if apply_boundary is not None:
+            p = apply_boundary(chk["t"], chk["u"], p)
+
+        # yield new solution
+        t = chk["t"]
+        yield AdjointStepCompleted(
+            t=t, tfinal=tfinal, dt=dt, iteration=m, u=chk["u"], p=p
+        )
 
 
 @singledispatch

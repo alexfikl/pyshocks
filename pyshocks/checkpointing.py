@@ -96,7 +96,7 @@ class InMemoryCheckpoint(Checkpoint):
     As expected, this is not suitable for larger simulations.
     """
 
-    storage: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    storage: Dict[Hashable, Dict[str, Any]] = field(default_factory=dict)
 
     def index_to_key(self, i: int) -> Hashable:
         return (self.basename, i)
@@ -146,7 +146,7 @@ class PickleCheckpoint(Checkpoint):
 
     dirname: pathlib.Path
 
-    def index_to_key(self, i: int) -> Hashable:
+    def index_to_key(self, i: int) -> pathlib.Path:
         return self.dirname / f"{self.basename}_{i:09d}.npz"
 
     def __contains__(self, i: int) -> bool:
@@ -162,7 +162,7 @@ def _save_pickle(chk: PickleCheckpoint, idx: int, values: Dict[str, Any]) -> Non
     try:
         import cloudpickle as pickle
     except ImportError:
-        import pickle
+        import pickle  # type: ignore[no-redef]
 
     import lzma
 
@@ -184,12 +184,15 @@ def _load_pickle(
     try:
         import cloudpickle as pickle
     except ImportError:
-        import pickle
+        import pickle  # type: ignore[no-redef]
 
     import lzma
 
     with open(filename, "rb") as infile:
         values = pickle.load(lzma.decompress(infile.read()))
+
+    if include is None:
+        return dict(values)
 
     return {k: v for k, v in values.items() if k in include}
 
@@ -215,7 +218,7 @@ class NumpyCheckpoint(Checkpoint):
 
     dirname: pathlib.Path
 
-    def index_to_key(self, i: int) -> Hashable:
+    def index_to_key(self, i: int) -> pathlib.Path:
         return self.dirname / f"{self.basename}_{i:09d}.npz"
 
     def __contains__(self, i: int) -> bool:
@@ -228,7 +231,7 @@ def _save_npz(chk: NumpyCheckpoint, idx: int, values: Dict[str, Any]) -> None:
     if not filename.exists():
         raise KeyError(f"cannot set existing checkpoint at '{idx}'")
 
-    jnp.savez(filename, values)
+    jnp.savez(filename, **values)
 
 
 @load.register(NumpyCheckpoint)
@@ -242,7 +245,7 @@ def _load_npz(
     if not filename.exists():
         raise KeyError(f"cannot find checkpoint at index '{idx}'")
 
-    values = jnp.load(filename, allow_pickle=False)
+    values = jnp.load(filename, allow_pickle=False)  # type: ignore[no-untyped-call]
     if include is None:
         return dict(values)
 

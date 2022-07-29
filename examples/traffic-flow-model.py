@@ -77,6 +77,7 @@ def main(
     integrator = timestepping.ForwardEuler(
         predict_timestep=lambda t, u: 1.0e-2,
         source=jax.jit(right_hand_side),
+        checkpoint=None,
     )
 
     for event in timestepping.step(integrator, u0, tfinal=1.0):

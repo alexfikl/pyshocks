@@ -101,6 +101,7 @@ def evolve(
     stepper = ts.SSPRK33(
         predict_timestep=lambda _t, _u: dt,
         source=_apply_operator,
+        checkpoint=None,
     )
 
     u = u0
