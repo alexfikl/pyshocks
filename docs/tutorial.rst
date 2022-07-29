@@ -69,7 +69,7 @@ to implement the scheme. To evolve the traffic flow model in time, we can use
 the following setup
 
 .. literalinclude:: ../examples/traffic-flow-model.py
-    :lines: 70-84
+    :lines: 70-85
     :language: python
     :linenos:
 
