@@ -12,7 +12,7 @@ import matplotlib.pyplot as mp
 from pyshocks import UniformGrid, Boundary, timeme
 from pyshocks import advection, get_logger
 from pyshocks.timestepping import Stepper, StepCompleted, step
-from pyshocks.adjoint import InMemoryCheckpoint, save, load
+from pyshocks.checkpointing import InMemoryCheckpoint, save, load
 
 logger = get_logger("advection-adjoint")
 
@@ -26,6 +26,7 @@ class Simulation:
 
     tfinal: float
     chk: InMemoryCheckpoint
+    count: int = 0
 
     @property
     def name(self) -> str:
@@ -41,6 +42,7 @@ class Simulation:
         # are not actually enforced after, which seems to mess with the adjoint
         u = apply_boundary(self.bc, self.grid, event.t, event.u)
 
+        self.count += 1
         save(
             self.chk,
             event.iteration,
@@ -53,8 +55,8 @@ class Simulation:
         )
 
     def load_checkpoint(self) -> StepCompleted:
-        self.chk.count -= 1
-        data = load(self.chk, self.chk.count)
+        self.count -= 1
+        data = load(self.chk, self.count)
 
         return StepCompleted(tfinal=self.tfinal, **data)
 
@@ -339,7 +341,7 @@ def main(
         bc=boundary,
         stepper=stepper,
         tfinal=tfinal,
-        chk=InMemoryCheckpoint(),
+        chk=InMemoryCheckpoint(basename="Iteration"),
     )
 
     uf = evolve_forward(
