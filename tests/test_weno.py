@@ -62,9 +62,9 @@ def test_weno_smoothness_indicator_vectorization(
             beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1]) ** 2
 
     # jnp.convolve-based
-    from pyshocks.weno import _weno_js_smoothness
+    from pyshocks.weno import weno_js_smoothness
 
-    beta1 = _weno_js_smoothness(u, a, b)
+    beta1 = weno_js_smoothness(u, a, b)
 
     # }}}
 
@@ -77,9 +77,9 @@ def test_weno_smoothness_indicator_vectorization(
             uhat0[i, j] = jnp.sum(u[j + stencil] * c[i, ::-1])
 
     # jnp.convolve-based
-    from pyshocks.weno import _weno_js_reconstruct
+    from pyshocks.weno import weno_js_reconstruct
 
-    uhat1 = _weno_js_reconstruct(u, c)
+    uhat1 = weno_js_reconstruct(u, c)
 
     # }}}
 
@@ -132,9 +132,9 @@ def test_weno_smoothness_indicator(scheme: WENOJS, n: int, is_smooth: bool) -> N
 
     # {{{ compute smoothness indicator
 
-    from pyshocks.weno import _weno_js_smoothness
+    from pyshocks.weno import weno_js_smoothness
 
-    beta = _weno_js_smoothness(u, a, b)
+    beta = weno_js_smoothness(u, a, b)
 
     alpha = scheme.d / (scheme.eps + beta) ** 2
     omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
@@ -216,10 +216,10 @@ def test_weno_reference(
 
     from pyshocks import rnorm
 
-    from pyshocks.weno import _weno_js_smoothness
+    from pyshocks.weno import weno_js_smoothness
 
-    betar = _weno_js_smoothness(u[::-1], scheme.a, scheme.b)[:, ::-1].T
-    betal = _weno_js_smoothness(u, scheme.a, scheme.b).T
+    betar = weno_js_smoothness(u[::-1], scheme.a, scheme.b)[:, ::-1].T
+    betal = weno_js_smoothness(u, scheme.a, scheme.b).T
 
     errorl = rnorm(grid, sl, betal)
     errorr = rnorm(grid, sr, betar)

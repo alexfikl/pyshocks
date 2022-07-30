@@ -196,7 +196,7 @@ def reconstruct(grid: Grid, scheme: WENOMixin, u: jnp.ndarray) -> jnp.ndarray:
 # {{{ uniform grid reconstruction
 
 
-def _weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
+def weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack(
         [
             sum(
@@ -208,7 +208,7 @@ def _weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.n
     )
 
 
-def _weno_js_reconstruct(u: jnp.ndarray, c: jnp.ndarray) -> jnp.ndarray:
+def weno_js_reconstruct(u: jnp.ndarray, c: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack([jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])])
 
 
@@ -223,8 +223,8 @@ def _reconstruct_uniform_wenojs(
         Journal of Computational Physics, Vol. 126, pp. 202--228, 1996,
         `DOI <http://dx.doi.org/10.1006/jcph.1996.0130>`__.
     """
-    beta = _weno_js_smoothness(u, scheme.a, scheme.b)
-    uhat = _weno_js_reconstruct(u, scheme.c)
+    beta = weno_js_smoothness(u, scheme.a, scheme.b)
+    uhat = weno_js_reconstruct(u, scheme.c)
 
     alpha = scheme.d / (scheme.eps + beta) ** 2
     omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)

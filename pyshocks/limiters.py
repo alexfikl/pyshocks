@@ -5,14 +5,17 @@
 Limiters
 --------
 
-.. autoclass:: FluxLimiter
+.. autoclass:: Limiter
     :no-show-inheritance:
 .. autofunction:: limit
 
-.. autoclass:: MINMODFluxLimiter
-.. autoclass:: MonotonizedCentralFluxLimiter
-.. autoclass:: SUPERBEEFluxLimiter
-.. autoclass:: KorenFluxLimiter
+.. autoclass:: MINMODLimiter
+.. autoclass:: MonotonizedCentralLimiter
+.. autoclass:: SUPERBEELimiter
+.. autoclass:: KorenLimiter
+
+.. autofunction:: limiter_ids
+.. autofunction:: make_limiter_from_name
 """
 
 from dataclasses import dataclass
@@ -28,7 +31,7 @@ from pyshocks import Grid
 
 
 @dataclass(frozen=True)
-class FluxLimiter:
+class Limiter:
     r"""Describes a flux limiter for high-order finite volume schemes.
 
     A limiter is a function of the form
@@ -44,7 +47,7 @@ class FluxLimiter:
 
 
 @singledispatch
-def limit(lm: FluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+def limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     """
     :arg lm: an object that describes how to limit the variable.
     :arg u: variable with cell-centered values
@@ -59,7 +62,7 @@ def limit(lm: FluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
 
 
 @dataclass(frozen=True)
-class MINMODFluxLimiter(FluxLimiter):
+class MINMODLimiter(Limiter):
     r"""The parametrized ``minmod`` limiter given by
 
     .. math::
@@ -77,8 +80,8 @@ class MINMODFluxLimiter(FluxLimiter):
     theta: float
 
 
-@limit.register(MINMODFluxLimiter)
-def _limit_minmod(lm: MINMODFluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+@limit.register(MINMODLimiter)
+def _limit_minmod(lm: MINMODLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
     phi = jnp.maximum(
         0.0, jnp.minimum(jnp.minimum(lm.theta, lm.theta * r)), (1 + r) / 2
@@ -94,7 +97,7 @@ def _limit_minmod(lm: MINMODFluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndar
 
 
 @dataclass(frozen=True)
-class MonotonizedCentralFluxLimiter(FluxLimiter):
+class MonotonizedCentralLimiter(Limiter):
     r"""The monotonized central limiter is given by
 
     .. math::
@@ -103,9 +106,9 @@ class MonotonizedCentralFluxLimiter(FluxLimiter):
     """
 
 
-@limit.register(MonotonizedCentralFluxLimiter)
+@limit.register(MonotonizedCentralLimiter)
 def _limit_monotonized_central(
-    lm: MonotonizedCentralFluxLimiter, grid: Grid, u: jnp.ndarray
+    lm: MonotonizedCentralLimiter, grid: Grid, u: jnp.ndarray
 ) -> jnp.ndarray:
     r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
     phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(4, 2 * r)), (1 + 3 * r) / 4)
@@ -120,12 +123,12 @@ def _limit_monotonized_central(
 
 
 @dataclass(frozen=True)
-class SUPERBEEFluxLimiter(FluxLimiter):
+class SUPERBEELimiter(Limiter):
     pass
 
 
-@limit.register(SUPERBEEFluxLimiter)
-def _limit_superbee(lm: SUPERBEEFluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+@limit.register(SUPERBEELimiter)
+def _limit_superbee(lm: SUPERBEELimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
     phi = jnp.maximum(0.0, jnp.maximum(jnp.minimum(1, 2 * r), jnp.minimum(2, r)))
 
@@ -139,12 +142,12 @@ def _limit_superbee(lm: SUPERBEEFluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.
 
 
 @dataclass(frozen=True)
-class KorenFluxLimiter(FluxLimiter):
+class KorenLimiter(Limiter):
     pass
 
 
-@limit.register(KorenFluxLimiter)
-def _limit_koren(lm: KorenFluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+@limit.register(KorenLimiter)
+def _limit_koren(lm: KorenLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
     phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r)), (1 + 2 * r) / 3)
 
@@ -157,24 +160,23 @@ def _limit_koren(lm: KorenFluxLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarra
 # {{{ make_flux_limiter_from_name
 
 
-_FLUX_LIMITERS: Dict[str, Type[FluxLimiter]] = {
-    "minmod": MINMODFluxLimiter,
-    "mc": MonotonizedCentralFluxLimiter,
-    "superbee": SUPERBEEFluxLimiter,
-    "koren": KorenFluxLimiter,
+_LIMITERS: Dict[str, Type[Limiter]] = {
+    "default": KorenLimiter,
+    "minmod": MINMODLimiter,
+    "mc": MonotonizedCentralLimiter,
+    "superbee": SUPERBEELimiter,
+    "koren": KorenLimiter,
 }
 
 
-def flux_limiter_ids() -> Tuple[str, ...]:
-    return tuple(_FLUX_LIMITERS.keys())
+def limiter_ids() -> Tuple[str, ...]:
+    return tuple(_LIMITERS.keys())
 
 
-def make_flux_limiter_from_name(name: str, **kwargs: Any) -> FluxLimiter:
-    cls = _FLUX_LIMITERS.get(name)
+def make_limiter_from_name(name: str, **kwargs: Any) -> Limiter:
+    cls = _LIMITERS.get(name)
     if cls is None:
-        raise ValueError(
-            f"flux limiter '{name}' not found; try one of {flux_limiter_ids()}"
-        )
+        raise ValueError(f"flux limiter '{name}' not found; try one of {limiter_ids()}")
 
     from dataclasses import fields
 
