@@ -57,9 +57,7 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 
     cls = _SCHEMES.get(name)
     if cls is None:
-        raise ValueError(
-            f"scheme '{name}' not found; try one of {tuple(_SCHEMES.keys())}"
-        )
+        raise ValueError(f"scheme '{name}' not found; try one of {scheme_ids()}")
 
     from dataclasses import fields
 

@@ -42,7 +42,7 @@ from pyshocks.grid import Grid
 
 @dataclass(frozen=True)
 class SchemeBase:
-    r"""Describes numerical scheme for a type of PDE.
+    r"""Describes numerical schemes for a type of PDE.
 
     The general form of the equations we will be looking at is
 
