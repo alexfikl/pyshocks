@@ -98,7 +98,7 @@ def main(
     b: float = +1.0,
     n: int = 512,
     tfinal: float = 0.5,
-    theta: float = 0.5,
+    theta: float = 1.0,
     example_name: str = "sign",
     interactive: bool = False,
     visualize: bool = True,
@@ -228,8 +228,7 @@ def main(
         ax.set_ylabel("$u$")
         ax.grid(True)
 
-        scheme_name = f"{type(scheme).__name__}_{type(scheme.rec).__name__}".lower()
-        fig.savefig(outdir / f"advection_{scheme_name}_{example_name}_{n:05d}")
+        fig.savefig(outdir / f"advection_{scheme.name}_{example_name}_{n:05d}")
         plt.close(fig)
 
     # }}}
@@ -301,8 +300,7 @@ def convergence(
         ax.set_ylabel("$y$")
         ax.grid(True)
 
-        scheme_name = type(scheme).__name__.lower()
-        fig.savefig(outdir / f"advection_{scheme_name}_convergence")
+        fig.savefig(outdir / f"advection_{scheme.name}_convergence")
         plt.close(fig)
 
 

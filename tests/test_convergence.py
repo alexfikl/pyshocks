@@ -7,7 +7,6 @@ from typing import Callable, List, Optional, Tuple
 
 from pyshocks import (
     SchemeBase,
-    SchemeBaseV2,
     Grid,
     Quadrature,
     T,
@@ -64,10 +63,6 @@ def evolve(
 
     if visualize:
         equation_name = scheme.__module__.split(".")[-2]
-        scheme_name = type(scheme).__name__.lower()
-        if isinstance(scheme, SchemeBaseV2):
-            scheme_name = f"{scheme_name}_{type(scheme.rec).__name__}".lower()
-
         s = grid.i_
 
     # }}}
@@ -131,7 +126,7 @@ def evolve(
         ax.set_xlabel("$x$")
         ax.legend()
 
-        filename = f"convergence_{equation_name}_{scheme_name}_{n:04}_solution"
+        filename = f"convergence_{equation_name}_{scheme.name}_{n:04}_solution"
         fig.savefig(filename)
         fig.clf()
 
@@ -140,7 +135,7 @@ def evolve(
         ax.set_xlabel("$x$")
         ax.set_ylabel(r"$|u - \hat{u}|$")
 
-        filename = f"convergence_{equation_name}_{scheme_name}_{n:04}_error"
+        filename = f"convergence_{equation_name}_{scheme.name}_{n:04}_error"
         fig.savefig(filename)
         fig.clf()
 
@@ -160,14 +155,15 @@ def evolve(
 
 
 @pytest.mark.parametrize(
-    ("scheme", "resolutions"),
+    ("scheme_name", "resolutions"),
     [
-        (burgers.LaxFriedrichs(alpha=0.98), list(range(64, 128 + 1, 16))),
-        (burgers.EngquistOsher(), list(range(32, 128 + 1, 16))),
+        ("rusanov", list(range(64, 128 + 1, 16))),
+        ("lf", list(range(64, 128 + 1, 16))),
+        ("eo", list(range(32, 128 + 1, 16))),
     ],
 )
 def test_burgers_convergence(
-    scheme: burgers.Scheme,
+    scheme_name: str,
     resolutions: List[int],
     a: float = -1.0,
     b: float = 1.0,
@@ -175,7 +171,10 @@ def test_burgers_convergence(
 ) -> None:
     from pyshocks import EOCRecorder
 
-    eoc = EOCRecorder(name=type(scheme).__name__)
+    rec = make_reconstruction_from_name("constant")
+    scheme = burgers.make_scheme_from_name(scheme_name, rec=rec, alpha=0.98)
+
+    eoc = EOCRecorder(name=scheme.name)
 
     from pyshocks.timestepping import predict_timestep_from_resolutions
 
@@ -241,7 +240,7 @@ def test_advection_convergence(
 
     from pyshocks import EOCRecorder
 
-    eoc = EOCRecorder(name=type(scheme).__name__)
+    eoc = EOCRecorder(name=scheme.name)
 
     for n in resolutions:
         # NOTE: SSPRK33 is order dt^3, so this makes it dt^3 ~ dx^5
@@ -273,13 +272,13 @@ def test_advection_convergence(
 
 
 @pytest.mark.parametrize(
-    ("scheme", "order", "resolutions"),
+    ("scheme_name", "order", "resolutions"),
     [
-        (diffusion.CenteredScheme(diffusivity=None), 2, list(range(80, 160 + 1, 16))),
+        ("centered", 2, list(range(80, 160 + 1, 16))),
     ],
 )
 def test_diffusion_convergence(
-    scheme: diffusion.Scheme,
+    scheme_name: str,
     order: int,
     resolutions: List[int],
     a: float = -1.0,
@@ -294,9 +293,12 @@ def test_diffusion_convergence(
         d = jnp.full_like(grid.x, diffusivity)  # type: ignore[no-untyped-call]
         return replace(s, diffusivity=d)
 
+    rec = make_reconstruction_from_name("constant")
+    scheme = diffusion.make_scheme_from_name(scheme_name, rec=rec)
+
     from pyshocks import EOCRecorder
 
-    eoc = EOCRecorder(name=type(scheme).__name__)
+    eoc = EOCRecorder(name=scheme.name)
 
     from pyshocks.timestepping import predict_timestep_from_resolutions
 

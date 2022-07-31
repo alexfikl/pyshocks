@@ -9,18 +9,18 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    ConservationLawScheme,
+    ConservationLawSchemeV2,
     make_uniform_grid,
     apply_operator,
     predict_timestep,
 )
-from pyshocks import diffusion, burgers, get_logger
+from pyshocks import burgers, limiters, reconstruction, get_logger
 
 logger = get_logger("burgers")
 
 
 def main(
-    scheme: ConservationLawScheme,
+    scheme: ConservationLawSchemeV2,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
@@ -57,12 +57,16 @@ def main(
     boundary = dirichlet_boundary(solution)
 
     if diffusivity is not None:
+        from pyshocks import diffusion
+
         d = jnp.full_like(grid.x, diffusivity)  # type: ignore[no-untyped-call]
-        scheme_d = diffusion.CenteredScheme(diffusivity=d)
+        scheme_d = diffusion.CenteredScheme(rec=scheme.rec, diffusivity=d)
 
         from pyshocks.schemes import CombineConservationLawScheme
 
-        scheme = CombineConservationLawScheme((scheme, scheme_d))
+        scheme = CombineConservationLawScheme(
+            rec=scheme.rec, schemes=(scheme, scheme_d)
+        )
 
     # }}}
 
@@ -102,6 +106,8 @@ def main(
     method = timestepping.SSPRK33(
         predict_timestep=jax.jit(_predict_timestep),
         source=jax.jit(_apply_operator),
+        # predict_timestep=_predict_timestep,
+        # source=_apply_operator,
         checkpoint=None,
     )
     step = timestepping.step(method, u0, tfinal=tfinal)
@@ -157,8 +163,7 @@ def main(
         ax.set_ylabel("$u$")
         ax.grid(True)
 
-        scheme_name = type(scheme).__name__.lower()
-        fig.savefig(outdir / f"burgers_{scheme_name}_{n:05d}")
+        fig.savefig(outdir / f"burgers_{scheme.name}_{n:05d}")
         plt.close(fig)
 
     # }}}
@@ -174,6 +179,20 @@ if __name__ == "__main__":
         default="lf",
         type=str.lower,
         choices=burgers.scheme_ids(),
+    )
+    parser.add_argument(
+        "-r",
+        "--reconstruct",
+        default="default",
+        type=str.lower,
+        choices=reconstruction.reconstruction_ids(),
+    )
+    parser.add_argument(
+        "-l",
+        "--limiter",
+        default="default",
+        type=str.lower,
+        choices=limiters.limiter_ids(),
     )
     parser.add_argument(
         "--alpha", default=1.0, type=float, help="Lax-Friedrichs scheme parameter"
@@ -192,11 +211,15 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
+    rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
+    ascheme = burgers.make_scheme_from_name(args.scheme, rec=rec)
+
     from pyshocks.tools import set_recommended_matplotlib
 
     set_recommended_matplotlib()
     main(
-        burgers.make_scheme_from_name(args.scheme, alpha=args.alpha),
+        ascheme,
         outdir=args.outdir,
         diffusivity=args.diffusivity,
         interactive=args.interactive,

@@ -20,15 +20,50 @@ Schemes
 
 .. autoclass:: Scheme
 .. autoclass:: CenteredScheme
+
+.. autofunction:: scheme_ids
+.. autofunction:: make_scheme_from_name
 """
 
-from typing import Tuple
+from typing import Any, Dict, Tuple, Type
 
 import jax.numpy as jnp
 
 from pyshocks import Grid
 from pyshocks.diffusion.schemes import Scheme, CenteredScheme
 
+
+# {{{ make_scheme_from_name
+
+_SCHEMES: Dict[str, Type[Scheme]] = {
+    "centered": CenteredScheme,
+}
+
+
+def scheme_ids() -> Tuple[str, ...]:
+    return tuple(_SCHEMES.keys())
+
+
+def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
+    """
+    :arg name: name of the scheme used to solve the linear diffusion equation.
+    :arg kwargs: additional arguments to pass to the scheme. Any arguments
+        that are not in the scheme's fields are ignored.
+    """
+
+    cls = _SCHEMES.get(name)
+    if cls is None:
+        raise ValueError(f"scheme '{name}' not found; try one of {scheme_ids()}")
+
+    from dataclasses import fields
+
+    if "diffusivity" not in kwargs:
+        kwargs["diffusivity"] = None
+
+    return cls(**{f.name: kwargs[f.name] for f in fields(cls) if f.name in kwargs})
+
+
+# }}}
 
 # {{{ exact solutions
 
@@ -65,4 +100,6 @@ __all__ = (
     "Scheme",
     "CenteredScheme",
     "ex_expansion",
+    "scheme_ids",
+    "make_scheme_from_name",
 )
