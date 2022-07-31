@@ -57,6 +57,21 @@ def limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
 
 # }}}
 
+# {{{ unlimited
+
+
+@dataclass(frozen=True)
+class UnlimitedLimiter(Limiter):
+    """This limiter performs no limiting and is mostly meant for testing."""
+
+
+@limit.register(UnlimitedLimiter)
+def _limit_unlimited(lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+    return jnp.zeros_like(grid.f)  # type: ignore[no-untyped-call]
+
+
+# }}}
+
 
 # {{{ minmod
 
@@ -78,6 +93,10 @@ class MINMODLimiter(Limiter):
     """
 
     theta: float
+
+    def __post_init__(self) -> None:
+        if self.theta < 1.0 or self.theta > 2.0:
+            raise ValueError(f"'theta' must be in [1, 2]: {self.theta}")
 
 
 @limit.register(MINMODLimiter)
@@ -102,7 +121,7 @@ class MonotonizedCentralLimiter(Limiter):
 
     .. math::
 
-        \phi(r) = max\left(0, \min\left(4, 2 r, \frac{1 + 3 r}{4}\right)\right)
+        \phi(r) = max\left(0, \min\left(4, 2 r, \frac{1 + 3 r}{4}\right)\right).
     """
 
 
@@ -124,7 +143,12 @@ def _limit_monotonized_central(
 
 @dataclass(frozen=True)
 class SUPERBEELimiter(Limiter):
-    pass
+    r"""The classic SUPERBEE limiter that is given by
+
+    .. math::
+
+        \phi(r) = \max(0, \min(1, 2 r), \min(2, r)).
+    """
 
 
 @limit.register(SUPERBEELimiter)
@@ -143,7 +167,13 @@ def _limit_superbee(lm: SUPERBEELimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndar
 
 @dataclass(frozen=True)
 class KorenLimiter(Limiter):
-    pass
+    """A third-order TVD limiter described in [Kuzmin2006]_ due to B. Koren.
+
+    .. [Kuzmin2006] D. Kuzmin, *On the Design of General-Purpose Flux Limiters
+        for Finite Element Schemes. I. Scalar Convection*,
+        Journal of Computational Physics, Vol. 219, pp. 513--531, 2006,
+        `DOI <http://dx.doi.org/10.1016/j.jcp.2006.03.034>`__.
+    """
 
 
 @limit.register(KorenLimiter)
@@ -161,7 +191,10 @@ def _limit_koren(lm: KorenLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
 
 
 _LIMITERS: Dict[str, Type[Limiter]] = {
+    # NOTE: this is the default for now because the internet said it's third-order
+    # accurate
     "default": KorenLimiter,
+    "none": UnlimitedLimiter,
     "minmod": MINMODLimiter,
     "mc": MonotonizedCentralLimiter,
     "superbee": SUPERBEELimiter,

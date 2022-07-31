@@ -8,6 +8,7 @@ import jax.numpy as jnp
 
 from pyshocks import Grid, SchemeBase, Boundary
 from pyshocks import numerical_flux, apply_operator, predict_timestep
+from pyshocks.reconstruction import Reconstruction
 from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 
@@ -147,6 +148,48 @@ def _numerical_flux_advection_wenojs(
     # NOTE: this uses an upwind flux
     aavg = (ap[:-1] + am[1:]) / 2
     fnum = jnp.where(aavg > 0, up[:-1], um[1:])  # type: ignore[no-untyped-call]
+
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+
+
+# }}}
+
+
+# {{{ v2
+
+
+@dataclass(frozen=True)
+class AdvectionScheme(Scheme):
+    rec: Reconstruction
+
+    @property
+    def order(self) -> int:
+        return self.rec.order
+
+    @property
+    def stencil_width(self) -> int:
+        return self.rec.stencil_width
+
+
+@dataclass(frozen=True)
+class AdvectionGodunov(AdvectionScheme):
+    pass
+
+
+@numerical_flux.register(AdvectionGodunov)
+def _numerical_flux_advection_godunov_rec(
+    scheme: AdvectionGodunov, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert scheme.velocity is not None
+    assert u.shape[0] == grid.x.size
+
+    from pyshocks.reconstruction import reconstruct
+
+    ul, ur = reconstruct(scheme.rec, grid, u)
+    al, ar = reconstruct(scheme.rec, grid, scheme.velocity)
+
+    aavg = (al[:-1] + ar[1:]) / 2
+    fnum = jnp.where(aavg > 0, ul[:-1], ur[1:])  # type: ignore[no-untyped-call]
 
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 

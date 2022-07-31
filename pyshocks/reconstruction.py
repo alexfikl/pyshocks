@@ -8,9 +8,11 @@ Reconstruction
 .. autoclass:: Reconstruction
 .. autofunction:: reconstruct
 
-.. autoclass:: FirstOrderReconstruction
+.. autoclass:: ConstantReconstruction
 .. autoclass:: MUSCL
 .. autoclass:: WENOJS
+.. autoclass:: WENOJS32
+.. autoclass:: WENOJS53
 
 .. autofunction:: reconstruction_ids
 .. autofunction:: make_reconstruction_from_name
@@ -82,7 +84,7 @@ def reconstruct(
 
 
 @dataclass(frozen=True)
-class FirstOrderReconstruction(Reconstruction):
+class ConstantReconstruction(Reconstruction):
     r"""A standard first-order finite volume reconstruction.
 
     For this reconstruction, we have that
@@ -103,9 +105,9 @@ class FirstOrderReconstruction(Reconstruction):
         return 1
 
 
-@reconstruct.register(FirstOrderReconstruction)
+@reconstruct.register(ConstantReconstruction)
 def _reconstruct_first_order(
-    rec: FirstOrderReconstruction, grid: Grid, u: jnp.ndarray
+    rec: ConstantReconstruction, grid: Grid, u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     assert grid.nghosts >= rec.stencil_width
     return u, u
@@ -174,7 +176,7 @@ def _reconstruct_muscl(
 
 
 @dataclass(frozen=True)
-class WENOJS(Reconstruction):
+class WENOJS(Reconstruction):  # pylint: disable=abstract-method
     """A WENO-JS reconstruction from [JiangShu1996]_.
 
     .. [JiangShu1996] G.-S. Jiang, C.-W. Shu, *Efficient Implementation of
@@ -182,15 +184,12 @@ class WENOJS(Reconstruction):
         Journal of Computational Physics, Vol. 126, pp. 202--228, 1996,
         `DOI <http://dx.doi.org/10.1006/jcph.1996.0130>`__.
 
-    .. attribute:: variant
+    .. attribute:: eps
 
-        Defines the variant of the WENO scheme. Currently supported are the
-        third-order scheme ``"32"`` (which degrades to second-order around
-        shocks) and the fifth-order scheme ``"53"`` (which degrades to third-order
-        around shocks).
+        Small fudge factor used in smoothness indicators.
     """
 
-    variant: str
+    eps: float
 
     # coefficients
     a: ClassVar[jnp.ndarray]
@@ -198,17 +197,23 @@ class WENOJS(Reconstruction):
     c: ClassVar[jnp.ndarray]
     d: ClassVar[jnp.ndarray]
 
+    @property
+    def stencil_width(self) -> int:
+        return self.order
+
+
+@dataclass(frozen=True)
+class WENOJS32(WENOJS):
+    """A third-order WENO-JS scheme that decays to second-order in non-smooth
+    regions.
+    """
+
+    eps: float = 1.0e-6
+
     def __post_init__(self) -> None:
-        if self.variant == "32":
-            from pyshocks.weno import weno_js_32_coefficients
+        from pyshocks.weno import weno_js_32_coefficients
 
-            a, b, c, d = weno_js_32_coefficients()
-        elif self.variant == "53":
-            from pyshocks.weno import weno_js_53_coefficients
-
-            a, b, c, d = weno_js_53_coefficients()
-        else:
-            raise ValueError(f"unknown variant of the WENO-JS scheme: '{self.variant}'")
+        a, b, c, d = weno_js_32_coefficients()
 
         # NOTE: hack to keep the class frozen
         object.__setattr__(self, "a", a)
@@ -217,17 +222,32 @@ class WENOJS(Reconstruction):
         object.__setattr__(self, "d", d)
 
     @property
-    def eps(self) -> float:
-        # FIXME: worth making this configurable?
-        return 1.0e-6 if self.order == 3 else 1.0e-12
+    def order(self) -> int:
+        return 2
+
+
+@dataclass(frozen=True)
+class WENOJS53(WENOJS):
+    """A fifth-order WENO-JS scheme that decays to third-order in non-smooth
+    regions.
+    """
+
+    eps: float = 1.0e-12
+
+    def __post_init__(self) -> None:
+        from pyshocks.weno import weno_js_53_coefficients
+
+        a, b, c, d = weno_js_53_coefficients()
+
+        # NOTE: hack to keep the class frozen
+        object.__setattr__(self, "a", a)
+        object.__setattr__(self, "b", b)
+        object.__setattr__(self, "c", c)
+        object.__setattr__(self, "d", d)
 
     @property
     def order(self) -> int:
-        return int(self.variant[0])
-
-    @property
-    def stencil_width(self) -> int:
-        return self.order
+        return 3
 
 
 def _reconstruct_weno_js_side(rec: WENOJS, u: jnp.ndarray) -> jnp.ndarray:
@@ -265,10 +285,11 @@ def _reconstruct_wenojs(
 # {{{ make_reconstruction_from_name
 
 _RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
-    "default": FirstOrderReconstruction,
-    "fv": FirstOrderReconstruction,
+    "default": ConstantReconstruction,
+    "constant": ConstantReconstruction,
     "muscl": MUSCL,
-    "wenojs": WENOJS,
+    "wenojs32": WENOJS32,
+    "wenojs53": WENOJS53,
 }
 
 
