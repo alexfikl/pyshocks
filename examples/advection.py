@@ -16,7 +16,7 @@ from pyshocks import (
     apply_operator,
     predict_timestep,
 )
-from pyshocks import advection, get_logger
+from pyshocks import advection, limiters, reconstruction, get_logger
 
 logger = get_logger("advection")
 
@@ -91,7 +91,7 @@ def make_boundary_conditions(
 
 
 def main(
-    scheme: advection.Scheme,
+    scheme: advection.AdvectionGodunov,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
@@ -228,7 +228,7 @@ def main(
         ax.set_ylabel("$u$")
         ax.grid(True)
 
-        scheme_name = type(scheme).__name__.lower()
+        scheme_name = f"{type(scheme).__name__}_{type(scheme.rec).__name__}".lower()
         fig.savefig(outdir / f"advection_{scheme_name}_{example_name}_{n:05d}")
         plt.close(fig)
 
@@ -238,7 +238,7 @@ def main(
 
 
 def convergence(
-    scheme: advection.Scheme,
+    scheme: advection.AdvectionGodunov,
     *,
     outdir: pathlib.Path,
     example_name: str = "sign",
@@ -318,7 +318,21 @@ if __name__ == "__main__":
         "--scheme",
         default="godunov",
         type=str.lower,
-        choices=["godunov", "wenojs32", "wenojs53"],
+        choices=["godunov"],
+    )
+    parser.add_argument(
+        "-r",
+        "--reconstruct",
+        default="default",
+        type=str.lower,
+        choices=reconstruction.reconstruction_ids(),
+    )
+    parser.add_argument(
+        "-l",
+        "--limiter",
+        default="default",
+        type=str.lower,
+        choices=limiters.limiter_ids(),
     )
     parser.add_argument(
         "--example",
@@ -332,15 +346,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    name_to_scheme = {
-        "godunov": advection.Godunov(velocity=None),
-        "wenojs32": advection.WENOJS32(velocity=None),
-        "wenojs53": advection.WENOJS53(velocity=None),
-    }
+    lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
+    rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
+    ascheme = advection.AdvectionGodunov(rec=rec, velocity=None)
 
+    from pyshocks.tools import set_recommended_matplotlib
+
+    set_recommended_matplotlib()
     if args.convergence:
-        convergence(
-            name_to_scheme[args.scheme], outdir=args.outdir, example_name=args.example
-        )
+        convergence(ascheme, outdir=args.outdir, example_name=args.example)
     else:
-        main(name_to_scheme[args.scheme], outdir=args.outdir, example_name=args.example)
+        main(ascheme, outdir=args.outdir, example_name=args.example)

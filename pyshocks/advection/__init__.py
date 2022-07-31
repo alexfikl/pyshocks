@@ -31,7 +31,14 @@ Schemes
 
 from typing import Any, Dict, Tuple, Type
 
-from pyshocks.advection.schemes import Scheme, Godunov, WENOJS, WENOJS32, WENOJS53
+from pyshocks.advection.schemes import (
+    Scheme,
+    AdvectionGodunov,
+    Godunov,
+    WENOJS,
+    WENOJS32,
+    WENOJS53,
+)
 
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
@@ -69,6 +76,7 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 
 __all__ = (
     "Scheme",
+    "AdvectionGodunov",
     "Godunov",
     "WENOJS",
     "WENOJS32",
