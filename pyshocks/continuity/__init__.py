@@ -19,10 +19,6 @@ Schemes
 .. autoclass:: Scheme
 .. autoclass:: Godunov
 
-.. autoclass:: WENOJS
-.. autoclass:: WENOJS32
-.. autoclass:: WENOJS53
-
 Helpers
 ^^^^^^^
 
@@ -37,13 +33,56 @@ Data
 .. autofunction:: ic_sine
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional, Tuple, Type
 
 from pyshocks.grid import Grid
 from pyshocks.tools import SpatialFunction
-from pyshocks.continuity.schemes import Scheme, Godunov, WENOJS, WENOJS32, WENOJS53
+from pyshocks.continuity.schemes import Scheme, Godunov
 
 import jax.numpy as jnp
+
+# NOTE: just providing an alias for common usage
+Upwind = Godunov
+
+
+# {{{ make_scheme_from_name
+
+_SCHEMES: Dict[str, Type[Scheme]] = {
+    "godunov": Godunov,
+    "upwind": Godunov,
+}
+
+
+def scheme_ids() -> Tuple[str, ...]:
+    """
+    :returns: a :class:`tuple` of available schemes.
+    """
+    return tuple(_SCHEMES.keys())
+
+
+def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
+    """
+    :arg name: name of the scheme used to solve the continuity equation.
+    :arg kwargs: additional arguments to pass to the scheme. Any arguments
+        that are not in the scheme's fields are ignored.
+    """
+
+    cls = _SCHEMES.get(name)
+    if cls is None:
+        raise ValueError(f"scheme '{name}' not found; try one of {scheme_ids()}")
+
+    from dataclasses import fields
+
+    if "velocity" not in kwargs:
+        kwargs["velocity"] = None
+
+    return cls(**{f.name: kwargs[f.name] for f in fields(cls) if f.name in kwargs})
+
+
+# }}}
+
+
+# {{{ check_oslc
 
 
 def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> jnp.ndarray:
@@ -69,6 +108,9 @@ def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> jnp.nd
 
     dadx = (a[1:] - a[:-1]) / (x[1:] - x[:-1])
     return jnp.max(dadx)
+
+
+# }}}
 
 
 # {{{ velocity fields
@@ -189,9 +231,6 @@ def ic_tophat(
 __all__ = (
     "Scheme",
     "Godunov",
-    "WENOJS",
-    "WENOJS32",
-    "WENOJS53",
     "velocity_const",
     "velocity_sign",
     "ic_sine",

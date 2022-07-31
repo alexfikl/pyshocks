@@ -9,7 +9,11 @@ Schemes
 
 .. autoclass:: SchemeBase
     :no-show-inheritance:
+
+.. autoclass:: SchemeBaseV2
+
 .. autoclass:: ConservationLawScheme
+.. autoclass:: ConservationLawSchemeV2
 .. autoclass:: CombineConservationLawScheme
 
 .. autofunction:: flux
@@ -35,6 +39,7 @@ from typing import Optional, Tuple
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
+from pyshocks.reconstruction import Reconstruction
 
 
 # {{{ schemes
@@ -57,11 +62,32 @@ class SchemeBase:
 
     @property
     def order(self) -> int:
-        return -1
+        raise NotImplementedError
 
     @property
     def stencil_width(self) -> int:
-        return 0
+        raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class SchemeBaseV2(SchemeBase):
+    """
+    .. attribute:: rec
+
+        A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
+        to reconstruct high-order face-based values when needed by the numerical
+        scheme.
+    """
+
+    rec: Reconstruction
+
+    @property
+    def order(self) -> int:
+        return self.rec.order
+
+    @property
+    def stencil_width(self) -> int:
+        return self.rec.stencil_width
 
 
 @singledispatch
@@ -157,7 +183,7 @@ def predict_timestep(
 
 
 @dataclass(frozen=True)
-class ConservationLawScheme(SchemeBase):
+class ConservationLawScheme(SchemeBase):  # pylint: disable=abstract-method
     r"""Describes numerical schemes for conservation laws.
 
     We consider conservation laws of the form
@@ -182,7 +208,26 @@ def _apply_operator_conservation_law(
 
 
 @dataclass(frozen=True)
-class CombineConservationLawScheme(ConservationLawScheme):
+class ConservationLawSchemeV2(SchemeBaseV2):
+    pass
+
+
+@apply_operator.register(ConservationLawSchemeV2)
+def _apply_operator_conservation_law_v2(
+    scheme: ConservationLawSchemeV2,
+    grid: Grid,
+    bc: "Boundary",
+    t: float,
+    u: jnp.ndarray,
+) -> jnp.ndarray:
+    u = apply_boundary(bc, grid, t, u)
+    f = numerical_flux(scheme, grid, t, u)
+
+    return -(f[1:] - f[:-1]) / grid.dx
+
+
+@dataclass(frozen=True)
+class CombineConservationLawScheme(ConservationLawScheme):  # pylint: disable=W0223
     r"""Implements a combined operator of conservation laws.
 
     In this case, we consider a conservation law in the form

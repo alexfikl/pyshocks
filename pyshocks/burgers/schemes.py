@@ -14,7 +14,7 @@ from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 
 @dataclass(frozen=True)
-class Scheme(ConservationLawScheme):
+class Scheme(ConservationLawScheme):  # pylint: disable=abstract-method
     """Base class for numerical schemes for Burgers' equation.
 
     .. automethod:: __init__

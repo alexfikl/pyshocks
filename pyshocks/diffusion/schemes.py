@@ -14,7 +14,7 @@ from pyshocks import numerical_flux, predict_timestep
 
 
 @dataclass(frozen=True)
-class Scheme(ConservationLawScheme):
+class Scheme(ConservationLawScheme):  # pylint: disable=abstract-method
     """
     .. attribute:: diffusivity
     """

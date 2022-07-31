@@ -21,9 +21,9 @@ Schemes
 .. autoclass:: Scheme
 .. autoclass:: Godunov
 
-.. autoclass:: WENOJS
-.. autoclass:: WENOJS32
-.. autoclass:: WENOJS53
+.. class:: Upwind
+
+    An alias for :class:`Godunov`.
 
 .. autofunction:: scheme_ids
 .. autofunction:: make_scheme_from_name
@@ -31,20 +31,14 @@ Schemes
 
 from typing import Any, Dict, Tuple, Type
 
-from pyshocks.advection.schemes import (
-    Scheme,
-    AdvectionGodunov,
-    Godunov,
-    WENOJS,
-    WENOJS32,
-    WENOJS53,
-)
+from pyshocks.advection.schemes import Scheme, Godunov
 
+# NOTE: just providing an alias for common usage
+Upwind = Godunov
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
     "godunov": Godunov,
-    "wenojs32": WENOJS32,
-    "wenojs53": WENOJS53,
+    "upwind": Godunov,
 }
 
 
@@ -57,7 +51,7 @@ def scheme_ids() -> Tuple[str, ...]:
 
 def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
     """
-    :arg name: name of the scheme used to solve Burgers' equation.
+    :arg name: name of the scheme used to solve the linear advection equation.
     :arg kwargs: additional arguments to pass to the scheme. Any arguments
         that are not in the scheme's fields are ignored.
     """
@@ -76,11 +70,8 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 
 __all__ = (
     "Scheme",
-    "AdvectionGodunov",
     "Godunov",
-    "WENOJS",
-    "WENOJS32",
-    "WENOJS53",
+    "Upwind",
     "scheme_ids",
     "make_scheme_from_name",
 )
