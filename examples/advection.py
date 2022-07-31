@@ -91,7 +91,7 @@ def make_boundary_conditions(
 
 
 def main(
-    scheme: advection.AdvectionGodunov,
+    scheme: advection.Scheme,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
@@ -238,15 +238,12 @@ def main(
 
 
 def convergence(
-    scheme: advection.AdvectionGodunov,
+    scheme: advection.Scheme,
     *,
     outdir: pathlib.Path,
     example_name: str = "sign",
     visualize: bool = True,
 ) -> None:
-    if not isinstance(scheme, advection.Scheme):
-        raise TypeError("this only works for the non-conservative advection")
-
     if visualize:
         import matplotlib.pyplot as plt
 
@@ -318,7 +315,7 @@ if __name__ == "__main__":
         "--scheme",
         default="godunov",
         type=str.lower,
-        choices=["godunov"],
+        choices=advection.scheme_ids(),
     )
     parser.add_argument(
         "-r",
@@ -340,6 +337,7 @@ if __name__ == "__main__":
         type=str.lower,
         choices=["const", "sign", "double_sign"],
     )
+    parser.add_argument("--interactive", action="store_true")
     parser.add_argument("--convergence", action="store_true")
     parser.add_argument(
         "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
@@ -348,7 +346,7 @@ if __name__ == "__main__":
 
     lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
     rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
-    ascheme = advection.AdvectionGodunov(rec=rec, velocity=None)
+    ascheme = advection.make_scheme_from_name(args.scheme, rec=rec, velocity=None)
 
     from pyshocks.tools import set_recommended_matplotlib
 
@@ -356,4 +354,9 @@ if __name__ == "__main__":
     if args.convergence:
         convergence(ascheme, outdir=args.outdir, example_name=args.example)
     else:
-        main(ascheme, outdir=args.outdir, example_name=args.example)
+        main(
+            ascheme,
+            outdir=args.outdir,
+            example_name=args.example,
+            interactive=args.interactive,
+        )

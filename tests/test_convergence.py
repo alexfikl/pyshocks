@@ -7,6 +7,7 @@ from typing import Callable, List, Optional, Tuple
 
 from pyshocks import (
     SchemeBase,
+    SchemeBaseV2,
     Grid,
     Quadrature,
     T,
@@ -14,6 +15,8 @@ from pyshocks import (
     get_logger,
     set_recommended_matplotlib,
 )
+from pyshocks.reconstruction import make_reconstruction_from_name
+from pyshocks.limiters import make_limiter_from_name
 from pyshocks import burgers, advection, continuity, diffusion
 
 import jax
@@ -62,6 +65,9 @@ def evolve(
     if visualize:
         equation_name = scheme.__module__.split(".")[-2]
         scheme_name = type(scheme).__name__.lower()
+        if isinstance(scheme, SchemeBaseV2):
+            scheme_name = f"{scheme_name}_{type(scheme.rec).__name__}".lower()
+
         s = grid.i_
 
     # }}}
@@ -194,15 +200,17 @@ def test_burgers_convergence(
 
 
 @pytest.mark.parametrize(
-    ("scheme", "order", "resolutions"),
+    ("scheme_name", "rec_name", "order", "resolutions"),
     [
-        (advection.Godunov(velocity=None), 1, list(range(80, 160 + 1, 16))),
-        (advection.WENOJS32(velocity=None), 3, list(range(192, 384 + 1, 32))),
-        (advection.WENOJS53(velocity=None), 5, list(range(32, 256 + 1, 32))),
+        ("godunov", "constant", 1, list(range(80, 160 + 1, 16))),
+        ("godunov", "muscl", 2, list(range(80, 160 + 1, 16))),
+        ("godunov", "wenojs32", 3, list(range(192, 384 + 1, 32))),
+        ("godunov", "wenojs53", 5, list(range(32, 256 + 1, 32))),
     ],
 )
 def test_advection_convergence(
-    scheme: advection.Scheme,
+    scheme_name: str,
+    rec_name: str,
     order: int,
     resolutions: List[int],
     a: float = -1.0,
@@ -226,6 +234,10 @@ def test_advection_convergence(
         )
 
         return replace(s, velocity=velocity)
+
+    lm = make_limiter_from_name("default")
+    rec = make_reconstruction_from_name(rec_name, lm=lm)
+    scheme = advection.make_scheme_from_name(scheme_name, rec=rec, velocity=None)
 
     from pyshocks import EOCRecorder
 

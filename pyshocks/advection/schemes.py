@@ -6,17 +6,25 @@ from typing import Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, SchemeBase, Boundary
+from pyshocks import Grid, SchemeBaseV2, Boundary
 from pyshocks import numerical_flux, apply_operator, predict_timestep
-from pyshocks.reconstruction import Reconstruction
-from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 
 # {{{ base
 
 
 @dataclass(frozen=True)
-class Scheme(SchemeBase):
+class SpatialVelocity:
+    """A placeholder for a spatially-varying velocity field."""
+
+    velocity: jnp.ndarray
+
+    def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
+        return self.velocity
+
+
+@dataclass(frozen=True)
+class Scheme(SchemeBaseV2):
     """Base class for numerical schemes for the linear advection equation.
 
     .. attribute:: velocity
@@ -65,18 +73,10 @@ def _apply_operator_advection(
 
 @dataclass(frozen=True)
 class Godunov(Scheme):
-    """First-order Godunov (upwind) scheme for the advection equation.
+    """A Godunov (upwind) scheme for the advection equation.
 
     .. automethod:: __init__
     """
-
-    @property
-    def order(self) -> int:
-        return 1
-
-    @property
-    def stencil_width(self) -> int:
-        return 1
 
 
 @numerical_flux.register(Godunov)
@@ -86,110 +86,20 @@ def _numerical_flux_advection_godunov(
     assert scheme.velocity is not None
     assert u.shape[0] == grid.x.size
 
-    a = scheme.velocity
-    aavg = (a[1:] + a[:-1]) / 2
-    fnum = jnp.where(aavg > 0, u[:-1], u[1:])  # type: ignore[no-untyped-call]
-
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
-
-
-# }}}
-
-
-# {{{ WENOJS
-
-
-@dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
-    """See :class:`pyshocks.burgers.WENOJS`."""
-
-
-@dataclass(frozen=True)
-class WENOJS32(WENOJS32Mixin, WENOJS):
-    """See :class:`pyshocks.burgers.WENOJS32`.
-
-    .. automethod:: __init__
-    """
-
-    eps: float = 1.0e-6
-
-    def __post_init__(self) -> None:
-        self.set_coefficients()
-
-
-@dataclass(frozen=True)
-class WENOJS53(WENOJS53Mixin, WENOJS):
-    """See :class:`pyshocks.burgers.WENOJS53`.
-
-    .. automethod:: __init__
-    """
-
-    eps: float = 1.0e-12
-
-    def __post_init__(self) -> None:
-        self.set_coefficients()
-
-
-@numerical_flux.register(WENOJS)
-def _numerical_flux_advection_wenojs(
-    scheme: WENOJS, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    assert scheme.velocity is not None
-    assert u.size == grid.x.size
-
-    from pyshocks.weno import reconstruct
-
-    up = reconstruct(grid, scheme, u)
-    ap = reconstruct(grid, scheme, scheme.velocity)
-
-    um = reconstruct(grid, scheme, u[::-1])[::-1]
-    am = reconstruct(grid, scheme, scheme.velocity[::-1])[::-1]
-
-    # NOTE: this uses an upwind flux
-    aavg = (ap[:-1] + am[1:]) / 2
-    fnum = jnp.where(aavg > 0, up[:-1], um[1:])  # type: ignore[no-untyped-call]
-
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
-
-
-# }}}
-
-
-# {{{ v2
-
-
-@dataclass(frozen=True)
-class AdvectionScheme(Scheme):
-    rec: Reconstruction
-
-    @property
-    def order(self) -> int:
-        return self.rec.order
-
-    @property
-    def stencil_width(self) -> int:
-        return self.rec.stencil_width
-
-
-@dataclass(frozen=True)
-class AdvectionGodunov(AdvectionScheme):
-    pass
-
-
-@numerical_flux.register(AdvectionGodunov)
-def _numerical_flux_advection_godunov_rec(
-    scheme: AdvectionGodunov, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    assert scheme.velocity is not None
-    assert u.shape[0] == grid.x.size
-
     from pyshocks.reconstruction import reconstruct
+
+    # NOTE: the values are given at the cell boundaries as follows
+    #
+    #       i - 1             i           i + 1
+    #   --------------|--------------|--------------
+    #           u^R_{i - 1}      u^R_i
+    #                   u^L_i         u^L_{i + 1}
 
     ul, ur = reconstruct(scheme.rec, grid, u)
     al, ar = reconstruct(scheme.rec, grid, scheme.velocity)
 
-    aavg = (al[:-1] + ar[1:]) / 2
-    fnum = jnp.where(aavg > 0, ul[:-1], ur[1:])  # type: ignore[no-untyped-call]
+    aavg = (ar[:-1] + al[1:]) / 2
+    fnum = jnp.where(aavg > 0, ur[:-1], ul[1:])  # type: ignore[no-untyped-call]
 
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 

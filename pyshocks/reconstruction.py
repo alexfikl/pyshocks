@@ -131,9 +131,9 @@ class MUSCL(Reconstruction):
 
         \begin{aligned}
         u^R_{i - \frac{1}{2}} =\,\, &
-            u_i - \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
-        u^L_{i + \frac{1}{2}} =\,\, &
             u_i + \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
+        u^L_{i + \frac{1}{2}} =\,\, &
+            u_i - \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
         \end{aligned}
 
     where :math:`\phi` is the limiter given by :attr:`lm`. This method requires
@@ -153,7 +153,7 @@ class MUSCL(Reconstruction):
 
     @property
     def stencil_width(self) -> int:
-        return 1
+        return 2
 
 
 @reconstruct.register(MUSCL)
@@ -163,10 +163,10 @@ def _reconstruct_muscl(
     assert grid.nghosts >= rec.stencil_width
     phi = limit(rec.lm, grid, u)
 
-    ul = u[:-1] + 0.5 * phi[:-1] * (u[1:] - u[:-1])
-    ur = u[:-1] - 0.5 * phi[:-1] * (u[1:] - u[:-1])
+    ur = u[:-1] + 0.5 * phi[:-1] * (u[1:] - u[:-1])
+    ul = u[1:] - 0.5 * phi[1:] * (u[1:] - u[:-1])
 
-    return jnp.pad(ul, 1), jnp.pad(ur, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(ul, (1, 0)), jnp.pad(ur, (0, 1))  # type: ignore[no-untyped-call]
 
 
 # }}}

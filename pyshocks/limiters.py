@@ -9,6 +9,7 @@ Limiters
     :no-show-inheritance:
 .. autofunction:: limit
 
+.. autoclass:: UnlimitedLimiter
 .. autoclass:: MINMODLimiter
 .. autoclass:: MonotonizedCentralLimiter
 .. autoclass:: SUPERBEELimiter
@@ -55,6 +56,15 @@ def limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     raise NotImplementedError(type(lm).__name__)
 
 
+def slope(u: jnp.ndarray) -> jnp.ndarray:
+    # NOTE: the slope ratio is computed from the following cells
+    #       i - 1          i         i + 1
+    #   ------------|------------|------------
+    #           --------      --------
+
+    return (u[1:-1] - u[:-2]) / (u[2:] - u[1:-1])
+
+
 # }}}
 
 # {{{ unlimited
@@ -67,7 +77,7 @@ class UnlimitedLimiter(Limiter):
 
 @limit.register(UnlimitedLimiter)
 def _limit_unlimited(lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    return jnp.zeros_like(grid.f)  # type: ignore[no-untyped-call]
+    return jnp.ones_like(u)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -101,9 +111,9 @@ class MINMODLimiter(Limiter):
 
 @limit.register(MINMODLimiter)
 def _limit_minmod(lm: MINMODLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
+    r = slope(u)
     phi = jnp.maximum(
-        0.0, jnp.minimum(jnp.minimum(lm.theta, lm.theta * r)), (1 + r) / 2
+        0.0, jnp.minimum(jnp.minimum(lm.theta, lm.theta * r), (1 + r) / 2)
     )
 
     return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
@@ -129,8 +139,8 @@ class MonotonizedCentralLimiter(Limiter):
 def _limit_monotonized_central(
     lm: MonotonizedCentralLimiter, grid: Grid, u: jnp.ndarray
 ) -> jnp.ndarray:
-    r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
-    phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(4, 2 * r)), (1 + 3 * r) / 4)
+    r = slope(u)
+    phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(4, 2 * r), (1 + 3 * r) / 4))
 
     return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
 
@@ -153,7 +163,7 @@ class SUPERBEELimiter(Limiter):
 
 @limit.register(SUPERBEELimiter)
 def _limit_superbee(lm: SUPERBEELimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
+    r = slope(u)
     phi = jnp.maximum(0.0, jnp.maximum(jnp.minimum(1, 2 * r), jnp.minimum(2, r)))
 
     return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
@@ -178,8 +188,8 @@ class KorenLimiter(Limiter):
 
 @limit.register(KorenLimiter)
 def _limit_koren(lm: KorenLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    r = (u[1:] - u[:-1]) / (u[2:] - u[1:-1])
-    phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r)), (1 + 2 * r) / 3)
+    r = slope(u)
+    phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r), (1 + 2 * r) / 3))
 
     return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
 

@@ -6,16 +6,15 @@ from typing import Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, ConservationLawScheme
+from pyshocks import Grid, ConservationLawSchemeV2
 from pyshocks import flux, numerical_flux, predict_timestep
-from pyshocks.weno import WENOJSMixin, WENOJS32Mixin, WENOJS53Mixin
 
 
 # {{{ base
 
 
 @dataclass(frozen=True)
-class Scheme(ConservationLawScheme):
+class Scheme(ConservationLawSchemeV2):  # pylint: disable=abstract-method
     """Base class for numerical schemes for the continuity equation.
 
     .. attribute:: velocity
@@ -25,6 +24,7 @@ class Scheme(ConservationLawScheme):
     .. automethod:: __init__
     """
 
+    # NOTE: this is Optional just for mypy, but should never be `None` in practice
     velocity: Optional[jnp.ndarray]
 
 
@@ -55,21 +55,13 @@ def _predict_timestep_continuity(
 
 @dataclass(frozen=True)
 class Godunov(Scheme):
-    """First-order Godunov (upwind) scheme for the continuity equation.
+    """A Godunov (upwind) scheme for the continuity equation.
 
     The flux of the Godunov scheme is given by
     :func:`~pyshocks.scalar.scalar_flux_upwind`.
 
     .. automethod:: __init__
     """
-
-    @property
-    def order(self) -> int:
-        return 1
-
-    @property
-    def stencil_width(self) -> int:
-        return 1
 
 
 @numerical_flux.register(Godunov)
@@ -79,70 +71,23 @@ def _numerical_flux_continuity_godunov(
     assert scheme.velocity is not None
     assert u.shape[0] == grid.x.size
 
-    am = jnp.maximum(-scheme.velocity, 0.0)
-    ap = jnp.maximum(+scheme.velocity, 0.0)
+    from pyshocks.reconstruction import reconstruct
 
-    fnum = ap[:-1] * u[:-1] - am[1:] * u[1:]
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    # NOTE: the values are given at the cell boundaries as follows
+    #
+    #       i - 1             i           i + 1
+    #   --------------|--------------|--------------
+    #           u^R_{i - 1}      u^R_i
+    #                   u^L_i         u^L_{i + 1}
 
+    ul, ur = reconstruct(scheme.rec, grid, u)
+    al, ar = reconstruct(scheme.rec, grid, scheme.velocity)
 
-# }}}
+    aavg = (ar[:-1] + al[1:]) / 2
+    fnum = jnp.where(
+        aavg > 0, ar[:-1] * ur[:-1], al[1:] * ul[1:]  # type: ignore[no-untyped-call]
+    )
 
-
-# {{{ WENO
-
-
-@dataclass(frozen=True)
-class WENOJS(Scheme, WENOJSMixin):  # pylint: disable=abstract-method
-    """See :class:`pyshocks.burgers.WENOJS`."""
-
-
-@dataclass(frozen=True)
-class WENOJS32(WENOJS32Mixin, WENOJS):
-    """See :class:`pyshocks.burgers.WENOJS32`.
-
-    .. automethod:: __init__
-    """
-
-    eps: float = 1.0e-6
-
-    def __post_init__(self) -> None:
-        self.set_coefficients()
-
-
-@dataclass(frozen=True)
-class WENOJS53(WENOJS53Mixin, WENOJS):
-    """See :class:`pyshocks.burgers.WENOJS53`.
-
-    .. automethod:: __init__
-    """
-
-    eps: float = 1.0e-12
-
-    def __post_init__(self) -> None:
-        self.set_coefficients()
-
-
-@numerical_flux.register(WENOJS)
-def _numerical_flux_continuity_wenojs(
-    scheme: WENOJS, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    assert scheme.velocity is not None
-    assert u.size == grid.x.size
-
-    from pyshocks.weno import reconstruct
-
-    up = reconstruct(grid, scheme, u)
-    fp = flux(scheme, t, grid.f[1:], up)
-
-    um = reconstruct(grid, scheme, u[::-1])[::-1]
-    fm = flux(scheme, t, grid.f[:-1], um)
-
-    # NOTE: using the *global* Lax-Friedrichs flux
-    a = scheme.velocity[grid.i_]
-    amax = jnp.max(jnp.abs(a))
-
-    fnum = (fp[:-1] + fm[1:]) / 2 + amax * (up[:-1] - um[1:]) / 2
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 

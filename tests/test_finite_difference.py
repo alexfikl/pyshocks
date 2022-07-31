@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from dataclasses import replace
 from functools import partial
 
 import numpy as np
@@ -18,23 +17,10 @@ import pytest
 # {{{ test advection vs continuity
 
 
-@pytest.mark.parametrize(
-    ("ascheme", "cscheme"),
-    [
-        (advection.Godunov(velocity=None), continuity.Godunov(velocity=None)),
-        (advection.WENOJS32(velocity=None), continuity.WENOJS32(velocity=None)),
-    ],
-)
-@pytest.mark.parametrize(
-    "bc_type",
-    [
-        "periodic",
-        "dirichlet",
-    ],
-)
+@pytest.mark.parametrize("rec_name", ["constant", "wenojs32"])
+@pytest.mark.parametrize("bc_type", ["periodic", "dirichlet"])
 def test_advection_vs_continuity(
-    ascheme: advection.Scheme,
-    cscheme: continuity.Scheme,
+    rec_name: str,
     bc_type: str,
     a: float = -1.0,
     b: float = +1.0,
@@ -49,9 +35,11 @@ def test_advection_vs_continuity(
 
     # {{{ setup
 
+    from pyshocks.reconstruction import make_reconstruction_from_name
     from pyshocks import make_uniform_grid, Boundary
 
-    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=ascheme.stencil_width)
+    rec = make_reconstruction_from_name(rec_name)
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=rec.stencil_width)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary
@@ -69,8 +57,8 @@ def test_advection_vs_continuity(
     # NOTE: the two schemes are only similar if the velocity is
     # divergence free; in 1d, that means it has to be constant
     velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
-    ascheme = replace(ascheme, velocity=velocity)
-    cscheme = replace(cscheme, velocity=velocity)
+    ascheme = advection.Godunov(rec=rec, velocity=velocity)
+    cscheme = continuity.Godunov(rec=rec, velocity=velocity)
 
     # }}}
 
@@ -119,16 +107,10 @@ def test_advection_vs_continuity(
 # {{{ test advection vs finite difference
 
 
-@pytest.mark.parametrize(
-    "scheme",
-    [
-        advection.Godunov(velocity=None),
-        # advection.WENOJS32(velocity=None),
-    ],
-)
+@pytest.mark.parametrize("rec_name", ["constant"])
 @pytest.mark.parametrize("bc_type", ["periodic", "dirichlet"])
 def test_advection_finite_difference_jacobian(
-    scheme: advection.Scheme,
+    rec_name: str,
     bc_type: str,
     a: float = -1.0,
     b: float = +1.0,
@@ -143,9 +125,11 @@ def test_advection_finite_difference_jacobian(
 
     # {{{ setup
 
+    from pyshocks.reconstruction import make_reconstruction_from_name
     from pyshocks import make_uniform_grid, Boundary
 
-    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    rec = make_reconstruction_from_name(rec_name)
+    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=rec.stencil_width)
 
     if bc_type == "periodic":
         from pyshocks.scalar import PeriodicBoundary
@@ -162,7 +146,7 @@ def test_advection_finite_difference_jacobian(
 
     key = jax.random.PRNGKey(42)
     velocity = jax.random.normal(key, grid.x.shape, dtype=np.float64)
-    scheme = replace(scheme, velocity=velocity)
+    scheme = advection.Godunov(rec=rec, velocity=velocity)
 
     # }}}
 
