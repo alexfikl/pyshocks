@@ -2,89 +2,17 @@
 # SPDX-License-Identifier: MIT
 
 """
-.. autoclass:: WENOMixin
-    :no-show-inheritance:
-
-.. autoclass:: WENOJSMixin
-    :no-show-inheritance:
-
-.. autoclass:: WENOJS32Mixin
-    :no-show-inheritance:
-.. autoclass:: WENOJS53Mixin
-    :no-show-inheritance:
-
 .. autofunction:: weno_js_32_coefficients
 .. autofunction:: weno_js_53_coefficients
-
-.. autofunction:: reconstruct
 """
-from functools import singledispatch
-from typing import ClassVar, Tuple
+
+from typing import Tuple
 
 import jax.numpy as jnp
 import numpy as np
 
-from pyshocks import Grid, UniformGrid
-
-
-# {{{ WENO
-
-
-class WENOMixin:
-    """
-    .. attribute:: order
-
-        Minimum order of the WENO scheme.
-
-    .. automethod:: set_coefficients
-    """
-
-    def set_coefficients(self) -> None:
-        """Initialize WENO coefficients."""
-        raise NotImplementedError
-
-
-# }}}
-
 
 # {{{ coefficients for WENOJS
-
-
-class WENOJSMixin(WENOMixin):  # pylint: disable=abstract-method
-    """
-    .. attribute:: a
-    .. attribute:: b
-    .. attribute:: c
-    .. attribute:: d
-
-    .. attribute:: eps
-    """
-
-    a: ClassVar[jnp.ndarray]
-    b: ClassVar[jnp.ndarray]
-    c: ClassVar[jnp.ndarray]
-    d: ClassVar[jnp.ndarray]
-
-    eps: float
-
-
-class WENOJS32Mixin(WENOJSMixin):
-    def set_coefficients(self) -> None:
-        a, b, c, d = weno_js_32_coefficients()
-
-        # NOTE: hack to keep the class frozen
-        object.__setattr__(self, "a", a)
-        object.__setattr__(self, "b", b)
-        object.__setattr__(self, "c", c)
-        object.__setattr__(self, "d", d)
-
-    @property
-    def order(self) -> int:
-        return 2
-
-    @property
-    def stencil_width(self) -> int:
-        return 2
 
 
 def weno_js_32_coefficients() -> Tuple[
@@ -111,25 +39,6 @@ def weno_js_32_coefficients() -> Tuple[
     ).T
 
     return a, b, c, d
-
-
-class WENOJS53Mixin(WENOJSMixin):
-    def set_coefficients(self) -> None:
-        a, b, c, d = weno_js_53_coefficients()
-
-        # NOTE: hack to keep the class frozen
-        object.__setattr__(self, "a", a)
-        object.__setattr__(self, "b", b)
-        object.__setattr__(self, "c", c)
-        object.__setattr__(self, "d", d)
-
-    @property
-    def order(self) -> int:
-        return 3
-
-    @property
-    def stencil_width(self) -> int:
-        return 3
 
 
 def weno_js_53_coefficients() -> Tuple[
@@ -174,25 +83,6 @@ def weno_js_53_coefficients() -> Tuple[
 # }}}
 
 
-# {{{ helpers
-
-
-@singledispatch
-def reconstruct(grid: Grid, scheme: WENOMixin, u: jnp.ndarray) -> jnp.ndarray:
-    """Generic WENO-like reconstruction.
-
-    :param grid: grid on which to perform the reconstruction.
-    :param scheme: WENO scheme used for the reconstruction.
-    :param u: cell-centered value to reconstruct.
-
-    :param: face-based values reconstructed from *u*.
-    """
-    raise NotImplementedError(type(grid).__name__)
-
-
-# }}}
-
-
 # {{{ uniform grid reconstruction
 
 
@@ -210,26 +100,6 @@ def weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.nd
 
 def weno_js_reconstruct(u: jnp.ndarray, c: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack([jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])])
-
-
-@reconstruct.register(UniformGrid)
-def _reconstruct_uniform_wenojs(
-    grid: Grid, scheme: WENOJSMixin, u: jnp.ndarray
-) -> jnp.ndarray:
-    """WENO-JS reconstruction from the [JiangShu1996]_.
-
-    .. [JiangShu1996] G.-S. Jiang, C.-W. Shu, *Efficient Implementation of
-        Weighted ENO Schemes*,
-        Journal of Computational Physics, Vol. 126, pp. 202--228, 1996,
-        `DOI <http://dx.doi.org/10.1006/jcph.1996.0130>`__.
-    """
-    beta = weno_js_smoothness(u, scheme.a, scheme.b)
-    uhat = weno_js_reconstruct(u, scheme.c)
-
-    alpha = scheme.d / (scheme.eps + beta) ** 2
-    omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
-
-    return jnp.sum(omega * uhat, axis=0)
 
 
 # }}}

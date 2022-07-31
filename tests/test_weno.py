@@ -4,12 +4,12 @@
 from itertools import product
 from typing import Tuple
 
-from pyshocks import get_logger
-from pyshocks.burgers import WENOJS, WENOJS32, WENOJS53
-
 import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
+
+from pyshocks import get_logger
+from pyshocks.reconstruction import WENOJS, make_reconstruction_from_name
 
 import pytest
 
@@ -19,15 +19,9 @@ logger = get_logger("test_weno")
 # {{{ test_weno_smoothness_indicator_vectorization
 
 
-@pytest.mark.parametrize(
-    "scheme",
-    [
-        WENOJS32(),
-        WENOJS53(),
-    ],
-)
+@pytest.mark.parametrize("rec_name", ["wenojs32", "wenojs53"])
 def test_weno_smoothness_indicator_vectorization(
-    scheme: WENOJS, rtol: float = 2.0e-15, n: int = 64
+    rec_name: str, rtol: float = 2.0e-15, n: int = 64
 ) -> None:
     """Tests that the vectorized version of the smoothness indicator matches
     the explicitly looped version.
@@ -35,9 +29,12 @@ def test_weno_smoothness_indicator_vectorization(
 
     # {{{ setup
 
-    a = scheme.a
-    b = scheme.b
-    c = scheme.c
+    rec = make_reconstruction_from_name(rec_name)
+    assert isinstance(rec, WENOJS)
+
+    a = rec.a
+    b = rec.b
+    c = rec.c
 
     nghosts = b.shape[-1] // 2
     nstencils = b.shape[0]
@@ -86,11 +83,11 @@ def test_weno_smoothness_indicator_vectorization(
     # {{{ check equality
 
     error = jla.norm(beta0[:, m] - beta1[:, m]) / jla.norm(beta0[:, m])
-    logger.info("beta[%s]: %.8e", type(scheme).__name__, error)
+    logger.info("beta[%s]: %.8e", type(rec).__name__, error)
     assert error < rtol
 
     error = jla.norm(uhat0[:, m] - uhat1[:, m]) / jla.norm(uhat0[:, m])
-    logger.info("uhat[%s]: %.8e", type(scheme).__name__, error)
+    logger.info("uhat[%s]: %.8e", type(rec).__name__, error)
     assert error < rtol
 
     # }}}
@@ -102,21 +99,18 @@ def test_weno_smoothness_indicator_vectorization(
 # {{{ test_weno_smoothness_indicator
 
 
-@pytest.mark.parametrize(
-    ("scheme", "n"),
-    [
-        (WENOJS32(), 512),
-        (WENOJS53(), 128),
-    ],
-)
+@pytest.mark.parametrize(("rec_name", "n"), [("wenojs32", 512), ("wenojs53", 128)])
 @pytest.mark.parametrize("is_smooth", [True, False])
-def test_weno_smoothness_indicator(scheme: WENOJS, n: int, is_smooth: bool) -> None:
+def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> None:
     """Tests that the smoothness indicator actually works."""
 
     # {{{ setup
 
-    a = scheme.a
-    b = scheme.b
+    rec = make_reconstruction_from_name(rec_name)
+    assert isinstance(rec, WENOJS)
+
+    a = rec.a
+    b = rec.b
 
     nghosts = b.shape[-1] // 2
     n = n + 2 * nghosts
@@ -136,18 +130,18 @@ def test_weno_smoothness_indicator(scheme: WENOJS, n: int, is_smooth: bool) -> N
 
     beta = weno_js_smoothness(u, a, b)
 
-    alpha = scheme.d / (scheme.eps + beta) ** 2
+    alpha = rec.d / (rec.eps + beta) ** 2
     omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
     # }}}
 
     # {{{ check smoothness
 
-    # NOTE: scheme.d are the "ideal" coefficients, so we're comparing how
+    # NOTE: rec.d are the "ideal" coefficients, so we're comparing how
     # close we are to those
 
-    error = jnp.max(jnp.abs(omega[:, m] - scheme.d))
-    logger.info("error[%s, %s]: %.8e", type(scheme).__name__, is_smooth, error)
+    error = jnp.max(jnp.abs(omega[:, m] - rec.d))
+    logger.info("error[%s, %s]: %.8e", type(rec).__name__, is_smooth, error)
 
     if is_smooth:
         assert error < 0.1
@@ -176,15 +170,15 @@ def _pyweno_reconstruct(
 
 
 @pytest.mark.parametrize(
-    ("scheme", "order", "n"),
+    ("rec_name", "order", "n"),
     [
         # NOTE: pyweno only seems to support order >= 5
-        # (WENOJS32(), 3, 256),
-        (WENOJS53(), 5, 512),
+        # ("wenojs32", 3, 256),
+        ("wenojs53", 5, 512),
     ],
 )
 def test_weno_reference(
-    scheme: WENOJS, order: int, n: int, visualize: bool = False
+    rec_name: str, order: int, n: int, visualize: bool = False
 ) -> None:
     """Compares our weno reconstruction to PyWENO"""
     pytest.importorskip("pyweno")
@@ -199,7 +193,10 @@ def test_weno_reference(
 
     from pyshocks import make_uniform_grid
 
-    grid = make_uniform_grid(a=0, b=2.0 * jnp.pi, n=n, nghosts=scheme.stencil_width)
+    rec = make_reconstruction_from_name(rec_name)
+    assert isinstance(rec, WENOJS)
+
+    grid = make_uniform_grid(a=0, b=2.0 * jnp.pi, n=n, nghosts=rec.stencil_width)
 
     from pyshocks import Quadrature, cell_average
 
@@ -218,18 +215,17 @@ def test_weno_reference(
 
     from pyshocks.weno import weno_js_smoothness
 
-    betar = weno_js_smoothness(u[::-1], scheme.a, scheme.b)[:, ::-1].T
-    betal = weno_js_smoothness(u, scheme.a, scheme.b).T
+    betar = weno_js_smoothness(u[::-1], rec.a, rec.b)[:, ::-1].T
+    betal = weno_js_smoothness(u, rec.a, rec.b).T
 
     errorl = rnorm(grid, sl, betal)
     errorr = rnorm(grid, sr, betar)
     logger.info("error smoothness: left %.5e right %.5e", errorl, errorr)
     assert errorl < 1.0e-5 and errorr < 1.0e-8
 
-    from pyshocks.weno import reconstruct
+    from pyshocks.reconstruction import reconstruct
 
-    urhat = reconstruct(grid, scheme, u)
-    ulhat = reconstruct(grid, scheme, u[::-1])[::-1]
+    ulhat, urhat = reconstruct(rec, grid, u)
 
     errorl = rnorm(grid, ul, ulhat)
     errorr = rnorm(grid, ur, urhat)

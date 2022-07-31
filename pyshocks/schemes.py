@@ -61,6 +61,10 @@ class SchemeBase:
     """
 
     @property
+    def name(self) -> str:
+        return type(self).__name__
+
+    @property
     def order(self) -> int:
         raise NotImplementedError
 
@@ -80,6 +84,10 @@ class SchemeBaseV2(SchemeBase):
     """
 
     rec: Reconstruction
+
+    @property
+    def name(self) -> str:
+        return f"{type(self).__name__}_{self.rec.name}".lower()
 
     @property
     def order(self) -> int:
@@ -227,11 +235,12 @@ def _apply_operator_conservation_law_v2(
 
 
 @dataclass(frozen=True)
-class CombineConservationLawScheme(ConservationLawScheme):  # pylint: disable=W0223
+class CombineConservationLawScheme(ConservationLawSchemeV2):  # pylint: disable=W0223
     r"""Implements a combined operator of conservation laws.
 
     In this case, we consider a conservation law in the form
 
+        return 1
     .. math::
 
         \frac{\partial \mathbf{u}}{\partial t}
@@ -246,11 +255,19 @@ class CombineConservationLawScheme(ConservationLawScheme):  # pylint: disable=W0
 
         A tuple of :class:`ConservationLawScheme` objects.
     """
-    schemes: Tuple[ConservationLawScheme, ...]
+    schemes: Tuple[ConservationLawSchemeV2, ...]
 
     def __post_init__(self) -> None:
         assert len(self.schemes) > 1
-        assert all(isinstance(s, ConservationLawScheme) for s in self.schemes)
+        assert all(isinstance(s, ConservationLawSchemeV2) for s in self.schemes)
+
+    @property
+    def order(self) -> int:
+        return min([s.order for s in self.schemes])
+
+    @property
+    def stencil_width(self) -> int:
+        return max([s.stencil_width for s in self.schemes])
 
 
 @predict_timestep.register(CombineConservationLawScheme)

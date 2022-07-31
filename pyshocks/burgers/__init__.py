@@ -19,10 +19,6 @@ Schemes
 .. autoclass:: LaxFriedrichs
 .. autoclass:: EngquistOsher
 
-.. autoclass:: WENOJS
-.. autoclass:: WENOJS32
-.. autoclass:: WENOJS53
-
 .. autofunction:: scheme_ids
 .. autofunction:: make_scheme_from_name
 
@@ -45,9 +41,6 @@ from pyshocks.burgers.schemes import (
     Rusanov,
     LaxFriedrichs,
     EngquistOsher,
-    WENOJS,
-    WENOJS32,
-    WENOJS53,
 )
 
 
@@ -55,8 +48,6 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "rusanov": Rusanov,
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,
-    "wenojs32": WENOJS32,
-    "wenojs53": WENOJS53,
 }
 
 
@@ -135,9 +126,6 @@ __all__ = (
     "Scheme",
     "LaxFriedrichs",
     "EngquistOsher",
-    "WENOJS",
-    "WENOJS32",
-    "WENOJS53",
     "scheme_ids",
     "make_scheme_from_name",
     "ic_tophat",

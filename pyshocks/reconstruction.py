@@ -53,6 +53,10 @@ class Reconstruction:
     """
 
     @property
+    def name(self) -> str:
+        return type(self).__name__.lower()
+
+    @property
     def order(self) -> int:
         raise NotImplementedError(type(self).__name__)
 
@@ -95,6 +99,10 @@ class ConstantReconstruction(Reconstruction):
 
     which results in a first-order scheme.
     """
+
+    @property
+    def name(self) -> str:
+        return "constant"
 
     @property
     def order(self) -> int:
@@ -148,6 +156,10 @@ class MUSCL(Reconstruction):
     lm: Limiter
 
     @property
+    def name(self) -> str:
+        return f"{type(self).__name__}_{type(self.lm).__name__[:-7]}".lower()
+
+    @property
     def order(self) -> int:
         return 2
 
@@ -160,6 +172,13 @@ class MUSCL(Reconstruction):
 def _reconstruct_muscl(
     rec: MUSCL, grid: Grid, u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    from pyshocks import UniformGrid
+
+    # FIXME: would this work on non-uniform grids? may need to change the
+    # limiters a bit to also contain the dx slopes?
+    if not isinstance(grid, UniformGrid):
+        raise NotImplementedError("MUSCL is only implemented for uniform grids")
+
     assert grid.nghosts >= rec.stencil_width
     phi = limit(rec.lm, grid, u)
 

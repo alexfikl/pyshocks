@@ -137,6 +137,8 @@ def step(
 
         dt = stepper.predict_timestep(t, u)
         dt = min(dt, tfinal - t) + 1.0e-15
+        if not jnp.isfinite(dt):
+            raise ValueError(f"time step is not finite: {dt}")
 
         u = advance(stepper, dt, t, u)
 

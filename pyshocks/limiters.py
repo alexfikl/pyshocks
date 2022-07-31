@@ -62,7 +62,13 @@ def slope(u: jnp.ndarray) -> jnp.ndarray:
     #   ------------|------------|------------
     #           --------      --------
 
-    return (u[1:-1] - u[:-2]) / (u[2:] - u[1:-1])
+    sl = u[1:-1] - u[:-2]
+    sr = u[2:] - u[1:-1]
+
+    # NOTE: handles the case where the function is constant as well
+    return jnp.where(  # type: ignore[no-untyped-call]
+        jnp.abs(sr) < 1.0e-12, 1.0, sl / sr
+    )
 
 
 # }}}

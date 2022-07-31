@@ -27,13 +27,14 @@ import jax.numpy as jnp
 
 from pyshocks.grid import Grid
 from pyshocks.schemes import (
-    SchemeBase,
+    SchemeBaseV2,
     flux,
     Boundary,
     OneSidedBoundary,
     TwoSidedBoundary,
     apply_boundary,
 )
+from pyshocks.reconstruction import reconstruct
 from pyshocks.tools import VectorFunction
 
 
@@ -43,7 +44,7 @@ from pyshocks.tools import VectorFunction
 
 
 def scalar_flux_upwind(
-    scheme: SchemeBase, grid: Grid, t: float, a: jnp.ndarray, u: jnp.ndarray
+    scheme: SchemeBaseV2, grid: Grid, t: float, a: jnp.ndarray, u: jnp.ndarray
 ) -> jnp.ndarray:
     r"""Implements the classic upwind flux (see [LeVeque2002]_).
 
@@ -53,8 +54,8 @@ def scalar_flux_upwind(
 
         f(u_L, u_R) =
         \begin{cases}
-        u_L, & \quad S(a_L, a_R) > 0, \\
-        u_R, & \quad \text{otherwise},
+        f(u_L), & \quad S(a_L, a_R) > 0, \\
+        f(u_R), & \quad \text{otherwise},
         \end{cases}
 
     where the speed :math:`S` is taken as a simple average, i.e.
@@ -64,11 +65,24 @@ def scalar_flux_upwind(
         S(a_L, a_R) = \frac{1}{2} (a_L + a_R).
     """
     assert u.shape[0] == grid.x.size
+    assert a.shape == u.shape
 
-    am = 0.5 * (a[1:] + a[:-1])
-    um = jnp.where(am > 0, u[:-1], u[1:])  # type: ignore[no-untyped-call]
+    # NOTE: the values are given at the cell boundaries as follows
+    #
+    #       i - 1             i           i + 1
+    #   --------------|--------------|--------------
+    #           u^R_{i - 1}      u^R_i
+    #                   u^L_i         u^L_{i + 1}
 
-    fnum = flux(scheme, t, grid.f, um)
+    ul, ur = reconstruct(scheme.rec, grid, u)
+    al, ar = reconstruct(scheme.rec, grid, a)
+
+    fl = flux(scheme, t, grid.f, ul)
+    fr = flux(scheme, t, grid.f, ur)
+
+    aavg = (ar[:-1] + al[1:]) / 2
+    fnum = jnp.where(aavg > 0, fr[:-1], fl[1:])  # type: ignore[no-untyped-call]
+
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
@@ -79,7 +93,7 @@ def scalar_flux_upwind(
 
 
 def scalar_flux_rusanov(
-    scheme: SchemeBase,
+    scheme: SchemeBaseV2,
     grid: Grid,
     t: float,
     a: jnp.ndarray,
@@ -112,9 +126,7 @@ def scalar_flux_rusanov(
     where values of :math:`\alpha < 1` are more dissipative than the standard
     version.
     """
-
     assert u.shape[0] == grid.x.size
-    f = flux(scheme, 0.0, grid.x, u)
 
     # artificial viscosity
     if abs(alpha - 1.0) > 1.0e-8:
@@ -122,12 +134,16 @@ def scalar_flux_rusanov(
     else:
         nu = 1
 
+    ul, ur = reconstruct(scheme.rec, grid, u)
+    fl = flux(scheme, t, grid.f, ul)
+    fr = flux(scheme, t, grid.f, ur)
+
     # largest local wave speed
     a = jnp.abs(a)
     if isinstance(a, jnp.ndarray) and a.size == u.size:
         a = jnp.maximum(a[1:], a[:-1])
 
-    fnum = 0.5 * (f[1:] + f[:-1]) - 0.5 * a * nu * (u[1:] - u[:-1])
+    fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * nu * (ul[1:] - ur[:-1])
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
@@ -138,7 +154,7 @@ def scalar_flux_rusanov(
 
 
 def scalar_flux_lax_friedrichs(
-    scheme: SchemeBase,
+    scheme: SchemeBaseV2,
     grid: Grid,
     t: float,
     a: jnp.ndarray,
@@ -166,9 +182,10 @@ def scalar_flux_lax_friedrichs(
 
 
 def scalar_flux_engquist_osher(
-    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
+    scheme: SchemeBaseV2, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
 ) -> jnp.ndarray:
-    r"""Implements the Engquist-Osher flux (see Section 12.6 in [LeVeque2002]_).
+    r"""Implements the Engquist-Osher flux (see Section 12.6 in [LeVeque2002]_)
+    for **convex** physical fluxes.
 
     The flux is given by
 
@@ -179,8 +196,9 @@ def scalar_flux_engquist_osher(
     """
     assert u.shape[0] == grid.x.size
 
-    fp = flux(scheme, t, grid.x, jnp.maximum(u, omega))
-    fm = flux(scheme, t, grid.x, jnp.minimum(u, omega))
+    ul, ur = reconstruct(scheme.rec, grid, u)
+    fr = flux(scheme, t, grid.f, jnp.maximum(ur, omega))
+    fl = flux(scheme, t, grid.f, jnp.minimum(ul, omega))
     fo = flux(
         scheme,
         t,
@@ -188,7 +206,7 @@ def scalar_flux_engquist_osher(
         jnp.full_like(grid.df, omega),  # type: ignore[no-untyped-call]
     )
 
-    fnum = fp[:-1] + fm[1:] - fo
+    fnum = fr[:-1] + fl[1:] - fo
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 

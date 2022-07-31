@@ -6,7 +6,7 @@ from typing import Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, ConservationLawScheme
+from pyshocks import Grid, ConservationLawSchemeV2
 from pyshocks import numerical_flux, predict_timestep
 
 
@@ -14,7 +14,7 @@ from pyshocks import numerical_flux, predict_timestep
 
 
 @dataclass(frozen=True)
-class Scheme(ConservationLawScheme):  # pylint: disable=abstract-method
+class Scheme(ConservationLawSchemeV2):  # pylint: disable=abstract-method
     """
     .. attribute:: diffusivity
     """
