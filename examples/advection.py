@@ -335,6 +335,7 @@ if __name__ == "__main__":
         type=str.lower,
         choices=["const", "sign", "double_sign"],
     )
+    parser.add_argument("-n", "--numcells", type=int, default=256)
     parser.add_argument("--interactive", action="store_true")
     parser.add_argument("--convergence", action="store_true")
     parser.add_argument(
@@ -354,6 +355,7 @@ if __name__ == "__main__":
     else:
         main(
             ascheme,
+            n=args.numcells,
             outdir=args.outdir,
             example_name=args.example,
             interactive=args.interactive,

@@ -198,16 +198,14 @@ if __name__ == "__main__":
         "--alpha", default=1.0, type=float, help="Lax-Friedrichs scheme parameter"
     )
     parser.add_argument(
-        "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
-    )
-    parser.add_argument(
         "--diffusivity",
         type=float,
         default=None,
     )
+    parser.add_argument("-n", "--numcells", type=int, default=256)
+    parser.add_argument("--interactive", action="store_true")
     parser.add_argument(
-        "--interactive",
-        action="store_true",
+        "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
     )
     args = parser.parse_args()
 
@@ -220,6 +218,7 @@ if __name__ == "__main__":
     set_recommended_matplotlib()
     main(
         ascheme,
+        n=args.numcells,
         outdir=args.outdir,
         diffusivity=args.diffusivity,
         interactive=args.interactive,

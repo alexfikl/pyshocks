@@ -340,12 +340,10 @@ if __name__ == "__main__":
         type=str.lower,
         choices=limiters.limiter_ids(),
     )
+    parser.add_argument("-n", "--numcells", type=int, default=256)
+    parser.add_argument("--interactive", action="store_true")
     parser.add_argument(
         "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
-    )
-    parser.add_argument(
-        "--interactive",
-        action="store_true",
     )
     args = parser.parse_args()
 
@@ -359,6 +357,7 @@ if __name__ == "__main__":
 
     main(
         ascheme,
+        n=args.numcells,
         outdir=args.outdir,
         interactive=args.interactive,
     )
