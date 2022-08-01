@@ -249,9 +249,8 @@ def _limit_koren(lm: KorenLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
 
 
 _LIMITERS: Dict[str, Type[Limiter]] = {
-    # NOTE: this is the default for now because the internet said it's third-order
-    # accurate
-    "default": KorenLimiter,
+    # NOTE: this is the default for now because it's popular
+    "default": MINMODLimiter,
     "none": UnlimitedLimiter,
     "minmod": MINMODLimiter,
     "mc": MonotonizedCentralLimiter,

@@ -132,7 +132,7 @@ def scalar_flux_rusanov(
     if abs(alpha - 1.0) > 1.0e-8:
         nu = grid.df ** (alpha - 1)
     else:
-        nu = 1
+        nu = 1.0
 
     ul, ur = reconstruct(scheme.rec, grid, u)
     fl = flux(scheme, t, grid.f, ul)
@@ -141,9 +141,11 @@ def scalar_flux_rusanov(
     # largest local wave speed
     a = jnp.abs(a)
     if isinstance(a, jnp.ndarray) and a.size == u.size:
+        # FIXME: should the reconstruct a and use al/ar to get a local speed?
         a = jnp.maximum(a[1:], a[:-1])
 
-    fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * nu * (ul[1:] - ur[:-1])
+    # FIXME: should the diffusive part use u or ul/ur?
+    fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * nu * (u[1:] - u[:-1])
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
