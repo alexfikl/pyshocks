@@ -24,7 +24,7 @@ Grid
 
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import jax
 import jax.numpy as jnp
@@ -256,47 +256,58 @@ def cell_average(
 
 
 @partial(jax.jit, static_argnums=(2,))
-def _norm(x: jnp.ndarray, dx: jnp.ndarray, p: float) -> jnp.ndarray:
+def _norm(u: jnp.ndarray, dx: jnp.ndarray, p: Union[str, float]) -> jnp.ndarray:
     if p == 1:
-        return jnp.sum(x * dx)
+        return jnp.sum(u * dx)
 
     if p == 2:
-        return jnp.sqrt(jnp.sum(x**2 * dx))
+        return jnp.sqrt(jnp.sum(u**2 * dx))
 
-    if p == jnp.inf:
-        return jnp.max(x)
+    if p in (jnp.inf, "inf"):
+        return jnp.max(u)
 
-    if p == -jnp.inf:
-        return jnp.min(x)
+    if p in (-jnp.inf, "-inf"):
+        return jnp.min(u)
 
-    from numbers import Number
+    if p == "tvd":
+        return jnp.sum(jnp.abs(jnp.diff(u)))
 
-    if isinstance(p, Number):
-        return jnp.sum(x**p * dx) ** (-1.0 / p)
+    if isinstance(p, (int, float)):
+        if p <= 0:
+            raise ValueError(f"'p' must be a positive float: {p}")
+
+        return jnp.sum(u**p * dx) ** (-1.0 / p)
 
     raise ValueError(f"unrecognized 'p': {p}")
 
 
 def norm(
-    grid: Grid, x: jnp.ndarray, *, p: float = 2, weighted: bool = False
+    grid: Grid, u: jnp.ndarray, *, p: Union[str, float] = 2, weighted: bool = False
 ) -> jnp.ndarray:
-    r"""Computes the interior :math:`\ell^p` norm of *x*."""
-    dx = grid.dx[grid.i_] if weighted else 1.0
-    x = jnp.abs(x[grid.i_])
+    r"""Computes the interior :math:`\ell^p` norm of *u*.
 
-    return _norm(x, dx, p)
+    :arg p: can be a (positive) floating point value or a string. The order can
+        also be ``"inf"`` or ``"-inf"`` or ``"tvd"`` for the maximum, minimum
+        or the total variation.
+    :arg weighted: if *True*, the standard :math:`p` are weighted by the cell
+        sizes.
+    """
+    dx = grid.dx[grid.i_] if weighted else 1.0
+    u = jnp.abs(u[grid.i_])
+
+    return _norm(u, dx, p)
 
 
 def rnorm(
     grid: Grid,
-    x: jnp.ndarray,
-    y: jnp.ndarray,
+    u: jnp.ndarray,
+    v: jnp.ndarray,
     *,
-    p: float = 2,
+    p: Union[str, float] = 2,
     weighted: bool = False,
     atol: float = 1.0e-14,
 ) -> jnp.ndarray:
-    r"""Computes the interior :math:`\ell^p` relative error norm of *x* and *y*
+    r"""Computes the interior :math:`\ell^p` relative error norm of *u* and *v*
     as
 
     .. math::
@@ -305,11 +316,11 @@ def rnorm(
 
     where the numerator is ignored if it is close to zero.
     """
-    ynorm = norm(grid, y, p=p)
-    if ynorm < atol:
-        ynorm = 1.0
+    vnorm = norm(grid, v, p=p)
+    if vnorm < atol:
+        vnorm = 1.0
 
-    return norm(grid, x - y, p=p) / ynorm
+    return norm(grid, u - v, p=p) / vnorm
 
 
 # }}}
