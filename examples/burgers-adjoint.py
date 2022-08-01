@@ -270,9 +270,9 @@ def main(
     def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
-    from pyshocks.timestepping import ForwardEuler
+    from pyshocks.timestepping import SSPRK33
 
-    stepper = ForwardEuler(
+    stepper = SSPRK33(
         predict_timestep=jax.jit(forward_predict_timestep),
         source=jax.jit(forward_operator),
         checkpoint=InMemoryCheckpoint(basename="Iteration"),
