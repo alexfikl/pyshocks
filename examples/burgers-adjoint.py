@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import partial
 
 import jax
@@ -220,7 +220,7 @@ def main(
     outdir: pathlib.Path,
     a: float = -1.0,
     b: float = +1.0,
-    n: int = 256,
+    n: int = 259,
     tfinal: float = 1.0,
     theta: float = 1.0,
     interactive: bool = False,
@@ -256,6 +256,11 @@ def main(
     # }}}
 
     # {{{ time stepping
+
+    if isinstance(scheme.rec, reconstruction.ESWENO32):
+        # NOTE: prefer the parameters recommended by Carpenter!
+        eps, delta = reconstruction.es_weno_from_grid(grid, u0)
+        scheme = replace(scheme, rec=replace(rec, eps=eps, delta=delta))
 
     from pyshocks import predict_timestep, apply_operator
 

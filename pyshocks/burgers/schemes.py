@@ -144,12 +144,46 @@ def _numerical_flux_burgers_engquist_osher(
 
 # }}}
 
+# {{{ ESWENO32
+
+
+@dataclass(frozen=True)
+class ESWENO32(Scheme):
+    """Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_."""
+
+
+@numerical_flux.register(ESWENO32)
+def _numerical_flux_burgers_esweno32(
+    scheme: ESWENO32, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.scalar import scalar_flux_lax_friedrichs
+    from pyshocks.weno import es_weno_weights
+    from pyshocks import reconstruction
+
+    rec = scheme.rec
+    if not isinstance(rec, reconstruction.ESWENO32):
+        raise ValueError("ESWENO32 scheme requires the ESWENO32 reconstruction")
+
+    # {{{ compute dissipative flux of ESWENO
+
+    omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)[0, :]
+
+    mu = jnp.sqrt((omega[1:] - omega[:-1]) ** 2 + rec.delta**2) / 8.0
+    gnum = -(mu[1:] + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
+
+    # }}}
+
+    fnum = scalar_flux_lax_friedrichs(scheme, grid, t, u, u, alpha=1)
+    return fnum - jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
+
+
+# }}}
 
 # {{{ SBP
 
 
 @dataclass(frozen=True)
-class SBP(SchemeBase):
+class SBP(SchemeBase):  # pylint: disable=abstract-method
     """Implements a finite difference Summation-by-Parts (SBP) scheme with
     a Simultaneous-Approximation-Term (SAT) for boundary conditions.
 
@@ -164,7 +198,7 @@ class SBP(SchemeBase):
         assert self.tau >= 0.5
 
     @property
-    def stencil_width(self):
+    def stencil_width(self) -> int:
         return 0
 
 
@@ -186,7 +220,7 @@ def _predict_timestep_burgers_sbp(
 
 
 @apply_operator.register(SBP)
-def apply_operator(
+def _apply_operator_sbp(
     scheme: SBP, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     raise NotImplementedError
@@ -194,12 +228,16 @@ def apply_operator(
 
 @dataclass(frozen=True)
 class SBP21(SBP):
-    pass
+    @property
+    def order(self):
+        return 2
 
 
 @dataclass(frozen=True)
 class SBP42(SBP):
-    pass
+    @property
+    def order(self):
+        return 4
 
 
 # }}}

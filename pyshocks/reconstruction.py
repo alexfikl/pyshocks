@@ -284,13 +284,10 @@ class WENOJS53(WENOJS):
 
 
 def _reconstruct_weno_js_side(rec: WENOJS, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_js_smoothness, weno_js_reconstruct
+    from pyshocks.weno import weno_js_reconstruct, weno_js_weights
 
-    beta = weno_js_smoothness(u, rec.a, rec.b)
+    omega = weno_js_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
     uhat = weno_js_reconstruct(u, rec.c)
-
-    alpha = rec.d / (rec.eps + beta) ** 2
-    omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
     return jnp.sum(omega * uhat, axis=0)
 
@@ -318,15 +315,58 @@ def _reconstruct_wenojs(
 # {{{ ESWENO
 
 
+def es_weno_from_grid(grid: Grid, u0: jnp.ndarray) -> Tuple[float, float]:
+    """Estimate the ESWENO32 parameters from the grid and initial condition.
+
+    :returns: ``(eps, delta)``, where ``eps`` is given by Equation 65
+        and ``delta`` is given by Equation 66 in [Yamaleev2009]_.
+    """
+    # FIXME: eps should also contain the derivative of u0 away from discontinuities,
+    # but not sure how to compute that in a vaguely accurate way. Also, we mostly
+    # look at piecewise constant shock solutions where du0/dx ~ 0, so this
+    # should be sufficient for the moment.
+
+    # NOTE: as in Yamaleev2009, we're using the L1 norm for u0
+    i = grid.i_
+    eps = jnp.sum(grid.dx[i] * jnp.abs(u0[i])) * grid.dx_min**2
+    delta = grid.dx_min**2
+
+    return eps, delta
+
+
 @dataclass(frozen=True)
 class ESWENO32(Reconstruction):
-    """Third-order Energy Stable WENO scheme by [Yamaleev2009]_.
+    """Third-order WENO reconstruction for the Energy Stable WENO (ESWENO)
+    scheme of [Yamaleev2009]_.
+
+    Note that this scheme only implements the modified weights of [Yamaleev2009]_,
+    not the entire energy stable WENO scheme.
 
     .. [Yamaleev2009] N. K. Yamaleev, M. H. Carpenter, *Third-Order Energy
         Stable WENO Scheme,
         Journal of Computational Physics, Vol. 228, pp. 3025--3047, 2009,
         `DOI <http://dx.doi.org/10.1016/j.jcp.2009.01.011>`__.
     """
+
+    eps: float = 1.0e-6
+    delta: float = 1.0e-6
+
+    # coefficients
+    a: ClassVar[jnp.ndarray]
+    b: ClassVar[jnp.ndarray]
+    c: ClassVar[jnp.ndarray]
+    d: ClassVar[jnp.ndarray]
+
+    def __post_init__(self) -> None:
+        from pyshocks.weno import weno_js_32_coefficients
+
+        a, b, c, d = weno_js_32_coefficients()
+
+        # NOTE: hack to keep the class frozen
+        object.__setattr__(self, "a", a)
+        object.__setattr__(self, "b", b)
+        object.__setattr__(self, "c", c)
+        object.__setattr__(self, "d", d)
 
     @property
     def order(self) -> int:
@@ -337,11 +377,30 @@ class ESWENO32(Reconstruction):
         return 2
 
 
+def _reconstruct_es_weno_side(rec: ESWENO32, u: jnp.ndarray) -> jnp.ndarray:
+    from pyshocks.weno import weno_js_reconstruct, es_weno_weights
+
+    omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
+    uhat = weno_js_reconstruct(u, rec.c)
+
+    return jnp.sum(omega * uhat, axis=0)
+
+
 @reconstruct.register(ESWENO32)
 def _reconstruct_esweno32(
     rec: ESWENO32, grid: Grid, u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
-    raise NotImplementedError
+    from pyshocks import UniformGrid
+
+    assert grid.nghosts >= rec.stencil_width
+
+    if not isinstance(grid, UniformGrid):
+        raise NotImplementedError("WENO-JS is only implemented for uniform grids")
+
+    ur = _reconstruct_es_weno_side(rec, u)
+    ul = _reconstruct_es_weno_side(rec, u[::-1])[::-1]
+
+    return ul, ur
 
 
 # }}}

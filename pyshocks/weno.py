@@ -96,10 +96,29 @@ def weno_js_reconstruct(u: jnp.ndarray, c: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack([jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])])
 
 
+def weno_js_weights(
+    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
+) -> jnp.ndarray:
+    beta = weno_js_smoothness(u, a, b)
+    alpha = d / (eps + beta) ** 2
+
+    return alpha / jnp.sum(alpha, axis=0, keepdims=True)
+
+
 # }}}
 
 
 # {{{ ESWENO
+
+
+def es_weno_weights(
+    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
+) -> jnp.ndarray:
+    beta = weno_js_smoothness(u, a, b)
+    tau = jnp.pad((u[2:] - 2 * u[1:-1] + u[:-2]) ** 2, 1)  # type: ignore
+    alpha = d * (1 + tau / (eps + beta))
+
+    return alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
 
 # }}}
