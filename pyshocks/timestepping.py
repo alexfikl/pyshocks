@@ -218,8 +218,8 @@ def advance(stepper: Stepper, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarra
 
     :param stepper: time stepping method description and source term.
     :param dt: time step to advance by.
-    :param t: time at the begining of the time step.
-    :param u: variable value at the begining of the time step.
+    :param t: time at the beginning of the time step.
+    :param u: variable value at the beginning of the time step.
 
     :returns: approximated value of *u* at :math:`t + \Delta t`.
     """

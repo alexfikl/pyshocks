@@ -36,7 +36,7 @@ class Reconstruction:
     """Describes a reconstruction algorithm for finite volume type methods.
 
     In finite volume methods, we have access to averaged cell values. A
-    recontruction algorithm will use these values to obtain high-order
+    reconstruction algorithm will use these values to obtain high-order
     expressions for the values at cell faces, which are then used in flux
     computations.
 
@@ -79,9 +79,9 @@ def reconstruct(
                 u^R_{i - 1}      u^R_i
                         u^L_i         u^L_{i + 1}
 
-    i.e. :math:`u^R_i` referres to the right reconstructed value in cell :math:`i`
+    i.e. :math:`u^R_i` refers to the right reconstructed value in cell :math:`i`
     and represents the value at :math:`x_{i + \frac{1}{2}}` and :math:`u^L_i`
-    referres the left reconstructed value in the cell :math:`i` and represents
+    refers the left reconstructed value in the cell :math:`i` and represents
     the value at :math:`x_{i - \frac{1}{2}}`.
 
     :arg rec: a reconstruction algorithm.

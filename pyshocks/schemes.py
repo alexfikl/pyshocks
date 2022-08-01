@@ -173,7 +173,7 @@ def predict_timestep(
 
 @dataclass(frozen=True)
 class FiniteVolumeScheme(SchemeBase):
-    """Discribes a finite volume-type scheme for PDEs.
+    """Describes a finite volume type scheme for PDEs.
 
     .. attribute:: rec
 

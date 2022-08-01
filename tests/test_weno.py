@@ -218,19 +218,19 @@ def test_weno_reference(
     betar = weno_js_smoothness(u[::-1], rec.a, rec.b)[:, ::-1].T
     betal = weno_js_smoothness(u, rec.a, rec.b).T
 
-    errorl = rnorm(grid, sl, betal)
-    errorr = rnorm(grid, sr, betar)
-    logger.info("error smoothness: left %.5e right %.5e", errorl, errorr)
-    assert errorl < 1.0e-5 and errorr < 1.0e-8
+    error_l = rnorm(grid, sl, betal)
+    error_r = rnorm(grid, sr, betar)
+    logger.info("error smoothness: left %.5e right %.5e", error_l, error_r)
+    assert error_l < 1.0e-5 and error_r < 1.0e-8
 
     from pyshocks.reconstruction import reconstruct
 
     ulhat, urhat = reconstruct(rec, grid, u)
 
-    errorl = rnorm(grid, ul, ulhat)
-    errorr = rnorm(grid, ur, urhat)
-    logger.info("error reconstruct: left %.5e right %.5e", errorl, errorr)
-    assert errorl < 1.0e-12 and errorr < 1.0e-12
+    error_l = rnorm(grid, ul, ulhat)
+    error_r = rnorm(grid, ur, urhat)
+    logger.info("error reconstruct: left %.5e right %.5e", error_l, error_r)
+    assert error_l < 1.0e-12 and error_r < 1.0e-12
 
     # }}}
 
