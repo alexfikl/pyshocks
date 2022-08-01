@@ -220,7 +220,7 @@ def main(
     outdir: pathlib.Path,
     a: float = -1.0,
     b: float = +1.0,
-    n: int = 259,
+    n: int = 257,
     tfinal: float = 1.0,
     theta: float = 1.0,
     interactive: bool = False,

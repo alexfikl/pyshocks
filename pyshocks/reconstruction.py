@@ -395,7 +395,7 @@ def _reconstruct_esweno32(
     assert grid.nghosts >= rec.stencil_width
 
     if not isinstance(grid, UniformGrid):
-        raise NotImplementedError("WENO-JS is only implemented for uniform grids")
+        raise NotImplementedError("ESWENO is only implemented for uniform grids")
 
     ur = _reconstruct_es_weno_side(rec, u)
     ul = _reconstruct_es_weno_side(rec, u[::-1])[::-1]

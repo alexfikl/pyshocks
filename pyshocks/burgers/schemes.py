@@ -156,24 +156,25 @@ class ESWENO32(Scheme):
 def _numerical_flux_burgers_esweno32(
     scheme: ESWENO32, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    from pyshocks.scalar import scalar_flux_lax_friedrichs
+    from pyshocks.scalar import scalar_flux_upwind
     from pyshocks.weno import es_weno_weights
     from pyshocks import reconstruction
 
     rec = scheme.rec
     if not isinstance(rec, reconstruction.ESWENO32):
-        raise ValueError("ESWENO32 scheme requires the ESWENO32 reconstruction")
+        raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction")
 
     # {{{ compute dissipative flux of ESWENO
 
+    # NOTE: computing these twice :(
     omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)[0, :]
 
     mu = jnp.sqrt((omega[1:] - omega[:-1]) ** 2 + rec.delta**2) / 8.0
-    gnum = -(mu[1:] + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
+    gnum = (mu + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
 
     # }}}
 
-    fnum = scalar_flux_lax_friedrichs(scheme, grid, t, u, u, alpha=1)
+    fnum = scalar_flux_upwind(scheme, grid, t, u, u)
     return fnum - jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
 
 
@@ -229,14 +230,14 @@ def _apply_operator_sbp(
 @dataclass(frozen=True)
 class SBP21(SBP):
     @property
-    def order(self):
+    def order(self) -> int:
         return 2
 
 
 @dataclass(frozen=True)
 class SBP42(SBP):
     @property
-    def order(self):
+    def order(self) -> int:
         return 4
 
 

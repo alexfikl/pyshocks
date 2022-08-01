@@ -41,6 +41,7 @@ from pyshocks.burgers.schemes import (
     Rusanov,
     LaxFriedrichs,
     EngquistOsher,
+    ESWENO32,
 )
 
 
@@ -49,6 +50,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "rusanov": Rusanov,
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,
+    "esweno32": ESWENO32,
 }
 
 
@@ -125,8 +127,10 @@ def ex_shock(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
 
 __all__ = (
     "Scheme",
+    "Rusanov",
     "LaxFriedrichs",
     "EngquistOsher",
+    "ESWENO32",
     "scheme_ids",
     "make_scheme_from_name",
     "ic_tophat",
