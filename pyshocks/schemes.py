@@ -10,6 +10,7 @@ Schemes
 .. autoclass:: SchemeBase
     :no-show-inheritance:
 
+.. autoclass:: FiniteVolumeScheme
 .. autoclass:: ConservationLawScheme
 .. autoclass:: CombineConservationLawScheme
 
@@ -63,28 +64,19 @@ class SchemeBase:
 
         The required stencil width for the scheme and reconstruction.
 
-    .. attribute:: rec
-
-        A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
-        to reconstruct high-order face-based values when needed by the numerical
-        scheme.
-
-    .. automethod:: __init__
     """
-
-    rec: Reconstruction
 
     @property
     def name(self) -> str:
-        return f"{type(self).__name__}_{self.rec.name}".lower()
+        return type(self).__name__
 
     @property
     def order(self) -> int:
-        return self.rec.order
+        raise NotImplementedError
 
     @property
     def stencil_width(self) -> int:
-        return self.rec.stencil_width
+        raise NotImplementedError
 
 
 @singledispatch
@@ -176,11 +168,45 @@ def predict_timestep(
 # }}}
 
 
+# {{{
+
+
+@dataclass(frozen=True)
+class FiniteVolumeScheme(SchemeBase):
+    """Discribes a finite volume-type scheme for PDEs.
+
+    .. attribute:: rec
+
+        A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
+        to reconstruct high-order face-based values when needed by the numerical
+        scheme.
+
+    .. automethod:: __init__
+    """
+
+    rec: Reconstruction
+
+    @property
+    def name(self) -> str:
+        return f"{type(self).__name__}_{self.rec.name}".lower()
+
+    @property
+    def order(self) -> int:
+        return self.rec.order
+
+    @property
+    def stencil_width(self) -> int:
+        return self.rec.stencil_width
+
+
+# }}}
+
+
 # {{{ conservation law schemes
 
 
 @dataclass(frozen=True)
-class ConservationLawScheme(SchemeBase):  # pylint: disable=abstract-method
+class ConservationLawScheme(FiniteVolumeScheme):
     r"""Describes numerical schemes for conservation laws.
 
     We consider conservation laws of the form

@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, ConservationLawScheme
-from pyshocks import flux, numerical_flux, predict_timestep
+from pyshocks import Grid, SchemeBase, ConservationLawScheme, Boundary
+from pyshocks import flux, numerical_flux, predict_timestep, apply_operator
 
 
 # {{{ base
@@ -140,6 +140,66 @@ def _numerical_flux_burgers_engquist_osher(
     from pyshocks.scalar import scalar_flux_engquist_osher
 
     return scalar_flux_engquist_osher(scheme, grid, t, u, omega=scheme.omega)
+
+
+# }}}
+
+
+# {{{ SBP
+
+
+@dataclass(frozen=True)
+class SBP(SchemeBase):
+    """Implements a finite difference Summation-by-Parts (SBP) scheme with
+    a Simultaneous-Approximation-Term (SAT) for boundary conditions.
+
+    .. attribute:: tau
+
+        Weight used for the SAT term.
+    """
+
+    tau: float
+
+    def __post_init__(self) -> None:
+        assert self.tau >= 0.5
+
+    @property
+    def stencil_width(self):
+        return 0
+
+
+@flux.register(SBP)
+def _flux_burgers_sbp(
+    scheme: SBP, t: float, x: jnp.ndarray, u: jnp.ndarray
+) -> jnp.ndarray:
+    return u**2 / 2
+
+
+@predict_timestep.register(SBP)
+def _predict_timestep_burgers_sbp(
+    scheme: SBP, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    # largest wave speed i.e. max |f'(u)|
+    smax = jnp.max(jnp.abs(u[grid.i_]))
+
+    return 0.5 * grid.dx_min / smax
+
+
+@apply_operator.register(SBP)
+def apply_operator(
+    scheme: SBP, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    raise NotImplementedError
+
+
+@dataclass(frozen=True)
+class SBP21(SBP):
+    pass
+
+
+@dataclass(frozen=True)
+class SBP42(SBP):
+    pass
 
 
 # }}}

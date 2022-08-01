@@ -27,7 +27,7 @@ import jax.numpy as jnp
 
 from pyshocks.grid import Grid
 from pyshocks.schemes import (
-    SchemeBase,
+    FiniteVolumeScheme,
     flux,
     Boundary,
     OneSidedBoundary,
@@ -44,7 +44,7 @@ from pyshocks.tools import VectorFunction
 
 
 def scalar_flux_upwind(
-    scheme: SchemeBase, grid: Grid, t: float, a: jnp.ndarray, u: jnp.ndarray
+    scheme: FiniteVolumeScheme, grid: Grid, t: float, a: jnp.ndarray, u: jnp.ndarray
 ) -> jnp.ndarray:
     r"""Implements the classic upwind flux (see [LeVeque2002]_).
 
@@ -86,7 +86,7 @@ def scalar_flux_upwind(
 
 
 def scalar_flux_rusanov(
-    scheme: SchemeBase,
+    scheme: FiniteVolumeScheme,
     grid: Grid,
     t: float,
     a: jnp.ndarray,
@@ -148,7 +148,7 @@ def scalar_flux_rusanov(
 
 
 def scalar_flux_lax_friedrichs(
-    scheme: SchemeBase,
+    scheme: FiniteVolumeScheme,
     grid: Grid,
     t: float,
     a: jnp.ndarray,
@@ -176,7 +176,7 @@ def scalar_flux_lax_friedrichs(
 
 
 def scalar_flux_engquist_osher(
-    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
+    scheme: FiniteVolumeScheme, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
 ) -> jnp.ndarray:
     r"""Implements the Engquist-Osher flux (see Section 12.6 in [LeVeque2002]_)
     for **convex** physical fluxes.

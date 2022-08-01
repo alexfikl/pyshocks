@@ -12,7 +12,7 @@ import jax.numpy as jnp
 import numpy as np
 
 
-# {{{ coefficients for WENOJS
+# {{{ WENOJS
 
 
 def weno_js_32_coefficients() -> Tuple[
@@ -80,12 +80,6 @@ def weno_js_53_coefficients() -> Tuple[
     return a, b, c, d
 
 
-# }}}
-
-
-# {{{ uniform grid reconstruction
-
-
 def weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack(
         [
@@ -100,6 +94,12 @@ def weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.nd
 
 def weno_js_reconstruct(u: jnp.ndarray, c: jnp.ndarray) -> jnp.ndarray:
     return jnp.stack([jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])])
+
+
+# }}}
+
+
+# {{{ ESWENO
 
 
 # }}}

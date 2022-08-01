@@ -315,6 +315,38 @@ def _reconstruct_wenojs(
 # }}}
 
 
+# {{{ ESWENO
+
+
+@dataclass(frozen=True)
+class ESWENO32(Reconstruction):
+    """Third-order Energy Stable WENO scheme by [Yamaleev2009]_.
+
+    .. [Yamaleev2009] N. K. Yamaleev, M. H. Carpenter, *Third-Order Energy
+        Stable WENO Scheme,
+        Journal of Computational Physics, Vol. 228, pp. 3025--3047, 2009,
+        `DOI <http://dx.doi.org/10.1016/j.jcp.2009.01.011>`__.
+    """
+
+    @property
+    def order(self) -> int:
+        return 2
+
+    @property
+    def stencil_width(self) -> int:
+        return 2
+
+
+@reconstruct.register(ESWENO32)
+def _reconstruct_esweno32(
+    rec: ESWENO32, grid: Grid, u: jnp.ndarray
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    raise NotImplementedError
+
+
+# }}}
+
+
 # {{{ make_reconstruction_from_name
 
 _RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
@@ -323,6 +355,7 @@ _RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
     "muscl": MUSCL,
     "wenojs32": WENOJS32,
     "wenojs53": WENOJS53,
+    "esweno32": ESWENO32,
 }
 
 
