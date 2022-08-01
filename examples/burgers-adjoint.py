@@ -222,7 +222,7 @@ def main(
     b: float = +1.0,
     n: int = 256,
     tfinal: float = 1.0,
-    theta: float = 0.5,
+    theta: float = 0.75,
     interactive: bool = False,
     visualize: bool = True,
 ) -> None:
