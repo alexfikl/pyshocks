@@ -3,18 +3,12 @@ from dataclasses import dataclass
 import jax
 import jax.numpy as jnp
 
-from pyshocks import ConservationLawScheme, Grid, flux, numerical_flux
+from pyshocks import ConservationLawSchemeV2, Grid, flux, numerical_flux
 
 
 @dataclass(frozen=True)
-class TrafficFlowScheme(ConservationLawScheme):
-    @property
-    def order(self) -> int:
-        return 1
-
-    @property
-    def stencil_width(self) -> int:
-        return 1
+class TrafficFlowScheme(ConservationLawSchemeV2):
+    pass
 
 
 @flux.register(TrafficFlowScheme)
@@ -47,7 +41,10 @@ def main(
 ) -> None:
     # {{{ setup
 
-    scheme = TrafficFlowScheme()
+    from pyshocks.reconstruction import make_reconstruction_from_name
+
+    rec = make_reconstruction_from_name("constant")
+    scheme = TrafficFlowScheme(rec=rec)
 
     from pyshocks import make_uniform_grid
 
