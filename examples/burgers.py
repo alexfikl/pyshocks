@@ -9,7 +9,7 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    ConservationLawSchemeV2,
+    ConservationLawScheme,
     make_uniform_grid,
     apply_operator,
     predict_timestep,
@@ -20,7 +20,7 @@ logger = get_logger("burgers")
 
 
 def main(
-    scheme: ConservationLawSchemeV2,
+    scheme: ConservationLawScheme,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,

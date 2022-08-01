@@ -3,11 +3,11 @@ from dataclasses import dataclass
 import jax
 import jax.numpy as jnp
 
-from pyshocks import ConservationLawSchemeV2, Grid, flux, numerical_flux
+from pyshocks import ConservationLawScheme, Grid, flux, numerical_flux
 
 
 @dataclass(frozen=True)
-class TrafficFlowScheme(ConservationLawSchemeV2):
+class TrafficFlowScheme(ConservationLawScheme):
     pass
 
 

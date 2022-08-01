@@ -15,9 +15,7 @@ from pyshocks.grid import (
 )
 from pyshocks.schemes import (
     SchemeBase,
-    SchemeBaseV2,
     ConservationLawScheme,
-    ConservationLawSchemeV2,
     CombineConservationLawScheme,
     flux,
     numerical_flux,
@@ -67,9 +65,7 @@ __all__ = (
     "UniformGrid",
     "make_uniform_grid",
     "SchemeBase",
-    "SchemeBaseV2",
     "ConservationLawScheme",
-    "ConservationLawSchemeV2",
     "CombineConservationLawScheme",
     "flux",
     "numerical_flux",

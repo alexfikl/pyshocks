@@ -10,10 +10,7 @@ Schemes
 .. autoclass:: SchemeBase
     :no-show-inheritance:
 
-.. autoclass:: SchemeBaseV2
-
 .. autoclass:: ConservationLawScheme
-.. autoclass:: ConservationLawSchemeV2
 .. autoclass:: CombineConservationLawScheme
 
 .. autofunction:: flux
@@ -47,34 +44,6 @@ from pyshocks.reconstruction import Reconstruction
 
 @dataclass(frozen=True)
 class SchemeBase:
-    r"""Describes numerical schemes for a type of PDE.
-
-    The general form of the equations we will be looking at is
-
-    .. math::
-
-        \frac{\partial \mathbf{u}}{\partial t} =
-            \mathbf{A}(t, \mathbf{x}, \mathbf{u}, \nabla \mathbf{u}).
-
-    .. attribute:: order
-    .. attribute:: stencil_width
-    """
-
-    @property
-    def name(self) -> str:
-        return type(self).__name__
-
-    @property
-    def order(self) -> int:
-        raise NotImplementedError
-
-    @property
-    def stencil_width(self) -> int:
-        raise NotImplementedError
-
-
-@dataclass(frozen=True)
-class SchemeBaseV2(SchemeBase):
     r"""Describes numerical schemes for a type of PDE.
 
     The general form of the equations we will be looking at is
@@ -234,26 +203,7 @@ def _apply_operator_conservation_law(
 
 
 @dataclass(frozen=True)
-class ConservationLawSchemeV2(SchemeBaseV2):
-    pass
-
-
-@apply_operator.register(ConservationLawSchemeV2)
-def _apply_operator_conservation_law_v2(
-    scheme: ConservationLawSchemeV2,
-    grid: Grid,
-    bc: "Boundary",
-    t: float,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
-    u = apply_boundary(bc, grid, t, u)
-    f = numerical_flux(scheme, grid, t, u)
-
-    return -(f[1:] - f[:-1]) / grid.dx
-
-
-@dataclass(frozen=True)
-class CombineConservationLawScheme(ConservationLawSchemeV2):  # pylint: disable=W0223
+class CombineConservationLawScheme(ConservationLawScheme):  # pylint: disable=W0223
     r"""Implements a combined operator of conservation laws.
 
     In this case, we consider a conservation law in the form
@@ -273,11 +223,11 @@ class CombineConservationLawScheme(ConservationLawSchemeV2):  # pylint: disable=
 
         A tuple of :class:`ConservationLawScheme` objects.
     """
-    schemes: Tuple[ConservationLawSchemeV2, ...]
+    schemes: Tuple[ConservationLawScheme, ...]
 
     def __post_init__(self) -> None:
         assert len(self.schemes) > 1
-        assert all(isinstance(s, ConservationLawSchemeV2) for s in self.schemes)
+        assert all(isinstance(s, ConservationLawScheme) for s in self.schemes)
 
     @property
     def order(self) -> int:
