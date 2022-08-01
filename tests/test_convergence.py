@@ -234,7 +234,7 @@ def test_advection_convergence(
 
         return replace(s, velocity=velocity)
 
-    lm = make_limiter_from_name("default")
+    lm = make_limiter_from_name("default", theta=1.0)
     rec = make_reconstruction_from_name(rec_name, lm=lm)
     scheme = advection.make_scheme_from_name(scheme_name, rec=rec, velocity=None)
 
