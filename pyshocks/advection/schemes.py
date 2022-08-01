@@ -6,7 +6,7 @@ from typing import Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, SchemeBaseV2, Boundary
+from pyshocks import Grid, SchemeBase, Boundary
 from pyshocks import numerical_flux, apply_operator, predict_timestep
 
 
@@ -24,7 +24,7 @@ class SpatialVelocity:
 
 
 @dataclass(frozen=True)
-class Scheme(SchemeBaseV2):
+class Scheme(SchemeBase):
     """Base class for numerical schemes for the linear advection equation.
 
     .. attribute:: velocity

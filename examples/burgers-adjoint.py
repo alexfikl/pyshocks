@@ -12,7 +12,7 @@ import matplotlib.pyplot as mp
 from pyshocks import (
     UniformGrid,
     Boundary,
-    ConservationLawSchemeV2,
+    ConservationLawScheme,
     timeme,
 )
 from pyshocks import burgers, reconstruction, limiters, get_logger
@@ -24,7 +24,7 @@ logger = get_logger("burgers-adjoint")
 
 @dataclass
 class Simulation:
-    scheme: ConservationLawSchemeV2
+    scheme: ConservationLawScheme
     grid: UniformGrid
     bc: Boundary
     stepper: Stepper
@@ -215,7 +215,7 @@ def evolve_adjoint(
 
 
 def main(
-    scheme: ConservationLawSchemeV2,
+    scheme: ConservationLawScheme,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
