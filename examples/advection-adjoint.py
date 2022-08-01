@@ -10,7 +10,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
 from pyshocks import UniformGrid, Boundary, timeme
-from pyshocks import advection, get_logger
+from pyshocks import advection, reconstruction, limiters, get_logger
 from pyshocks.checkpointing import InMemoryCheckpoint
 from pyshocks.timestepping import Stepper, step, adjoint_step
 
@@ -28,9 +28,7 @@ class Simulation:
     @property
     def name(self) -> str:
         n = self.grid.n
-        scheme = type(self.scheme).__name__.lower()
-        stepper = type(self.stepper).__name__.lower()
-        return f"{scheme}_{stepper}_{n:05}"
+        return f"{self.scheme.name}_{type(self.stepper).__name__}_{n:05d}".lower()
 
 
 @timeme
@@ -329,6 +327,20 @@ if __name__ == "__main__":
         choices=advection.scheme_ids(),
     )
     parser.add_argument(
+        "-r",
+        "--reconstruct",
+        default="default",
+        type=str.lower,
+        choices=reconstruction.reconstruction_ids(),
+    )
+    parser.add_argument(
+        "-l",
+        "--limiter",
+        default="default",
+        type=str.lower,
+        choices=limiters.limiter_ids(),
+    )
+    parser.add_argument(
         "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
     )
     parser.add_argument(
@@ -337,12 +349,16 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
+    rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
+    ascheme = advection.make_scheme_from_name(args.scheme, rec=rec, velocity=None)
+
     from pyshocks.tools import set_recommended_matplotlib
 
     set_recommended_matplotlib()
 
     main(
-        advection.make_scheme_from_name(args.scheme),
+        ascheme,
         outdir=args.outdir,
         interactive=args.interactive,
     )

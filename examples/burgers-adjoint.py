@@ -12,10 +12,10 @@ import matplotlib.pyplot as mp
 from pyshocks import (
     UniformGrid,
     Boundary,
-    ConservationLawScheme,
+    ConservationLawSchemeV2,
     timeme,
 )
-from pyshocks import burgers, get_logger
+from pyshocks import burgers, reconstruction, limiters, get_logger
 from pyshocks.checkpointing import InMemoryCheckpoint
 from pyshocks.timestepping import step, adjoint_step, Stepper
 
@@ -24,7 +24,7 @@ logger = get_logger("burgers-adjoint")
 
 @dataclass
 class Simulation:
-    scheme: ConservationLawScheme
+    scheme: ConservationLawSchemeV2
     grid: UniformGrid
     bc: Boundary
     stepper: Stepper
@@ -34,9 +34,7 @@ class Simulation:
     @property
     def name(self) -> str:
         n = self.grid.n
-        scheme = type(self.scheme).__name__.lower()
-        stepper = type(self.stepper).__name__.lower()
-        return f"{scheme}_{stepper}_{n:05}"
+        return f"{self.scheme.name}_{type(self.stepper).__name__}_{n:05d}".lower()
 
 
 @timeme
@@ -217,7 +215,7 @@ def evolve_adjoint(
 
 
 def main(
-    scheme: ConservationLawScheme,
+    scheme: ConservationLawSchemeV2,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
@@ -324,6 +322,20 @@ if __name__ == "__main__":
         choices=burgers.scheme_ids(),
     )
     parser.add_argument(
+        "-r",
+        "--reconstruct",
+        default="default",
+        type=str.lower,
+        choices=reconstruction.reconstruction_ids(),
+    )
+    parser.add_argument(
+        "-l",
+        "--limiter",
+        default="default",
+        type=str.lower,
+        choices=limiters.limiter_ids(),
+    )
+    parser.add_argument(
         "--alpha", default=0.995, type=float, help="Lax-Friedrichs scheme parameter"
     )
     parser.add_argument(
@@ -335,12 +347,16 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
+    rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
+    ascheme = burgers.make_scheme_from_name(args.scheme, rec=rec, alpha=args.alpha)
+
     from pyshocks.tools import set_recommended_matplotlib
 
     set_recommended_matplotlib()
 
     main(
-        burgers.make_scheme_from_name(args.scheme, alpha=args.alpha),
+        ascheme,
         outdir=args.outdir,
         interactive=args.interactive,
     )

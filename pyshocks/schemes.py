@@ -75,7 +75,25 @@ class SchemeBase:
 
 @dataclass(frozen=True)
 class SchemeBaseV2(SchemeBase):
-    """
+    r"""Describes numerical schemes for a type of PDE.
+
+    The general form of the equations we will be looking at is
+
+    .. math::
+
+        \frac{\partial \mathbf{u}}{\partial t} =
+            \mathbf{A}(t, \mathbf{x}, \mathbf{u}, \nabla \mathbf{u}).
+
+    .. attribute:: order
+
+        Expected order of the scheme. This is the minimum convergence order
+        attainable for the scheme (e.g. WENO schemes can attain higher orders
+        for smooth solutions).
+
+    .. attribute:: stencil_width
+
+        The required stencil width for the scheme and reconstruction.
+
     .. attribute:: rec
 
         A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
@@ -263,11 +281,11 @@ class CombineConservationLawScheme(ConservationLawSchemeV2):  # pylint: disable=
 
     @property
     def order(self) -> int:
-        return min([s.order for s in self.schemes])
+        return min(s.order for s in self.schemes)
 
     @property
     def stencil_width(self) -> int:
-        return max([s.stencil_width for s in self.schemes])
+        return max(s.stencil_width for s in self.schemes)
 
 
 @predict_timestep.register(CombineConservationLawScheme)
