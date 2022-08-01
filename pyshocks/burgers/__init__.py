@@ -45,6 +45,7 @@ from pyshocks.burgers.schemes import (
 
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
+    "default": LaxFriedrichs,
     "rusanov": Rusanov,
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,

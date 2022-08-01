@@ -36,6 +36,7 @@ from pyshocks.diffusion.schemes import Scheme, CenteredScheme
 # {{{ make_scheme_from_name
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
+    "default": CenteredScheme,
     "centered": CenteredScheme,
 }
 

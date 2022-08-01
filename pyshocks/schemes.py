@@ -68,6 +68,8 @@ class SchemeBase:
         A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
         to reconstruct high-order face-based values when needed by the numerical
         scheme.
+
+    .. automethod:: __init__
     """
 
     rec: Reconstruction

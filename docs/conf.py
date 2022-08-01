@@ -35,6 +35,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # highlighting
 pygments_style = "sphinx"
 
+html_theme = "sphinx_rtd_theme"
+
 # }}}
 
 # {{{ internationalization

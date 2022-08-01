@@ -261,10 +261,18 @@ _LIMITERS: Dict[str, Type[Limiter]] = {
 
 
 def limiter_ids() -> Tuple[str, ...]:
+    """
+    :returns: a :class:`tuple` of available limiters.
+    """
     return tuple(_LIMITERS.keys())
 
 
 def make_limiter_from_name(name: str, **kwargs: Any) -> Limiter:
+    """
+    :arg name: name of the limiter.
+    :arg kwargs: additional arguments to pass to the limiter. Any arguments
+        that are not in the limiter's fields are ignored.
+    """
     cls = _LIMITERS.get(name)
     if cls is None:
         raise ValueError(f"flux limiter '{name}' not found; try one of {limiter_ids()}")

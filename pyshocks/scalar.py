@@ -67,13 +67,6 @@ def scalar_flux_upwind(
     assert u.shape[0] == grid.x.size
     assert a.shape == u.shape
 
-    # NOTE: the values are given at the cell boundaries as follows
-    #
-    #       i - 1             i           i + 1
-    #   --------------|--------------|--------------
-    #           u^R_{i - 1}      u^R_i
-    #                   u^L_i         u^L_{i + 1}
-
     ul, ur = reconstruct(scheme.rec, grid, u)
     al, ar = reconstruct(scheme.rec, grid, a)
 
@@ -144,8 +137,7 @@ def scalar_flux_rusanov(
         # FIXME: should the reconstruct a and use al/ar to get a local speed?
         a = jnp.maximum(a[1:], a[:-1])
 
-    # FIXME: should the diffusive part use u or ul/ur?
-    fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * nu * (u[1:] - u[:-1])
+    fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * nu * (ul[1:] - ur[:-1])
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 

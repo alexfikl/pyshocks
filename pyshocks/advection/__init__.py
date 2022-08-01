@@ -37,6 +37,7 @@ from pyshocks.advection.schemes import Scheme, Godunov
 Upwind = Godunov
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
+    "default": Godunov,
     "godunov": Godunov,
     "upwind": Godunov,
 }

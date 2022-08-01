@@ -6,6 +6,7 @@ Reconstruction
 --------------
 
 .. autoclass:: Reconstruction
+    :no-show-inheritance:
 .. autofunction:: reconstruct
 
 .. autoclass:: ConstantReconstruction
@@ -69,14 +70,27 @@ class Reconstruction:
 def reconstruct(
     rec: Reconstruction, grid: Grid, u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
-    """
+    r"""Reconstruct face values from the cell-averaged values *u*.
+
+    In this implementation, we use the convention that::
+
+            i - 1             i           i + 1
+        --------------|--------------|--------------
+                u^R_{i - 1}      u^R_i
+                        u^L_i         u^L_{i + 1}
+
+    i.e. :math:`u^R_i` referres to the right reconstructed value in cell :math:`i`
+    and represents the value at :math:`x_{i + \frac{1}{2}}` and :math:`u^L_i`
+    referres the left reconstructed value in the cell :math:`i` and represents
+    the value at :math:`x_{i - \frac{1}{2}}`.
+
     :arg rec: a reconstruction algorithm.
     :arg grid: the computational grid representation.
     :arg u: variable to reconstruct at the left and right cell faces.
 
     :returns: a :class:`tuple` of ``(ul, ur)`` containing a reconstructed
         state on the left and right side of each cell face. The dimension
-        of the returned arrays matches :attr:`pyshocks.Grid.nfaces`.
+        of the returned arrays matches :attr:`pyshocks.Grid.ncells`.
     """
     raise NotImplementedError(type(rec).__name__)
 
@@ -95,7 +109,7 @@ class ConstantReconstruction(Reconstruction):
 
     .. math::
 
-        (u^R_{i - \frac{1}{2}}, u^L_{i + \frac{1}{2}}) = (u_i, u_i).
+        (u^R_i, u^L_i) = (u_i, u_i).
 
     which results in a first-order scheme.
     """
@@ -130,7 +144,7 @@ def _reconstruct_first_order(
 @dataclass(frozen=True)
 class MUSCL(Reconstruction):
     r"""A second-order MUSCL (Monotonic Upstream-centered Scheme for
-    Conservation Laws).
+    Conservation Laws) reconstruction.
 
     The MUSCL reconstruction uses a limited linear interpolation to obtain
     the values at the cell faces by
@@ -138,9 +152,9 @@ class MUSCL(Reconstruction):
     .. math::
 
         \begin{aligned}
-        u^R_{i - \frac{1}{2}} =\,\, &
+        u^R_i =\,\, &
             u_i + \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
-        u^L_{i + \frac{1}{2}} =\,\, &
+        u^L_i =\,\, &
             u_i - \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
         \end{aligned}
 
@@ -313,10 +327,18 @@ _RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
 
 
 def reconstruction_ids() -> Tuple[str, ...]:
+    """
+    :returns: a :class:`tuple` of available reconstruction algorithms.
+    """
     return tuple(_RECONSTRUCTION.keys())
 
 
 def make_reconstruction_from_name(name: str, **kwargs: Any) -> Reconstruction:
+    """
+    :arg name: name of the reconstruction algorithm.
+    :arg kwargs: additional arguments to pass to the algorithm. Any arguments
+        that are not in the algorithm's fields are ignored.
+    """
     cls = _RECONSTRUCTION.get(name)
     if cls is None:
         raise ValueError(

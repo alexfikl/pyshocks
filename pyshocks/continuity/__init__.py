@@ -48,6 +48,7 @@ Upwind = Godunov
 # {{{ make_scheme_from_name
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
+    "default": Godunov,
     "godunov": Godunov,
     "upwind": Godunov,
 }
