@@ -208,7 +208,6 @@ class CombineConservationLawScheme(ConservationLawScheme):  # pylint: disable=W0
 
     In this case, we consider a conservation law in the form
 
-        return 1
     .. math::
 
         \frac{\partial \mathbf{u}}{\partial t}

@@ -347,7 +347,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
+    lm = limiters.make_limiter_from_name(args.limiter, theta=1.0, variant=1)
     rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
     ascheme = burgers.make_scheme_from_name(args.scheme, rec=rec, alpha=args.alpha)
 

@@ -13,6 +13,7 @@ Limiters
 .. autoclass:: MINMODLimiter
 .. autoclass:: MonotonizedCentralLimiter
 .. autoclass:: SUPERBEELimiter
+.. autoclass:: VanAlbadaLimiter
 .. autoclass:: KorenLimiter
 
 .. autofunction:: limiter_ids
@@ -175,6 +176,50 @@ def _limit_superbee(lm: SUPERBEELimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndar
 # }}}
 
 
+# {{{ van Albada
+
+
+@dataclass(frozen=True)
+class VanAlbadaLimiter(Limiter):
+    r"""The van Albada limiter that is given by
+
+    .. math::
+
+        \phi_v(r) =
+        \begin{cases}
+        \dfrac{r^2 + r}{r^2 + 1}, & \quad v = 1, \\
+        \dfrac{2 r}{r^2 + 1}, & \quad v = 2, \\
+        \end{cases}
+
+    where :math:`v` denotes the :attr:`variant` of the limiter.
+
+    .. attribute:: variant
+
+        Choses one of the two variants of the van Albada limiter.
+    """
+
+    variant: int
+
+    def __post_init__(self) -> None:
+        assert self.variant in (1, 2)
+
+
+@limit.register(VanAlbadaLimiter)
+def _limit_van_albada_1(
+    lm: VanAlbadaLimiter, grid: Grid, u: jnp.ndarray
+) -> jnp.ndarray:
+    r = slope(u)
+    if lm.variant == 1:
+        phi = (r**2 + r) / (r**2 + 1)
+    else:
+        phi = 2 * r / (r**2 + 1)
+
+    return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
+
+
+# }}}
+
+
 # {{{ Koren
 
 
@@ -211,6 +256,7 @@ _LIMITERS: Dict[str, Type[Limiter]] = {
     "minmod": MINMODLimiter,
     "mc": MonotonizedCentralLimiter,
     "superbee": SUPERBEELimiter,
+    "vanalbada": VanAlbadaLimiter,
     "koren": KorenLimiter,
 }
 

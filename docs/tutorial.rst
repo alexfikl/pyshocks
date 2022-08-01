@@ -44,14 +44,14 @@ As we are dealing with a conservation law, we would subclass the existing
 We start with a new class
 
 .. literalinclude:: ../examples/traffic-flow-model.py
-    :lines: 1-17
+    :lines: 1-11
     :language: python
     :linenos:
 
 for which we would need to implement the physical flux above
 
 .. literalinclude:: ../examples/traffic-flow-model.py
-    :lines: 20-27
+    :lines: 14-21
     :language: python
     :linenos:
 
@@ -59,7 +59,7 @@ Now, we are in a position to implement a numerical scheme for this model.
 For this, we use the standard upwind scheme
 
 .. literalinclude:: ../examples/traffic-flow-model.py
-    :lines: 30-40
+    :lines: 24-34
     :language: python
     :linenos:
 
@@ -69,7 +69,7 @@ to implement the scheme. To evolve the traffic flow model in time, we can use
 the following setup
 
 .. literalinclude:: ../examples/traffic-flow-model.py
-    :lines: 70-85
+    :lines: 67-82
     :language: python
     :linenos:
 
