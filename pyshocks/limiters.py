@@ -7,6 +7,7 @@ Limiters
 
 .. autoclass:: Limiter
     :no-show-inheritance:
+.. autofunction:: evaluate
 .. autofunction:: limit
 
 .. autoclass:: UnlimitedLimiter
@@ -49,12 +50,26 @@ class Limiter:
 
 
 @singledispatch
+def evaluate(lm: Limiter, r: jnp.ndarray) -> jnp.ndarray:
+    """Evaluate the limiter at a given slope ratio.
+
+    This is a separate function from :func:`limit` mostly for testing purposes.
+
+    :arg lm: an object that describes how to limit the variable.
+    :arg r: value at which to evaluate the limiter. In practice, this is
+        computed from the function value slopes as described by
+        :class:`Limiter`.
+    """
+    raise NotImplementedError(type(lm).__name__)
+
+
+@singledispatch
 def limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     """
     :arg lm: an object that describes how to limit the variable.
     :arg u: variable with cell-centered values
     """
-    raise NotImplementedError(type(lm).__name__)
+    return jnp.pad(evaluate(lm, slope(u)), 1)  # type: ignore[no-untyped-call]
 
 
 def slope(u: jnp.ndarray) -> jnp.ndarray:
@@ -77,6 +92,11 @@ def slope(u: jnp.ndarray) -> jnp.ndarray:
 @dataclass(frozen=True)
 class UnlimitedLimiter(Limiter):
     """This limiter performs no limiting and is mostly meant for testing."""
+
+
+@evaluate.register(UnlimitedLimiter)
+def _evaluate_unlimited(lm: UnlimitedLimiter, r: jnp.ndarray) -> jnp.ndarray:
+    return jnp.ones_like(r)  # type: ignore[no-untyped-call]
 
 
 @limit.register(UnlimitedLimiter)
@@ -113,14 +133,11 @@ class MINMODLimiter(Limiter):
             raise ValueError(f"'theta' must be in [1, 2]: {self.theta}")
 
 
-@limit.register(MINMODLimiter)
-def _limit_minmod(lm: MINMODLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    r = slope(u)
-    phi = jnp.maximum(
+@evaluate.register(MINMODLimiter)
+def _evaluate_minmod(lm: MINMODLimiter, r: jnp.ndarray) -> jnp.ndarray:
+    return jnp.maximum(
         0.0, jnp.minimum(jnp.minimum(lm.theta, lm.theta * r), (1 + r) / 2)
     )
-
-    return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -139,14 +156,11 @@ class MonotonizedCentralLimiter(Limiter):
     """
 
 
-@limit.register(MonotonizedCentralLimiter)
-def _limit_monotonized_central(
-    lm: MonotonizedCentralLimiter, grid: Grid, u: jnp.ndarray
+@evaluate.register(MonotonizedCentralLimiter)
+def _evaluate_monotonized_central(
+    lm: MonotonizedCentralLimiter, r: jnp.ndarray
 ) -> jnp.ndarray:
-    r = slope(u)
-    phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(4, 2 * r), (1 + 3 * r) / 4))
-
-    return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
+    return jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r), (1 + r) / 2))
 
 
 # }}}
@@ -165,12 +179,9 @@ class SUPERBEELimiter(Limiter):
     """
 
 
-@limit.register(SUPERBEELimiter)
-def _limit_superbee(lm: SUPERBEELimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    r = slope(u)
-    phi = jnp.maximum(0.0, jnp.maximum(jnp.minimum(1, 2 * r), jnp.minimum(2, r)))
-
-    return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
+@evaluate.register(SUPERBEELimiter)
+def _evaluate_superbee(lm: SUPERBEELimiter, r: jnp.ndarray) -> jnp.ndarray:
+    return jnp.maximum(0.0, jnp.maximum(jnp.minimum(1, 2 * r), jnp.minimum(2, r)))
 
 
 # }}}
@@ -204,17 +215,14 @@ class VanAlbadaLimiter(Limiter):
         assert self.variant in (1, 2)
 
 
-@limit.register(VanAlbadaLimiter)
-def _limit_van_albada_1(
-    lm: VanAlbadaLimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
-    r = slope(u)
+@evaluate.register(VanAlbadaLimiter)
+def _evaluate_van_albada_1(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
     if lm.variant == 1:
         phi = (r**2 + r) / (r**2 + 1)
     else:
         phi = 2 * r / (r**2 + 1)
 
-    return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
+    return jnp.maximum(phi, 0.0)
 
 
 # }}}
@@ -234,12 +242,9 @@ class KorenLimiter(Limiter):
     """
 
 
-@limit.register(KorenLimiter)
-def _limit_koren(lm: KorenLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    r = slope(u)
-    phi = jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r), (1 + 2 * r) / 3))
-
-    return jnp.pad(phi, 1)  # type: ignore[no-untyped-call]
+@evaluate.register(KorenLimiter)
+def _evaluate_koren(lm: KorenLimiter, r: jnp.ndarray) -> jnp.ndarray:
+    return jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r), (1 + 2 * r) / 3))
 
 
 # }}}
