@@ -328,6 +328,25 @@ def _evaluate_van_albada(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
     return jnp.maximum(0.0, phi)
 
 
+@slope_limit.register(VanAlbadaLimiter)
+def _slope_limit_van_albada(
+    lm: VanAlbadaLimiter, grid: Grid, u: jnp.ndarray
+) -> jnp.ndarray:
+    sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
+    sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
+
+    if lm.variant == 1:
+        s = jnp.where(  # type: ignore[no-untyped-call]
+            sl * sr <= 0.0, 0.0, sl * sr * (sl + sr) / (sl**2 + sr**2)
+        )
+    else:
+        s = jnp.where(  # type: ignore[no-untyped-call]
+            sl * sr <= 0.0, 0.0, 2.0 * sl * sr / (sl**2 + sr**2)
+        )
+
+    return s
+
+
 # }}}
 
 # {{{ van Leer
@@ -351,6 +370,18 @@ class VanLeerLimiter(Limiter):
 def _evaluate_van_leer(lm: VanLeerLimiter, r: jnp.ndarray) -> jnp.ndarray:
     rabs = jnp.abs(r)
     return jnp.maximum(0.0, (r + rabs) / (1 + rabs))
+
+
+@slope_limit.register(VanLeerLimiter)
+def _slope_limit_van_leer(
+    lm: VanLeerLimiter, grid: Grid, u: jnp.ndarray
+) -> jnp.ndarray:
+    sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
+    sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
+
+    return jnp.where(  # type: ignore[no-untyped-call]
+        sl * sr <= 0.0, 0.0, 2.0 * sl * sr / (sl + sr)
+    )
 
 
 # }}}
