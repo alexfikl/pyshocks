@@ -32,6 +32,7 @@ def cosine_pulse(
 
 
 def main(
+    rec_name: str,
     *,
     outdir: pathlib.Path,
     n: int = 256,
@@ -54,7 +55,7 @@ def main(
     from pyshocks import Quadrature, cell_average
 
     grid = make_uniform_grid(a=0.0, b=1.0, n=n, nghosts=3)
-    quad = Quadrature(grid=grid, order=6)
+    quad = Quadrature(grid=grid, order=5)
 
     velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
     u0 = cell_average(quad, cosine_pulse)
@@ -62,9 +63,10 @@ def main(
     from pyshocks.weno import es_weno_parameters
 
     eps, delta = es_weno_parameters(grid, u0)
+    logger.info("esweno: eps %.12e delta %.12e", eps, delta)
 
     boundary = PeriodicBoundary()
-    rec = reconstruction.make_reconstruction_from_name("esweno32")
+    rec = reconstruction.make_reconstruction_from_name(rec_name)
     scheme = advection.make_scheme_from_name(
         "esweno32", rec=rec, velocity=velocity, eps=eps, delta=delta
     )
@@ -179,6 +181,13 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-r",
+        "--reconstruct",
+        default="esweno32",
+        type=str.lower,
+        choices=reconstruction.reconstruction_ids(),
+    )
     parser.add_argument("-n", "--numcells", type=int, default=200)
     parser.add_argument("--interactive", action="store_true")
     parser.add_argument(
@@ -190,6 +199,7 @@ if __name__ == "__main__":
 
     set_recommended_matplotlib()
     main(
+        args.reconstruct,
         n=args.numcells,
         outdir=args.outdir,
         interactive=args.interactive,

@@ -71,15 +71,7 @@ def _apply_operator_advection(
 # {{{ upwind
 
 
-@dataclass(frozen=True)
-class Godunov(Scheme):
-    """A Godunov (upwind) scheme for the advection equation.
-
-    .. automethod:: __init__
-    """
-
-
-def advection_flux_upwind(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+def upwind_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     assert u.shape[0] == grid.x.size
 
     from pyshocks.reconstruction import reconstruct
@@ -93,18 +85,40 @@ def advection_flux_upwind(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.nda
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
+@dataclass(frozen=True)
+class Godunov(Scheme):
+    """A Godunov (upwind) scheme for the advection equation.
+
+    .. automethod:: __init__
+    """
+
+
 @numerical_flux.register(Godunov)
 def _numerical_flux_advection_godunov(
     scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.velocity is not None
-    return advection_flux_upwind(scheme, grid, u)
+    return upwind_flux(scheme, grid, u)
 
 
 # }}}
 
 
 # {{{ ESWENO
+
+
+def esweno_lf_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+    assert u.shape[0] == grid.x.size
+
+    from pyshocks.reconstruction import reconstruct
+
+    f = scheme.velocity * u
+    ul, ur = reconstruct(scheme.rec, grid, u)
+    fl, fr = reconstruct(scheme.rec, grid, f)
+
+    a = jnp.max(jnp.abs(scheme.velocity))
+    fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * (ul[1:] - ur[:-1])
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 @dataclass(frozen=True)
@@ -126,26 +140,27 @@ def _numerical_flux_burgers_esweno32(
     from pyshocks import reconstruction
 
     rec = scheme.rec
-    if not isinstance(rec, reconstruction.ESWENO32):
-        raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction")
 
-    # {{{ compute dissipative flux of ESWENO
+    if isinstance(rec, reconstruction.ESWENO32):
+        # {{{ compute dissipative flux of ESWENO
 
-    # NOTE: computing these twice :(
-    omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)[0, :]
+        # NOTE: computing these twice :(
+        omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)[0, :]
 
-    # NOTE: see Equation 37 in [Yamaleev2009] for mu expression
-    mu = jnp.sqrt((omega[1:] - omega[:-1]) ** 2 + rec.delta**2) / 8.0
+        # NOTE: see Equation 37 in [Yamaleev2009] for mu expression
+        mu = jnp.sqrt((omega[1:] - omega[:-1]) ** 2 + rec.delta**2) / 8.0
 
-    # NOTE: see Equation  in [Yamaleev2009] for flux expression
-    gnum = -(mu + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
+        # NOTE: see Equation  in [Yamaleev2009] for flux expression
+        gnum = -(mu + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
 
-    gnum = jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
+        gnum = jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
 
-    # }}}
+        # }}}
+    else:
+        gnum = 0.0
 
-    fnum = advection_flux_upwind(scheme, grid, u)
-    return fnum + gnum
+    return upwind_flux(scheme, grid, u) + gnum
+    # return esweno_lf_flux(scheme, grid, u) + gnum
 
 
 # }}}
