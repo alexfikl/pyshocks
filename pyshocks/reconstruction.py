@@ -28,7 +28,7 @@ from typing import Any, ClassVar, Dict, Tuple, Type
 import jax.numpy as jnp
 
 from pyshocks import Grid
-from pyshocks.limiters import Limiter, slope_limit
+from pyshocks.limiters import Limiter
 
 # {{{
 
@@ -168,6 +168,7 @@ class MUSCL(Reconstruction):
     """
 
     lm: Limiter
+    atol: float = 1.0e-12
 
     @property
     def name(self) -> str:
@@ -194,10 +195,28 @@ def _reconstruct_muscl(
         raise NotImplementedError("MUSCL is only implemented for uniform grids")
 
     assert grid.nghosts >= rec.stencil_width
-    du = slope_limit(rec.lm, grid, u)
 
-    ur = u + 0.5 * grid.dx * du
-    ul = u - 0.5 * grid.dx * du
+    from pyshocks.limiters import evaluate, local_slope_ratio
+
+    r = jnp.pad(local_slope_ratio(u, atol=rec.atol), 1)  # type: ignore[no-untyped-call]
+    phi_r = evaluate(rec.lm, r)
+
+    if rec.lm.is_symmetric:
+        phi_inv_r = jnp.where(  # type: ignore[no-untyped-call]
+            jnp.abs(r) < rec.atol, 0.0, phi_r / r
+        )
+    else:
+        inv_r = jnp.where(  # type: ignore[no-untyped-call]
+            jnp.abs(r) < rec.atol, rec.atol, 1 / r
+        )
+        phi_inv_r = evaluate(rec.lm, inv_r)
+
+    ur = jnp.pad(  # type: ignore[no-untyped-call]
+        u[:-1] + 0.5 * phi_r[:-1] * (u[1:] - u[:-1]), (0, 1)
+    )
+    ul = jnp.pad(  # type: ignore[no-untyped-call]
+        u[1:] - 0.5 * phi_inv_r[1:] * (u[1:] - u[:-1]), (1, 0)
+    )
 
     return ul, ur
 

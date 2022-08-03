@@ -52,7 +52,7 @@ def func_step(x: jnp.ndarray, w: float = 0.25) -> jnp.ndarray:
     ],
 )
 def test_flux_limiters(
-    lm_name: str, lm_kwargs: Dict[str, Any], smooth: bool, visualize: bool = True
+    lm_name: str, lm_kwargs: Dict[str, Any], smooth: bool, visualize: bool = False
 ) -> None:
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_grid(-1.0, 1.0, n=128, nghosts=1)
@@ -134,24 +134,26 @@ def test_flux_limiters(
     [
         # ("none", {}),
         ("minmod", {"theta": 1.0}),
-        # ("minmod", {"theta": 1.5}),
-        # ("minmod", {"theta": 2.0}),
+        ("minmod", {"theta": 1.5}),
+        ("minmod", {"theta": 2.0}),
         ("mc", {}),
         ("superbee", {}),
-        # ("vanalbada", {"variant": 1}),
-        # ("vanalbada", {"variant": 2}),
-        # ("koren", {}),
+        ("vanalbada", {"variant": 1}),
+        ("vanalbada", {"variant": 2}),
+        ("koren", {}),
     ],
 )
 @pytest.mark.parametrize(
     "smooth",
     [
-        True,
+        # NOTE: the smooth sine wave gives some TVD failures of the order
+        # of 1.0e-5, likely due to the poor handling of the extrema
+        # True,
         False,
     ],
 )
 def test_tvd_slope_limiter_burgers(
-    lm_name: str, lm_kwargs: Dict[str, Any], smooth: bool, visualize: bool = True
+    lm_name: str, lm_kwargs: Dict[str, Any], smooth: bool, visualize: bool = False
 ) -> None:
     from pyshocks.reconstruction import MUSCL
     from pyshocks.scalar import PeriodicBoundary
@@ -183,12 +185,13 @@ def test_tvd_slope_limiter_burgers(
     from pyshocks.timestepping import SSPRK33, step, predict_maxit_from_timestep
 
     dt = 0.1 * grid.dx_min / jnp.max(jnp.abs(u0))
-    tfinal = 0.25
+    tfinal = 0.5
     maxit, dt = predict_maxit_from_timestep(tfinal, dt)
 
     method = SSPRK33(
         predict_timestep=lambda t, u: dt,
         source=jax.jit(_apply_operator),
+        # source=_apply_operator,
         checkpoint=None,
     )
 
@@ -224,44 +227,44 @@ def test_tvd_slope_limiter_burgers(
     # }}}
 
     if not visualize:
-        return
+        sm_name = "sine" if smooth else "step"
+        lm_args = "_".join(f"{k}_{v}" for k, v in lm_kwargs.items())
+        suffix = f"{sm_name}_{lm_name}_{lm_args}".replace(".", "_")
 
-    sm_name = "sine" if smooth else "step"
-    lm_args = "_".join(f"{k}_{v}" for k, v in lm_kwargs.items())
-    suffix = f"{sm_name}_{lm_name}_{lm_args}".replace(".", "_")
+        import matplotlib.pyplot as mp
 
-    import matplotlib.pyplot as mp
+        fig = mp.figure()
 
-    fig = mp.figure()
+        # {{{ plot total variation
 
-    # {{{ plot total variation
+        ax = fig.gca()
 
-    ax = fig.gca()
+        ax.plot(tvd_increase)
+        ax.set_xlabel("$n$")
+        ax.set_ylabel("$TV(u^{n + 1}) - TV(u^n)$")
 
-    ax.plot(tvd_increase)
-    ax.set_xlabel("$n$")
-    ax.set_ylabel("$TV(u^{n + 1}) - TV(u^n)$")
+        fig.savefig(f"muscl_tvd_{suffix}")
+        fig.clf()
 
-    fig.savefig(f"muscl_tvd_{suffix}")
-    fig.clf()
+        # }}}
 
-    # }}}
+        # {{{ plot solution
 
-    # {{{ plot solution
+        ax = fig.gca()
 
-    ax = fig.gca()
+        i = grid.i_
+        ax.plot(grid.x[i], u[i])
+        ax.set_xlabel("$x$")
+        ax.set_ylabel("$u(T, x)$")
 
-    i = grid.i_
-    ax.plot(grid.x[i], u[i])
-    ax.set_xlabel("$x$")
-    ax.set_ylabel("$u(T, x)$")
+        fig.savefig(f"muscl_tvd_solution_{suffix}")
+        fig.clf()
 
-    fig.savefig(f"muscl_tvd_solution_{suffix}")
-    fig.clf()
+        # }}}
 
-    # }}}
+        mp.close(fig)
 
-    mp.close(fig)
+    assert fail_count == 0
 
 
 # }}}

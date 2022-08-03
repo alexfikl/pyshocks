@@ -55,7 +55,16 @@ class Limiter:
 
     On the other hand, a slope limiter gives an estimate of a TVD slope.
     This limiter is applied by calling :func:`slope_limit`.
+
+    .. attribute:: is_symmetric
+
+        Is *True* for flux limiters that exhibit the above symmetry. This can be
+        used to simplify the recontruction procedure.
     """
+
+    @property
+    def is_symmetric(self) -> bool:
+        return False
 
 
 @singledispatch
@@ -176,6 +185,10 @@ class MINMODLimiter(Limiter):
         if self.theta < 1.0 or self.theta > 2.0:
             raise ValueError(f"'theta' must be in [1, 2]: {self.theta}")
 
+    @property
+    def is_symmetric(self) -> bool:
+        return True
+
 
 @evaluate.register(MINMODLimiter)
 def _evaluate_minmod(lm: MINMODLimiter, r: jnp.ndarray) -> jnp.ndarray:
@@ -206,6 +219,10 @@ class MonotonizedCentralLimiter(Limiter):
 
         \phi(r) = max\left(0, \min\left(4, 2 r, \frac{1 + 3 r}{4}\right)\right).
     """
+
+    @property
+    def is_symmetric(self) -> bool:
+        return True
 
 
 @evaluate.register(MonotonizedCentralLimiter)
@@ -240,6 +257,10 @@ class SUPERBEELimiter(Limiter):
 
         \phi(r) = \max(0, \min(1, 2 r), \min(2, r)).
     """
+
+    @property
+    def is_symmetric(self) -> bool:
+        return True
 
 
 @evaluate.register(SUPERBEELimiter)
@@ -291,6 +312,10 @@ class VanAlbadaLimiter(Limiter):
     def __post_init__(self) -> None:
         assert self.variant in (1, 2)
 
+    @property
+    def is_symmetric(self) -> bool:
+        return self.variant == 1
+
 
 @evaluate.register(VanAlbadaLimiter)
 def _evaluate_van_albada(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
@@ -315,6 +340,10 @@ class VanLeerLimiter(Limiter):
 
         \phi(r) = \frac{r + |r|}{1 + |r|}
     """
+
+    @property
+    def is_symmetric(self) -> bool:
+        return True
 
 
 @evaluate.register(VanAlbadaLimiter)
