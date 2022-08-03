@@ -41,6 +41,7 @@ def func_step(x: jnp.ndarray, w: float = 0.25) -> jnp.ndarray:
         ("superbee", {}),
         ("vanalbada", {"variant": 1}),
         ("vanalbada", {"variant": 2}),
+        ("vanleer", {}),
         ("koren", {}),
     ],
 )
@@ -140,6 +141,7 @@ def test_flux_limiters(
         ("superbee", {}),
         ("vanalbada", {"variant": 1}),
         ("vanalbada", {"variant": 2}),
+        ("vanleer", {}),
         ("koren", {}),
     ],
 )
