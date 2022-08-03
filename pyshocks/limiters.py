@@ -46,7 +46,12 @@ class Limiter:
 
     which becomes zero when there is no need for limiting in the variable *u*.
     The limiter is applied by calling :func:`flux_limit`. Note that the limiter is
-    generally not guaranteed to be :math:`\phi(r) \le 1`.
+    generally not guaranteed to be :math:`\phi(r) \le 1`. Most limiter
+    exhibit a symmetry of the form
+
+    .. math::
+
+        \phi\left(\frac{1}{r}\right) = \frac{\phi(r)}{r}.
 
     On the other hand, a slope limiter gives an estimate of a TVD slope.
     This limiter is applied by calling :func:`slope_limit`.
@@ -57,7 +62,8 @@ class Limiter:
 def evaluate(lm: Limiter, r: jnp.ndarray) -> jnp.ndarray:
     """Evaluate the limiter at a given slope ratio.
 
-    This is a separate function from :func:`limit` mostly for testing purposes.
+    This function can be used to evaluate non-symmetric limiters at given
+    slope ratios.
 
     :arg lm: an object that describes how to limit the variable.
     :arg r: value at which to evaluate the limiter. In practice, this is
@@ -130,7 +136,7 @@ def _slope_limit_unlimited(
     lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray
 ) -> jnp.ndarray:
     return jnp.pad(  # type: ignore[no-untyped-call]
-        (u[2:] - u[:-2]) / (grid.x[2:] - grid.x[:-2]), 1
+        (u[2:] + u[:-2]) / (grid.x[2:] - grid.x[:-2]), 1
     )
 
 
@@ -150,7 +156,7 @@ def minmod(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
 
 @dataclass(frozen=True)
 class MINMODLimiter(Limiter):
-    r"""The parametrized ``minmod`` limiter given by
+    r"""The parametrized MINMOD symmetric limiter given by
 
     .. math::
 
@@ -194,7 +200,7 @@ def _slope_limit_minmod(lm: MINMODLimiter, grid: Grid, u: jnp.ndarray) -> jnp.nd
 
 @dataclass(frozen=True)
 class MonotonizedCentralLimiter(Limiter):
-    r"""The monotonized central limiter is given by
+    r"""The monotonized central symmetric limiter is given by
 
     .. math::
 
@@ -228,7 +234,7 @@ def _slope_limit_monotonized_central(
 
 @dataclass(frozen=True)
 class SUPERBEELimiter(Limiter):
-    r"""The classic SUPERBEE limiter that is given by
+    r"""The classic SUPERBEE symmetric limiter that is given by
 
     .. math::
 
@@ -271,11 +277,13 @@ class VanAlbadaLimiter(Limiter):
         \dfrac{2 r}{r^2 + 1}, & \quad v = 2, \\
         \end{cases}
 
-    where :math:`v` denotes the :attr:`variant` of the limiter.
+    where :math:`v` denotes the :attr:`variant` of the limiter. Note that the
+    second variant of the van Albada limiter is not symmetric.
 
     .. attribute:: variant
 
-        Choses one of the two variants of the van Albada limiter.
+        Choses one of the two variants of the van Albada limiter. This is an
+        integer that takes values in :math:`\{1, 2\}`.
     """
 
     variant: int
@@ -285,17 +293,37 @@ class VanAlbadaLimiter(Limiter):
 
 
 @evaluate.register(VanAlbadaLimiter)
-def _evaluate_van_albada_1(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
+def _evaluate_van_albada(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
     if lm.variant == 1:
         phi = (r**2 + r) / (r**2 + 1)
     else:
         phi = 2 * r / (r**2 + 1)
 
-    return jnp.maximum(phi, 0.0)
+    return jnp.maximum(0.0, phi)
 
 
 # }}}
 
+# {{{ van Leer
+
+
+@dataclass(frozen=True)
+class VanLeerLimiter(Limiter):
+    r"""The (symmetric) van Leer limiter that is given by
+
+    .. math::
+
+        \phi(r) = \frac{r + |r|}{1 + |r|}
+    """
+
+
+@evaluate.register(VanAlbadaLimiter)
+def _evaluate_van_albada_1(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
+    rabs = jnp.abs(r)
+    return jnp.maximum(0.0, (r + rabs) / (1 + rabs))
+
+
+# }}}
 
 # {{{ Koren
 
@@ -330,6 +358,7 @@ _LIMITERS: Dict[str, Type[Limiter]] = {
     "mc": MonotonizedCentralLimiter,
     "superbee": SUPERBEELimiter,
     "vanalbada": VanAlbadaLimiter,
+    "vanleer": VanLeerLimiter,
     "koren": KorenLimiter,
 }
 

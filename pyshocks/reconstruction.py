@@ -14,6 +14,7 @@ Reconstruction
 .. autoclass:: WENOJS
 .. autoclass:: WENOJS32
 .. autoclass:: WENOJS53
+.. autoclass:: ESWENO32
 
 .. autofunction:: reconstruction_ids
 .. autofunction:: make_reconstruction_from_name
@@ -153,14 +154,12 @@ class MUSCL(Reconstruction):
 
         \begin{aligned}
         u^R_i =\,\, &
-            u_i + \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
+            u_i + \frac{\Delta x_i}{2} \overbar{\Delta u}_i, \\
         u^L_i =\,\, &
-            u_i - \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
+            u_i - \frac{\Delta x_i}{2} \verbar{\Delta u}_i, \\
         \end{aligned}
 
-    where :math:`\phi` is the limiter given by :attr:`lm`. This method requires
-    that the limiter takes values in :math:`\phi(r) \in [0, 1]`, which not all
-    limiters do.
+    where :math:`\overbar{\Delta u}_i` is the limited slope given by :attr:`lm`.
 
     .. attribute:: lm
 
@@ -341,11 +340,6 @@ class ESWENO32(Reconstruction):
 
     Note that this scheme only implements the modified weights of [Yamaleev2009]_,
     not the entire energy stable WENO scheme.
-
-    .. [Yamaleev2009] N. K. Yamaleev, M. H. Carpenter, *Third-Order Energy
-        Stable WENO Scheme,
-        Journal of Computational Physics, Vol. 228, pp. 3025--3047, 2009,
-        `DOI <http://dx.doi.org/10.1016/j.jcp.2009.01.011>`__.
     """
 
     eps: float = 1.0e-6

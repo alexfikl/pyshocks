@@ -15,9 +15,12 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+.. autoclass:: Godunov
 .. autoclass:: Rusanov
 .. autoclass:: LaxFriedrichs
 .. autoclass:: EngquistOsher
+.. autoclass:: ESWENO32
+.. autoclass:: SBP
 
 .. autofunction:: scheme_ids
 .. autofunction:: make_scheme_from_name
@@ -43,6 +46,7 @@ from pyshocks.burgers.schemes import (
     LaxFriedrichs,
     EngquistOsher,
     ESWENO32,
+    SBP,
 )
 
 
@@ -134,6 +138,7 @@ __all__ = (
     "LaxFriedrichs",
     "EngquistOsher",
     "ESWENO32",
+    "SBP",
     "scheme_ids",
     "make_scheme_from_name",
     "ic_tophat",
