@@ -16,6 +16,7 @@ Limiters
 .. autoclass:: MonotonizedCentralLimiter
 .. autoclass:: SUPERBEELimiter
 .. autoclass:: VanAlbadaLimiter
+.. autoclass:: VanLeerLimiter
 .. autoclass:: KorenLimiter
 
 .. autofunction:: limiter_ids
@@ -346,8 +347,8 @@ class VanLeerLimiter(Limiter):
         return True
 
 
-@evaluate.register(VanAlbadaLimiter)
-def _evaluate_van_albada_1(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
+@evaluate.register(VanLeerLimiter)
+def _evaluate_van_leer(lm: VanLeerLimiter, r: jnp.ndarray) -> jnp.ndarray:
     rabs = jnp.abs(r)
     return jnp.maximum(0.0, (r + rabs) / (1 + rabs))
 

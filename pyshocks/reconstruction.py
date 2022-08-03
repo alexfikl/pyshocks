@@ -11,6 +11,7 @@ Reconstruction
 
 .. autoclass:: ConstantReconstruction
 .. autoclass:: MUSCL
+.. autoclass:: MUSCLS
 .. autoclass:: WENOJS
 .. autoclass:: WENOJS32
 .. autoclass:: WENOJS53
@@ -155,12 +156,12 @@ class MUSCL(Reconstruction):
 
         \begin{aligned}
         u^R_i =\,\, &
-            u_i + \frac{\Delta x_i}{2} \overbar{\Delta u}_i, \\
+            u_i + \frac{\phi(r_i)}{2} (u_{i + 1} - u_i), \\
         u^L_i =\,\, &
-            u_i - \frac{\Delta x_i}{2} \verbar{\Delta u}_i, \\
+            u_i - \frac{\phi(r_i^{-1})}{2} (u_i - u_{i - 1}), \\
         \end{aligned}
 
-    where :math:`\overbar{\Delta u}_i` is the limited slope given by :attr:`lm`.
+    where :math:`\phi` is a limiter given by :attr:`lm`.
 
     .. attribute:: lm
 
@@ -218,6 +219,47 @@ def _reconstruct_muscl(
     ul = jnp.pad(  # type: ignore[no-untyped-call]
         u[1:] - 0.5 * phi_inv_r[1:] * (u[1:] - u[:-1]), (1, 0)
     )
+
+    return ul, ur
+
+
+# }}}
+
+
+# {{{ MUSCL-slope
+
+
+@dataclass(frozen=True)
+class MUSCLS(MUSCL):
+    r"""A second-order MUSCL (Monotonic Upstream-centered Scheme for
+    Conservation Laws) reconstruction.
+
+    Unlike :class:`MUSCL`, this class uses slope limiters to construct an
+    approximation in each cell. The results are similar in most cases, but
+    it is a bit simpler to construct. Note that not all limiters support
+    :func:`~pyshocks.limiters.slope_limit`.
+    """
+
+
+@reconstruct.register(MUSCLS)
+def _reconstruct_muscls(
+    rec: MUSCLS, grid: Grid, u: jnp.ndarray
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    from pyshocks import UniformGrid
+
+    # FIXME: would this work on non-uniform grids? may need to change the
+    # limiters a bit to also contain the dx slopes?
+    if not isinstance(grid, UniformGrid):
+        raise NotImplementedError("MUSCL is only implemented for uniform grids")
+
+    assert grid.nghosts >= rec.stencil_width
+
+    from pyshocks.limiters import slope_limit
+
+    du = slope_limit(rec.lm, grid, u)
+
+    ur = u + 0.5 * grid.dx * du
+    ul = u - 0.5 * grid.dx * du
 
     return ul, ur
 
@@ -468,6 +510,7 @@ _RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
     "default": ConstantReconstruction,
     "constant": ConstantReconstruction,
     "muscl": MUSCL,
+    "muscls": MUSCLS,
     "wenojs32": WENOJS32,
     "wenojs53": WENOJS53,
     "esweno32": ESWENO32,
