@@ -2,14 +2,15 @@
 # SPDX-License-Identifier: MIT
 
 from itertools import product
-from typing import Tuple
+from typing import List, Tuple
 
 import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
 
 from pyshocks import get_logger
-from pyshocks.reconstruction import WENOJS, make_reconstruction_from_name
+from pyshocks import make_uniform_grid
+from pyshocks.reconstruction import WENOJS, reconstruct, make_reconstruction_from_name
 
 import pytest
 
@@ -154,7 +155,7 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> No
 # }}}
 
 
-# {{{
+# {{{ test_weno_vs_pyweno
 
 
 def _pyweno_reconstruct(
@@ -177,7 +178,7 @@ def _pyweno_reconstruct(
         ("wenojs53", 5, 512),
     ],
 )
-def test_weno_reference(
+def test_weno_vs_pyweno(
     rec_name: str, order: int, n: int, visualize: bool = False
 ) -> None:
     """Compares our weno reconstruction to PyWENO"""
@@ -190,8 +191,6 @@ def test_weno_reference(
             visualize = False
 
     # {{{ reference values
-
-    from pyshocks import make_uniform_grid
 
     rec = make_reconstruction_from_name(rec_name)
     assert isinstance(rec, WENOJS)
@@ -222,8 +221,6 @@ def test_weno_reference(
     error_r = rnorm(grid, sr, betar)
     logger.info("error smoothness: left %.5e right %.5e", error_l, error_r)
     assert error_l < 1.0e-5 and error_r < 1.0e-8
-
-    from pyshocks.reconstruction import reconstruct
 
     ulhat, urhat = reconstruct(rec, grid, u)
 
@@ -257,6 +254,57 @@ def test_weno_reference(
     fig.savefig("test_weno_reference_smoothness")
 
     plt.close(fig)
+
+
+# }}}
+
+
+# {{{ test_weno_smooth_reconstruction_order
+
+
+def func_sine(x: jnp.ndarray, k: int = 1) -> jnp.ndarray:
+    return jnp.sin(2.0 * jnp.pi * k * x)
+
+
+@pytest.mark.parametrize(
+    ("name", "order", "resolutions"),
+    [
+        ("wenojs32", 3, list(range(192, 384 + 1, 32))),
+        ("wenojs53", 5, list(range(32, 256 + 1, 32))),
+        ("esweno32", 3, list(range(192, 384 + 1, 32))),
+    ],
+)
+def test_weno_smooth_reconstruction_order(
+    name: str, order: int, resolutions: List[int], visualize: bool = True
+) -> None:
+    from pyshocks import Quadrature, cell_average
+    from pyshocks import EOCRecorder, rnorm
+
+    eoc_l = EOCRecorder(name="ul")
+    eoc_r = EOCRecorder(name="ur")
+
+    for n in resolutions:
+        rec = make_reconstruction_from_name(name)
+
+        grid = make_uniform_grid(-1.0, 1.0, n=n, nghosts=rec.stencil_width)
+        quad = Quadrature(grid, order=order + 1)
+        u0 = cell_average(quad, func_sine)
+
+        ul_ref = ur_ref = func_sine(grid.f)
+        ul, ur = reconstruct(rec, grid, u0)
+
+        error_l = rnorm(grid, ul, ul_ref[:-1], p=jnp.inf)
+        error_r = rnorm(grid, ur, ur_ref[1:], p=jnp.inf)
+        logger.info("error: n %4d ul %.12e ur %.12e", n, error_l, error_r)
+
+        eoc_l.add_data_point(grid.dx_max, error_l)
+        eoc_r.add_data_point(grid.dx_max, error_r)
+
+    logger.info("\n%s", eoc_l)
+    logger.info("\n%s", eoc_r)
+
+    assert eoc_l.estimated_order >= order - 0.5
+    assert eoc_r.estimated_order >= order - 0.5
 
 
 # }}}
