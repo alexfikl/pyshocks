@@ -199,13 +199,18 @@ def _numerical_flux_burgers_esweno32(
     # NOTE: computing these twice :(
     omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)[0, :]
 
+    # NOTE: see Equation 37 in [Yamaleev2009] for mu expression
     mu = jnp.sqrt((omega[1:] - omega[:-1]) ** 2 + rec.delta**2) / 8.0
-    gnum = (mu + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
+
+    # NOTE: see Equation  in [Yamaleev2009] for flux expression
+    gnum = -(mu + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
+
+    gnum = jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
 
     # }}}
 
     fnum = scalar_flux_upwind(scheme, grid, t, u, u)
-    return fnum - jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
+    return fnum + gnum
 
 
 # }}}

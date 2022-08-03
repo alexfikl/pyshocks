@@ -258,8 +258,10 @@ def main(
     # {{{ time stepping
 
     if isinstance(scheme.rec, reconstruction.ESWENO32):
+        from pyshocks.weno import es_weno_parameters
+
         # NOTE: prefer the parameters recommended by Carpenter!
-        eps, delta = reconstruction.es_weno_from_grid(grid, u0)
+        eps, delta = es_weno_parameters(grid, u0)
         scheme = replace(scheme, rec=replace(rec, eps=eps, delta=delta))
 
     from pyshocks import predict_timestep, apply_operator

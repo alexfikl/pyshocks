@@ -377,25 +377,6 @@ def _reconstruct_wenojs(
 # {{{ ESWENO
 
 
-def es_weno_from_grid(grid: Grid, u0: jnp.ndarray) -> Tuple[float, float]:
-    """Estimate the ESWENO32 parameters from the grid and initial condition.
-
-    :returns: ``(eps, delta)``, where ``eps`` is given by Equation 65
-        and ``delta`` is given by Equation 66 in [Yamaleev2009]_.
-    """
-    # FIXME: eps should also contain the derivative of u0 away from discontinuities,
-    # but not sure how to compute that in a vaguely accurate way. Also, we mostly
-    # look at piecewise constant shock solutions where du0/dx ~ 0, so this
-    # should be sufficient for the moment.
-
-    # NOTE: as in Yamaleev2009, we're using the L1 norm for u0
-    i = grid.i_
-    eps = jnp.sum(grid.dx[i] * jnp.abs(u0[i])) * grid.dx_min**2
-    delta = grid.dx_min**2
-
-    return eps, delta
-
-
 @dataclass(frozen=True)
 class ESWENO32(Reconstruction):
     """Third-order WENO reconstruction for the Energy Stable WENO (ESWENO)
