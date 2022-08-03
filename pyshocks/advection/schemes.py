@@ -145,7 +145,7 @@ def _numerical_flux_burgers_esweno32(
         # {{{ compute dissipative flux of ESWENO
 
         # NOTE: computing these twice :(
-        omega0, omega1 = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
+        _, omega1 = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
 
         # NOTE: see Equation 37 in [Yamaleev2009] for mu expression
         mu = jnp.sqrt((omega1[1:] - omega1[:-1]) ** 2 + rec.delta**2) / 8.0
