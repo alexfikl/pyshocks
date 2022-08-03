@@ -170,10 +170,14 @@ def test_tvd_slope_limiter_burgers(
     scheme = burgers.Godunov(rec=rec)
     boundary = PeriodicBoundary()
 
+    from pyshocks import Quadrature, cell_average
+
+    quad = Quadrature(grid, order=3)
+
     if smooth:
-        u0 = func_sine(grid.x)
+        u0 = cell_average(quad, func_sine)
     else:
-        u0 = func_step(grid.x)
+        u0 = cell_average(quad, func_step)
 
     # }}}
 
@@ -228,7 +232,7 @@ def test_tvd_slope_limiter_burgers(
 
     # }}}
 
-    if not visualize:
+    if visualize:
         sm_name = "sine" if smooth else "step"
         lm_args = "_".join(f"{k}_{v}" for k, v in lm_kwargs.items())
         suffix = f"{sm_name}_{lm_name}_{lm_args}".replace(".", "_")
