@@ -20,6 +20,7 @@ Schemes
 .. autoclass:: LaxFriedrichs
 .. autoclass:: EngquistOsher
 .. autoclass:: ESWENO32
+.. autoclass:: SSWENO242
 .. autoclass:: SBP
 
 .. autofunction:: scheme_ids
@@ -46,6 +47,7 @@ from pyshocks.burgers.schemes import (
     LaxFriedrichs,
     EngquistOsher,
     ESWENO32,
+    SSWENO242,
     SBP,
 )
 
@@ -138,6 +140,7 @@ __all__ = (
     "LaxFriedrichs",
     "EngquistOsher",
     "ESWENO32",
+    "SSWENO242",
     "SBP",
     "scheme_ids",
     "make_scheme_from_name",

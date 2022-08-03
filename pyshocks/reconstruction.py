@@ -15,6 +15,7 @@ Reconstruction
 .. autoclass:: WENOJS32
 .. autoclass:: WENOJS53
 .. autoclass:: ESWENO32
+.. autoclass:: SSWENO242
 
 .. autofunction:: reconstruction_ids
 .. autofunction:: make_reconstruction_from_name
@@ -395,6 +396,47 @@ def _reconstruct_esweno32(
     ul = _reconstruct_es_weno_side(rec, u[::-1])[::-1]
 
     return ul, ur
+
+
+# }}}
+
+
+# {{{ SSWENO
+
+
+@dataclass(frozen=True)
+class SSWENO242(Reconstruction):
+    """Fourth-order WENO reconstruction for the Entropy Stable WENO (SSWENO)
+    scheme of [Fisher2013]_.
+
+    Note that the scheme deteriorates to second-order in regions of strong
+    gradients (and shocks) and boundaries. Boundaries are expected to be
+    implemented as described in [Fisher2013]_ to achive an entropy-stable
+    scheme.
+
+    """
+
+    @property
+    def order(self) -> int:
+        return 2
+
+    @property
+    def stencil_width(self) -> int:
+        return 2
+
+
+@reconstruct.register(SSWENO242)
+def _reconstruct_ssweno242(
+    rec: SSWENO242, grid: Grid, u: jnp.ndarray
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    from pyshocks import UniformGrid
+
+    assert grid.nghosts >= rec.stencil_width
+
+    if not isinstance(grid, UniformGrid):
+        raise NotImplementedError("SSWENO is only implemented for uniform grids")
+
+    raise NotImplementedError
 
 
 # }}}

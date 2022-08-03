@@ -210,6 +210,31 @@ def _numerical_flux_burgers_esweno32(
 
 # }}}
 
+
+# {{{ SSWENO242
+
+
+@dataclass(frozen=True)
+class SSWENO242(Scheme):
+    """Fourth-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_.
+
+    .. [Fisher2013] T. C. Fisher, M. H. Carpenter, *High-Order Entropy Stable
+        Finite Difference Schemes for Nonlinear Conservation Laws: Finite Domains*,
+        Journal of Computational Physics, Vol. 252, pp. 518--557, 2013,
+        `DOI <http://dx.doi.org/10.1016/j.jcp.2013.06.014>`__.
+    """
+
+
+@numerical_flux.register(SSWENO242)
+def _numerical_flux_burgers_ssweno242(
+    scheme: SSWENO242, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    raise NotImplementedError
+
+
+# }}}
+
+
 # {{{ SBP
 
 
