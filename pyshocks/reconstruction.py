@@ -201,6 +201,7 @@ def _reconstruct_muscl(
     r = jnp.pad(local_slope_ratio(u, atol=rec.atol), 1)  # type: ignore[no-untyped-call]
     phi_r = evaluate(rec.lm, r)
 
+    # FIXME: the symmetric case has some more simplifications; worth it?
     if rec.lm.is_symmetric:
         phi_inv_r = jnp.where(  # type: ignore[no-untyped-call]
             jnp.abs(r) < rec.atol, 0.0, phi_r / r
