@@ -159,8 +159,7 @@ def _numerical_flux_burgers_esweno32(
     else:
         gnum = 0.0
 
-    return upwind_flux(scheme, grid, u) + gnum
-    # return esweno_lf_flux(scheme, grid, u) + gnum
+    return esweno_lf_flux(scheme, grid, u) + gnum
 
 
 # }}}
