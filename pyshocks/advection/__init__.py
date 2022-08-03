@@ -20,6 +20,7 @@ Schemes
 
 .. autoclass:: Scheme
 .. autoclass:: Godunov
+.. autoclass:: ESWENO32
 
 .. class:: Upwind
 
@@ -31,7 +32,7 @@ Schemes
 
 from typing import Any, Dict, Tuple, Type
 
-from pyshocks.advection.schemes import Scheme, Godunov
+from pyshocks.advection.schemes import Scheme, Godunov, ESWENO32
 
 # NOTE: just providing an alias for common usage
 Upwind = Godunov
@@ -40,6 +41,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "default": Godunov,
     "godunov": Godunov,
     "upwind": Godunov,
+    "esweno32": ESWENO32,
 }
 
 
@@ -73,6 +75,7 @@ __all__ = (
     "Scheme",
     "Godunov",
     "Upwind",
+    "ESWENO32",
     "scheme_ids",
     "make_scheme_from_name",
 )

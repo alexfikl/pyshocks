@@ -282,9 +282,13 @@ def _norm(u: jnp.ndarray, dx: jnp.ndarray, p: Union[str, float]) -> jnp.ndarray:
 
 
 def norm(
-    grid: Grid, u: jnp.ndarray, *, p: Union[str, float] = 2, weighted: bool = False
+    grid: Grid, u: jnp.ndarray, *, p: Union[str, float] = 1, weighted: bool = False
 ) -> jnp.ndarray:
     r"""Computes the interior :math:`\ell^p` norm of *u*.
+
+    Note that the weighted :math:`\ell^p` norm actually results in the
+    :math:`L^p` norm, as *u* are cell averages. This is not the case of the
+    remaining norms.
 
     :arg p: can be a (positive) floating point value or a string. The order can
         also be ``"inf"`` or ``"-inf"`` or ``"tvd"`` for the maximum, minimum
@@ -303,7 +307,7 @@ def rnorm(
     u: jnp.ndarray,
     v: jnp.ndarray,
     *,
-    p: Union[str, float] = 2,
+    p: Union[str, float] = 1,
     weighted: bool = False,
     atol: float = 1.0e-14,
 ) -> jnp.ndarray:

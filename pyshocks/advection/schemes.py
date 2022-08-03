@@ -79,21 +79,10 @@ class Godunov(Scheme):
     """
 
 
-@numerical_flux.register(Godunov)
-def _numerical_flux_advection_godunov(
-    scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    assert scheme.velocity is not None
+def advection_flux_upwind(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     assert u.shape[0] == grid.x.size
 
     from pyshocks.reconstruction import reconstruct
-
-    # NOTE: the values are given at the cell boundaries as follows
-    #
-    #       i - 1             i           i + 1
-    #   --------------|--------------|--------------
-    #           u^R_{i - 1}      u^R_i
-    #                   u^L_i         u^L_{i + 1}
 
     ul, ur = reconstruct(scheme.rec, grid, u)
     al, ar = reconstruct(scheme.rec, grid, scheme.velocity)
@@ -102,6 +91,61 @@ def _numerical_flux_advection_godunov(
     fnum = jnp.where(aavg > 0, ur[:-1], ul[1:])  # type: ignore[no-untyped-call]
 
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+
+
+@numerical_flux.register(Godunov)
+def _numerical_flux_advection_godunov(
+    scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert scheme.velocity is not None
+    return advection_flux_upwind(scheme, grid, u)
+
+
+# }}}
+
+
+# {{{ ESWENO
+
+
+@dataclass(frozen=True)
+class ESWENO32(Scheme):
+    """Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_.
+
+    .. [Yamaleev2009] N. K. Yamaleev, M. H. Carpenter, *Third-Order Energy
+        Stable WENO Scheme*,
+        Journal of Computational Physics, Vol. 228, pp. 3025--3047, 2009,
+        `DOI <http://dx.doi.org/10.1016/j.jcp.2009.01.011>`__.
+    """
+
+
+@numerical_flux.register(ESWENO32)
+def _numerical_flux_burgers_esweno32(
+    scheme: ESWENO32, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.weno import es_weno_weights
+    from pyshocks import reconstruction
+
+    rec = scheme.rec
+    if not isinstance(rec, reconstruction.ESWENO32):
+        raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction")
+
+    # {{{ compute dissipative flux of ESWENO
+
+    # NOTE: computing these twice :(
+    omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)[0, :]
+
+    # NOTE: see Equation 37 in [Yamaleev2009] for mu expression
+    mu = jnp.sqrt((omega[1:] - omega[:-1]) ** 2 + rec.delta**2) / 8.0
+
+    # NOTE: see Equation  in [Yamaleev2009] for flux expression
+    gnum = -(mu + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
+
+    gnum = jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
+
+    # }}}
+
+    fnum = advection_flux_upwind(scheme, grid, u)
+    return fnum + gnum
 
 
 # }}}
