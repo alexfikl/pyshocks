@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from functools import partial
 from typing import Any, Dict
 
 import pytest
@@ -23,10 +24,12 @@ def func_sine(x: jnp.ndarray, k: int = 1) -> jnp.ndarray:
     return jnp.sin(2.0 * jnp.pi * k * x)
 
 
-def func_step(x: jnp.ndarray, w: float = 0.25) -> jnp.ndarray:
-    mid = (x[0] + x[-1]) / 2
-    a = mid - w * (mid - x[0])
-    b = mid + w * (x[-1] - mid)
+def func_step(
+    x: jnp.ndarray, w: float = 0.25, a: float = -1.0, b: float = 1.0
+) -> jnp.ndarray:
+    mid = (b + a) / 2
+    a = mid - w * (mid - a)
+    b = mid + w * (b - mid)
 
     return jnp.logical_and(x > a, x < b).astype(x.dtype)
 
@@ -58,10 +61,14 @@ def test_flux_limiters(
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_grid(-1.0, 1.0, n=128, nghosts=1)
 
+    from pyshocks import Quadrature, cell_average
+
+    quad = Quadrature(grid, order=3)
+
     if smooth:
-        u = func_sine(grid.x)
+        u = cell_average(quad, func_sine)
     else:
-        u = func_step(grid.x)
+        u = cell_average(quad, partial(func_step, a=grid.a, b=grid.b))
 
     from pyshocks.limiters import flux_limit, evaluate
 
@@ -70,6 +77,13 @@ def test_flux_limiters(
 
     i = grid.i_
     logger.info("phi: %.5e %.5e", jnp.min(phi[i]), jnp.max(phi[i]))
+
+    if smooth:
+        assert jnp.max(phi[i]) > 0.0
+    else:
+        # NOTE: the step function is piecewise constant, so we expect the
+        # limiter to always decay to the first-order scheme.
+        assert jnp.max(phi[i]) < 1.0e-12
 
     if not visualize:
         return
