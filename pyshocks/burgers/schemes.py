@@ -40,6 +40,30 @@ def _predict_timestep_burgers(
 # }}}
 
 
+# {{{ Godunov
+
+
+@dataclass(frozen=True)
+class Godunov(Scheme):
+    r"""Standard Godunov (upwind) scheme with the flux given by
+    :func:`~pyshocks.scalar.scalar_flux_upwind`.
+
+    .. automethod:: __init__
+    """
+
+
+@numerical_flux.register(Godunov)
+def _numerical_flux_burgers_godunov(
+    scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.scalar import scalar_flux_upwind
+
+    return scalar_flux_upwind(scheme, grid, t, u, u)
+
+
+# }}}
+
+
 # {{{ Rusanov
 
 

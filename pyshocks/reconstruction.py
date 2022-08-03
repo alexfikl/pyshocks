@@ -26,7 +26,7 @@ from typing import Any, ClassVar, Dict, Tuple, Type
 import jax.numpy as jnp
 
 from pyshocks import Grid
-from pyshocks.limiters import Limiter, limit
+from pyshocks.limiters import Limiter, slope_limit
 
 # {{{
 
@@ -194,12 +194,12 @@ def _reconstruct_muscl(
         raise NotImplementedError("MUSCL is only implemented for uniform grids")
 
     assert grid.nghosts >= rec.stencil_width
-    phi = limit(rec.lm, grid, u)
+    du = slope_limit(rec.lm, grid, u)
 
-    ur = u[:-1] + 0.5 * phi[:-1] * (u[1:] - u[:-1])
-    ul = u[1:] - 0.5 * phi[1:] * (u[1:] - u[:-1])
+    ur = u + 0.5 * grid.dx * du
+    ul = u - 0.5 * grid.dx * du
 
-    return jnp.pad(ul, (1, 0)), jnp.pad(ur, (0, 1))  # type: ignore[no-untyped-call]
+    return ul, ur
 
 
 # }}}

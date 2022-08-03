@@ -362,6 +362,49 @@ def timeme(func: Callable[P, T]) -> Callable[P, T]:
 # }}}
 
 
+# {{{ colors
+
+
+@dataclass(frozen=True)
+class Color:
+    Black: str = "\033[0;30m"
+    Red: str = "\033[0;31m"
+    Green: str = "\033[0;32m"
+    Brown: str = "\033[0;33m"
+    Blue: str = "\033[0;34m"
+    Purple: str = "\033[0;35m"
+    Cyan: str = "\033[0;36m"
+    LightGray: str = "\033[0;37m"
+    DarkGray: str = "\033[1;30m"
+    LightRed: str = "\033[1;31m"
+    LightGreen: str = "\033[1;32m"
+    Yellow: str = "\033[1;33m"
+    LightBlue: str = "\033[1;34m"
+    LightPurple: str = "\033[1;35m"
+    LightCyan: str = "\033[1;36m"
+    White: str = "\033[1;37m"
+    Normal: str = "\033[0m"
+
+    @staticmethod
+    def warn(s: Any) -> str:
+        return f"{Color.Yellow}{s}{Color.Normal}"
+
+    @staticmethod
+    def info(s: Any) -> str:
+        return f"{Color.DarkGray}{s}{Color.Normal}"
+
+    @staticmethod
+    def message(s: Any, success: bool = True) -> str:
+        return Color.info(s) if success else Color.warn(s)
+
+    @staticmethod
+    def wrap(s: Any, color: str) -> str:
+        return f"{color}{s}{Color.Normal}"
+
+
+# }}}
+
+
 # {{{ logging
 
 # https://misc.flogisoft.com/bash/tip_colors_and_formatting

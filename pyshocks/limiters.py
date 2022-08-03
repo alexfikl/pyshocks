@@ -8,7 +8,8 @@ Limiters
 .. autoclass:: Limiter
     :no-show-inheritance:
 .. autofunction:: evaluate
-.. autofunction:: limit
+.. autofunction:: flux_limit
+.. autofunction:: slope_limit
 
 .. autoclass:: UnlimitedLimiter
 .. autoclass:: MINMODLimiter
@@ -35,17 +36,20 @@ from pyshocks import Grid
 
 @dataclass(frozen=True)
 class Limiter:
-    r"""Describes a flux limiter for high-order finite volume schemes.
+    r"""Describes a limiter for high-order finite volume schemes.
 
-    A limiter is a function of the form
+    A flux limiter is a function of the form
 
     .. math::
 
         \phi(r) = \phi\left(\frac{u_i - u_{i - 1}}{u_{i + 1} - u_i}\right) \ge 0
 
     which becomes zero when there is no need for limiting in the variable *u*.
-    The limiter is applied by calling :func:`limit`. Note that the limiter is
+    The limiter is applied by calling :func:`flux_limit`. Note that the limiter is
     generally not guaranteed to be :math:`\phi(r) \le 1`.
+
+    On the other hand, a slope limiter gives an estimate of a TVD slope.
+    This limiter is applied by calling :func:`slope_limit`.
     """
 
 
@@ -64,15 +68,28 @@ def evaluate(lm: Limiter, r: jnp.ndarray) -> jnp.ndarray:
 
 
 @singledispatch
-def limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
-    """
+def flux_limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+    """Compute a flux limiter from *u*.
+
     :arg lm: an object that describes how to limit the variable.
     :arg u: variable with cell-centered values
     """
-    return jnp.pad(evaluate(lm, slope(u)), 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(  # type: ignore[no-untyped-call]
+        evaluate(lm, local_slope_ratio(u)), 1
+    )
 
 
-def slope(u: jnp.ndarray) -> jnp.ndarray:
+@singledispatch
+def slope_limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+    """Compute a limited slope from *u* on the *grid*.
+
+    :arg lm: an object that describes how to limit the variable.
+    :arg u: variable with cell-centered values
+    """
+    raise NotImplementedError(type(lm).__name__)
+
+
+def local_slope_ratio(u: jnp.ndarray, *, atol: float = 1.0e-12) -> jnp.ndarray:
     # NOTE: the slope ratio is computed from the following cells
     #       i - 1          i         i + 1
     #   ------------|------------|------------
@@ -81,7 +98,9 @@ def slope(u: jnp.ndarray) -> jnp.ndarray:
     sl = u[1:-1] - u[:-2]
     sr = u[2:] - u[1:-1]
 
-    return sl / (sr + 1.0e-12)
+    return jnp.where(  # type: ignore[no-untyped-call]
+        jnp.logical_or(jnp.abs(sl) < atol, jnp.abs(sr) < atol), 0.0, sl / sr
+    )
 
 
 # }}}
@@ -99,15 +118,34 @@ def _evaluate_unlimited(lm: UnlimitedLimiter, r: jnp.ndarray) -> jnp.ndarray:
     return jnp.ones_like(r)  # type: ignore[no-untyped-call]
 
 
-@limit.register(UnlimitedLimiter)
-def _limit_unlimited(lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+@flux_limit.register(UnlimitedLimiter)
+def _flux_limit_unlimited(
+    lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray
+) -> jnp.ndarray:
     return jnp.ones_like(u)  # type: ignore[no-untyped-call]
+
+
+@slope_limit.register(UnlimitedLimiter)
+def _slope_limit_unlimited(
+    lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray
+) -> jnp.ndarray:
+    return jnp.pad(  # type: ignore[no-untyped-call]
+        (u[2:] - u[:-2]) / (grid.x[2:] - grid.x[:-2]), 1
+    )
 
 
 # }}}
 
 
 # {{{ minmod
+
+
+def minmod(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
+    return jnp.where(  # type: ignore[no-untyped-call]
+        a * b < 0.0,
+        0.0,
+        jnp.where(jnp.abs(a) < jnp.abs(b), a, b),  # type: ignore[no-untyped-call]
+    )
 
 
 @dataclass(frozen=True)
@@ -140,6 +178,14 @@ def _evaluate_minmod(lm: MINMODLimiter, r: jnp.ndarray) -> jnp.ndarray:
     )
 
 
+@slope_limit.register(MINMODLimiter)
+def _slope_limit_minmod(lm: MINMODLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+    sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
+    sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
+
+    return jnp.pad(minmod(sl, sr), 1)  # type: ignore[no-untyped-call]
+
+
 # }}}
 
 
@@ -163,6 +209,17 @@ def _evaluate_monotonized_central(
     return jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r), (1 + r) / 2))
 
 
+@slope_limit.register(MonotonizedCentralLimiter)
+def _slope_limit_monotonized_central(
+    lm: MonotonizedCentralLimiter, grid: Grid, u: jnp.ndarray
+) -> jnp.ndarray:
+    sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
+    sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
+    sc = (u[2:] - u[:-2]) / (grid.x[2:] - grid.x[:-2])
+
+    return jnp.pad(minmod(minmod(sl, sr), sc), 1)  # type: ignore[no-untyped-call]
+
+
 # }}}
 
 
@@ -182,6 +239,18 @@ class SUPERBEELimiter(Limiter):
 @evaluate.register(SUPERBEELimiter)
 def _evaluate_superbee(lm: SUPERBEELimiter, r: jnp.ndarray) -> jnp.ndarray:
     return jnp.maximum(0.0, jnp.maximum(jnp.minimum(1, 2 * r), jnp.minimum(2, r)))
+
+
+@slope_limit.register(SUPERBEELimiter)
+def _slope_limit_superbee(
+    lm: SUPERBEELimiter, grid: Grid, u: jnp.ndarray
+) -> jnp.ndarray:
+    sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
+    sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
+
+    return jnp.pad(  # type: ignore[no-untyped-call]
+        jnp.maximum(minmod(sl, 2 * sr), minmod(2 * sl, sr)), 1
+    )
 
 
 # }}}

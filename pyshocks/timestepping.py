@@ -246,7 +246,7 @@ def predict_maxit_from_timestep(tfinal: float, dt: float) -> Tuple[int, float]:
 
     :returns: a tuple ``(maxit, dt)`` with the approximated values.
     """
-    maxit = int(tfinal / dt) + 1
+    maxit = int(tfinal / dt)
     dt = tfinal / maxit + 1.0e-15
 
     return maxit, dt

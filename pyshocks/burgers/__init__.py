@@ -38,6 +38,7 @@ import jax.numpy as jnp
 from pyshocks import Grid
 from pyshocks.burgers.schemes import (
     Scheme,
+    Godunov,
     Rusanov,
     LaxFriedrichs,
     EngquistOsher,
@@ -47,6 +48,7 @@ from pyshocks.burgers.schemes import (
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
     "default": LaxFriedrichs,
+    "godunov": Godunov,
     "rusanov": Rusanov,
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,
@@ -127,6 +129,7 @@ def ex_shock(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
 
 __all__ = (
     "Scheme",
+    "Godunov",
     "Rusanov",
     "LaxFriedrichs",
     "EngquistOsher",
