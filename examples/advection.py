@@ -122,10 +122,10 @@ def main(
     boundary = make_boundary_conditions(example_name, solution, a=0.5)
 
     # initial condition
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
 
     order = int(max(scheme.order, 1.0)) + 1
-    quad = Quadrature(grid=grid, order=order)
+    quad = make_leggauss_quadrature(grid, order=order)
     u0 = cell_average(quad, lambda x: solution(0.0, x))
 
     # update coefficients (i.e. velocity field)

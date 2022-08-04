@@ -16,13 +16,14 @@ Grid
 .. autoclass:: Quadrature
     :no-show-inheritance:
 
+.. autofunction:: make_leggauss_quadrature
 .. autofunction:: cell_average
 
 .. autofunction:: norm
 .. autofunction:: rnorm
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial
 from typing import Optional, Tuple, Union
 
@@ -182,59 +183,93 @@ def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Unifor
 
 @dataclass(frozen=True)
 class Quadrature:
-    """Gauss-Legendre quadrature of given :attr:`order`.
+    """Compositve quadrature of given :attr:`order`.
 
-    .. attribute:: grid
     .. attribute:: order
+    .. attribute:: nnodes
+
+        Number of quadrature nodes in each cell.
+
+    .. attribute:: ncells
+
+        Number of cells in the domain.
+
     .. attribute:: x
 
-        Quadrature points on the grid :attr:`grid`. The array has a shape of
-        ``(npoints, ncells)``.
+        Quadrature points. The array has a shape of ``(nnodes, ncells)``.
 
     .. attribute:: w
 
         Quadrature weights of the same size as :attr:`x`.
 
+    .. attribute:: dx
+
+        Cell sizes, as given by :attr:`Grid.dx`. These are only used when
+        computing cell averages.
+
     .. automethod:: __init__
     .. automethod:: __call__
     """
 
-    grid: Grid
     order: int
+    x: jnp.ndarray
+    w: jnp.ndarray
 
-    x: jnp.ndarray = field(init=False, repr=False)
-    w: jnp.ndarray = field(init=False, repr=False)
+    dx: jnp.ndarray
 
     def __post_init__(self) -> None:
-        if self.order < 1:
-            raise ValueError(f"invalid order: '{self.order}'")
+        if self.x.shape != self.w.shape:
+            raise ValueError(
+                "'x' and 'w' should have the same shape: "
+                f"got {self.x.shape} and {self.w.shape}"
+            )
 
-        # get Gauss-Legendre quadrature nodes and weights
-        from numpy.polynomial.legendre import leggauss
+    @property
+    def nnodes(self) -> int:
+        return int(self.x.shape[0])
 
-        xi, wi = leggauss(self.order)  # type: ignore[no-untyped-call]
-        xi = jax.device_put(xi).reshape(-1, 1)
-        wi = jax.device_put(wi).reshape(-1, 1)
+    @property
+    def ncells(self) -> int:
+        return int(self.x.shape[1])
 
-        # get grid sizes
-        dx = 0.5 * self.grid.dx.reshape(1, -1)
-        xm = self.grid.x.reshape(1, -1)
+    def __call__(self, fn: SpatialFunction, axis: Optional[int] = None) -> jnp.ndarray:
+        """Integral over the grid of the function.
 
-        # translate
-        xi = xm + dx * xi
-        wi = dx * wi
+        :arg axis: If *None*, this computes the integral over the full grid.
+            If *0*, a cellwise integral is computed and the resulting array
+            has size :attr:`ncells`.
+        """
 
-        object.__setattr__(self, "x", xi)
-        object.__setattr__(self, "w", wi)
+        if axis not in (0, None):
+            raise ValueError(f"unsupported axis value: '{axis}'")
 
-    def __call__(self, fn: SpatialFunction) -> jnp.ndarray:
-        """Integral over the grid of the function."""
-        return jnp.sum(fn(self.x) * self.w)
+        return jnp.sum(fn(self.x) * self.w, axis=axis)
 
 
-def cell_average(
-    quad: Quadrature, fn: SpatialFunction, staggered: bool = False
-) -> jnp.ndarray:
+def make_leggauss_quadrature(grid: Grid, order: int) -> Quadrature:
+    """Construct a Gauss-Legendre quadrature"""
+    if order < 1:
+        raise ValueError(f"invalid order: '{order}'")
+
+    # get Gauss-Legendre quadrature nodes and weights
+    from numpy.polynomial.legendre import leggauss
+
+    xi, wi = leggauss(order)  # type: ignore[no-untyped-call]
+    xi = jax.device_put(xi).reshape(-1, 1)
+    wi = jax.device_put(wi).reshape(-1, 1)
+
+    # get grid sizes
+    dx = 0.5 * grid.dx.reshape(1, -1)
+    xm = grid.x.reshape(1, -1)
+
+    # translate
+    xi = xm + dx * xi
+    wi = dx * wi
+
+    return Quadrature(order=order, x=xi, w=wi, dx=grid.dx)
+
+
+def cell_average(quad: Quadrature, fn: SpatialFunction) -> jnp.ndarray:
     r"""Computes the cell average of the callable *fn* as
 
     .. math::
@@ -243,10 +278,7 @@ def cell_average(
 
     :param fn: a callable taking an array of size ``(npoints, ncells)``.
     """
-    if quad.order == 1:
-        return fn(quad.grid.x)
-
-    return jnp.sum(fn(quad.x) * quad.w, axis=0) / jnp.sum(quad.w, axis=0)
+    return quad(fn, axis=0) / quad.dx
 
 
 # }}}

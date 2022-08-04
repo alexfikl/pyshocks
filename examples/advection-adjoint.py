@@ -223,28 +223,28 @@ def main(
 
     # {{{ geometry
 
+    from pyshocks import continuity
     from pyshocks import make_uniform_grid
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    func_velocity = partial(continuity.velocity_const, grid, 0.0)
+    func_ic = partial(continuity.ic_sine, grid)
 
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
 
     order = int(max(scheme.order, 1.0)) + 1
-    quad = Quadrature(grid=grid, order=order)
+    quad = make_leggauss_quadrature(grid, order=order)
 
-    from pyshocks import continuity
-
-    velocity = cell_average(quad, lambda x: continuity.velocity_const(grid, 0.0, x))
+    velocity = cell_average(quad, func_velocity)
     scheme = replace(scheme, velocity=velocity)
 
     # }}}
 
     # {{{ boundary conditions
 
-    ic = partial(continuity.ic_sine, grid)
-    solution = partial(continuity.ex_constant_velocity_field, a=1.0, u0=ic)
+    solution = partial(continuity.ex_constant_velocity_field, a=1.0, u0=func_ic)
 
-    u0 = cell_average(quad, ic)
+    u0 = cell_average(quad, func_ic)
 
     boundary: Boundary
     if bctype == "periodic":

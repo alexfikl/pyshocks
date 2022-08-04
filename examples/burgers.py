@@ -46,10 +46,10 @@ def main(
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     solution = partial(burgers.ex_shock, grid)
 
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
 
     order = int(max(scheme.order, 1.0)) + 1
-    quad = Quadrature(grid=grid, order=order)
+    quad = make_leggauss_quadrature(grid, order=order)
 
     from pyshocks.scalar import dirichlet_boundary
 

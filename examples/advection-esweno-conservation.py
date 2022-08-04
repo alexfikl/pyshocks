@@ -52,10 +52,10 @@ def main(
     # {{{ setup
 
     from pyshocks.scalar import PeriodicBoundary
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
 
     grid = make_uniform_grid(a=0.0, b=1.0, n=n, nghosts=3)
-    quad = Quadrature(grid=grid, order=5)
+    quad = make_leggauss_quadrature(grid, order=5)
 
     velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
     u0 = cell_average(quad, cosine_pulse)

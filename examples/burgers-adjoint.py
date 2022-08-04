@@ -235,16 +235,14 @@ def main(
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
-    from pyshocks import Quadrature
+    from pyshocks import make_leggauss_quadrature, cell_average
 
     order = int(max(scheme.order, 1.0)) + 1
-    quad = Quadrature(grid=grid, order=order)
+    quad = make_leggauss_quadrature(grid, order=order)
 
     # }}}
 
     # {{{ initial condition
-
-    from pyshocks import cell_average
 
     solution = partial(burgers.ex_shock, grid)
     u0 = cell_average(quad, lambda x: solution(0.0, x))

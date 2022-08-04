@@ -197,9 +197,9 @@ def test_weno_vs_pyweno(
 
     grid = make_uniform_grid(a=0, b=2.0 * jnp.pi, n=n, nghosts=rec.stencil_width)
 
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
 
-    quad = Quadrature(grid=grid, order=order)
+    quad = make_leggauss_quadrature(grid, order=order)
     u = cell_average(quad, jnp.sin)
 
     uhost = u.copy()
@@ -277,7 +277,7 @@ def func_sine(x: jnp.ndarray, k: int = 1) -> jnp.ndarray:
 def test_weno_smooth_reconstruction_order(
     name: str, order: int, resolutions: List[int], visualize: bool = True
 ) -> None:
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
     from pyshocks import EOCRecorder, rnorm
 
     eoc_l = EOCRecorder(name="ul")
@@ -287,7 +287,7 @@ def test_weno_smooth_reconstruction_order(
         rec = make_reconstruction_from_name(name)
 
         grid = make_uniform_grid(-1.0, 1.0, n=n, nghosts=rec.stencil_width)
-        quad = Quadrature(grid, order=order + 1)
+        quad = make_leggauss_quadrature(grid, order=order + 1)
         u0 = cell_average(quad, func_sine)
 
         ul_ref = ur_ref = func_sine(grid.f)

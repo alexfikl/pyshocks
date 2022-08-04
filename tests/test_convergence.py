@@ -53,10 +53,10 @@ def evolve(
         order = scheme.order
     order = int(max(order, 1.0))
 
-    from pyshocks import make_uniform_grid, Boundary
+    from pyshocks import make_uniform_grid, make_leggauss_quadrature, Boundary
 
     grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
-    quad = Quadrature(grid=grid, order=order + 1)
+    quad = make_leggauss_quadrature(grid, order=order + 1)
 
     if finalize is not None:
         scheme = finalize(scheme, grid, quad)

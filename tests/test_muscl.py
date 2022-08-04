@@ -61,9 +61,9 @@ def test_flux_limiters(
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_grid(-1.0, 1.0, n=128, nghosts=1)
 
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
 
-    quad = Quadrature(grid, order=3)
+    quad = make_leggauss_quadrature(grid, order=3)
 
     if smooth:
         u = cell_average(quad, func_sine)
@@ -184,9 +184,9 @@ def test_tvd_slope_limiter_burgers(
     scheme = burgers.Godunov(rec=rec)
     boundary = PeriodicBoundary()
 
-    from pyshocks import Quadrature, cell_average
+    from pyshocks import make_leggauss_quadrature, cell_average
 
-    quad = Quadrature(grid, order=3)
+    quad = make_leggauss_quadrature(grid, order=3)
 
     if smooth:
         u0 = cell_average(quad, func_sine)
