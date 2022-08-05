@@ -49,6 +49,13 @@ def weno_js_32_coefficients(
 
         \alpha_{i, m} = \frac{d_i}{(\beta_{i, m} + \epsilon)^2}.
 
+    THe general setup is more akin to the description provided in [Shu1998]_.
+
+    .. [Shu1998] C.-W. Shu, *Essentially Non-Oscillatory and Weighted Essentially
+        Non-Oscillatory Schemes for Hyperbolic Conservation Laws*,
+        Lecture Notes in Mathematics, pp. 325--432, 1998,
+        `DOI <http://dx.doi.org/10.1007/bfb0096355>`.
+
     :returns: a 4-tuple containing the coefficients :math:`a, b, c` and :math:`d`.
         For a third-order scheme, :math:`a` is of shape ``(1,)``, :math:`b`
         is of shape ``(2, 3, 1)``, :math:`c` is of shape ``(2, 3)`` and
@@ -63,7 +70,7 @@ def weno_js_32_coefficients(
     # * flipping the stencils
     # so that they can be directly used with jnp.convolve for vectorization
 
-    # smoothness indicator coefficients
+    # smoothness indicator coefficients ([Shu1998] Equation 2.62)
     a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
     b = jnp.array(  # type: ignore[no-untyped-call]
         [
@@ -74,12 +81,12 @@ def weno_js_32_coefficients(
         dtype=dtype,
     )
 
-    # stencil coefficients
+    # stencil coefficients ([Shu1998] Table 2.1)
     c = jnp.array(  # type: ignore[no-untyped-call]
         [[0.0, 3.0 / 2.0, -1.0 / 2.0], [1.0 / 2.0, 1.0 / 2.0, 0.0]], dtype=dtype
     )
 
-    # weights coefficients
+    # weights coefficients ([Shu1998] Equation 2.54)
     d = jnp.array(  # type: ignore[no-untyped-call]
         [[1.0 / 3.0, 2.0 / 3.0]], dtype=dtype
     ).T
@@ -100,7 +107,7 @@ def weno_js_53_coefficients(
     if dtype is None:
         dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
 
-    # equation 2.17 [Shu2009]
+    # smoothness indicator (Equation 2.17 [Shu2009])
     a = jnp.array(  # type: ignore[no-untyped-call]
         [13.0 / 12.0, 1.0 / 4.0], dtype=dtype
     )
@@ -113,7 +120,7 @@ def weno_js_53_coefficients(
         dtype=dtype,
     )
 
-    # equation 2.11, 2.12, 2.13 [Shu2009]
+    # stencil coefficients (Equation 2.11, 2.12, 2.13 [Shu2009])
     c = jnp.array(  # type: ignore[no-untyped-call]
         [
             [0.0, 0.0, 11.0 / 6.0, -7.0 / 6.0, 2.0 / 6.0],
@@ -123,7 +130,7 @@ def weno_js_53_coefficients(
         dtype=dtype,
     )
 
-    # equation 2.15 [Shu2009]
+    # weights coefficients (Equation 2.15 [Shu2009])
     d = jnp.array(  # type: ignore[no-untyped-call]
         [[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=dtype
     ).T
@@ -225,6 +232,14 @@ def ss_weno_242_coefficients(
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Initialize coefficients for the fourth-order WENO scheme of [Fisher2013].
 
+    The actual implementation details of the scheme are given in [Fisher2011]_.
+
+    .. [Fisher2011] T. C. Fisher, M. H. Carpenter, N. K. Yamaleev, S. H. Frankel,
+        *Boundary Closures for Fourth-Order Energy Stable Weighted Essentially
+        Non-Oscillatory Finite-Difference Schemes*,
+        Journal of Computational Physics, Vol. 230, pp. 3727-3752, 2011,
+        `DOI <http://dx.doi.org/10.1016/j.jcp.2011.01.043>`__.
+
     :returns: a 4-tuple containing the coefficients :math:`a, b, c` and :math:`d`.
         For a third-order scheme, :math:`a` is of shape ``(2,)``, :math:`b`
         is of shape ``(3, 4, 2)``, :math:`c` is of shape ``(3, 5)`` and
@@ -234,7 +249,7 @@ def ss_weno_242_coefficients(
     if dtype is None:
         dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
 
-    # smoothness indicator coefficients
+    # smoothness indicator coefficients ([Fisher2011] Equation 71)
     a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
     b = jnp.array(  # type: ignore[no-untyped-call]
         [
@@ -246,14 +261,19 @@ def ss_weno_242_coefficients(
         dtype=dtype,
     )
 
-    # stencil coefficients
+    # stencil coefficients ([Fisher2011] Equation 77)
     c = jnp.array(  # type: ignore[no-untyped-call]
-        [[0.0, 3.0 / 2.0, -1.0 / 2.0], [1.0 / 2.0, 1.0 / 2.0, 0.0]], dtype=dtype
+        [
+            # i - 1, i, i + 1, i + 2
+            [0.0, 0.0, 3.0 / 2.0, -1.0 / 2.0],
+            [0.0, 1.0 / 2.0, 1.0 / 2.0, 0.0][-1.0 / 2.0, 3.0 / 2.0, 0.0, 0.0],
+        ],
+        dtype=dtype,
     )
 
-    # weights coefficients
+    # weights coefficients ([Fisher2011] Equation 78)
     d = jnp.array(  # type: ignore[no-untyped-call]
-        [[1.0 / 3.0, 2.0 / 3.0]], dtype=dtype
+        [[1.0 / 6.0, 2.0 / 3.0, 1.0 / 6.0]], dtype=dtype
     ).T
 
     return a, b, c, d
