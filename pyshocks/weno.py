@@ -63,7 +63,7 @@ def weno_js_32_coefficients(
     """
 
     if dtype is None:
-        dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
+        dtype = jnp.dtype(jnp.float64)
 
     # NOTE: the arrays here are slightly modified from [Shu2009] by
     # * zero padding to the full stencil length
@@ -105,7 +105,7 @@ def weno_js_53_coefficients(
         :math:`d` is of shape ``(1, 3)``.
     """
     if dtype is None:
-        dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
+        dtype = jnp.dtype(jnp.float64)
 
     # smoothness indicator (Equation 2.17 [Shu2009])
     a = jnp.array(  # type: ignore[no-untyped-call]
@@ -247,7 +247,7 @@ def ss_weno_242_coefficients(
     """
 
     if dtype is None:
-        dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
+        dtype = jnp.dtype(jnp.float64)
 
     # smoothness indicator coefficients ([Fisher2011] Equation 71)
     a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
@@ -266,7 +266,8 @@ def ss_weno_242_coefficients(
         [
             # i - 1, i, i + 1, i + 2
             [0.0, 0.0, 3.0 / 2.0, -1.0 / 2.0],
-            [0.0, 1.0 / 2.0, 1.0 / 2.0, 0.0][-1.0 / 2.0, 3.0 / 2.0, 0.0, 0.0],
+            [0.0, 1.0 / 2.0, 1.0 / 2.0, 0.0],
+            [-1.0 / 2.0, 3.0 / 2.0, 0.0, 0.0],
         ],
         dtype=dtype,
     )
@@ -283,7 +284,7 @@ def ss_weno_242_operator_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     if dtype is None:
-        dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
+        dtype = jnp.dtype(jnp.float64)
 
     # [Fisher2013] Appendix A, Equation A.1
     p = jnp.array(  # type: ignore[no-untyped-call]
