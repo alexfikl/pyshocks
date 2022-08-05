@@ -17,6 +17,7 @@
 .. autoclass:: ScalarFunction
 .. autoclass:: VectorFunction
 .. autoclass:: SpatialFunction
+.. autoclass:: TemporalFunction
 
 .. autoclass:: EOCRecorder
     :no-show-inheritance:
@@ -88,6 +89,16 @@ class SpatialFunction(Protocol):
     """
 
     def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+        ...
+
+
+class TemporalFunction(Protocol):
+    r"""A generic callable that can be evaluated at :math:`t`.
+
+    .. automethod:: __call__
+    """
+
+    def __call__(self, t: float) -> float:
         ...
 
 

@@ -18,6 +18,9 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autoclass:: DirichletBoundary
 .. autoclass:: PeriodicBoundary
 .. autofunction:: dirichlet_boundary
+
+.. autoclass:: SSWENOBoundary
+.. autoclass:: SSWENOBurgersBoundary
 """
 
 from dataclasses import dataclass
@@ -35,7 +38,7 @@ from pyshocks.schemes import (
     apply_boundary,
 )
 from pyshocks.reconstruction import reconstruct
-from pyshocks.tools import VectorFunction
+from pyshocks.tools import TemporalFunction, VectorFunction
 
 
 # {{{ fluxes
@@ -277,6 +280,45 @@ def _apply_boundary_scalar_periodic(
     u = u.at[ito].set(u[g : 2 * g], unique_indices=True)
 
     return u
+
+
+# }}}
+
+
+# {{{ SSWENO
+
+
+@dataclass(frozen=True)
+class SSWENOBoundary(Boundary):
+    """Entropy-stable boundary conditions for the SSWENO scheme."""
+
+    fa: TemporalFunction
+    fb: TemporalFunction
+
+
+@dataclass(frozen=True)
+class SSWENOBurgersBoundary(SSWENOBoundary):
+    """SSWENO boundary conditions for Burgers' equation.
+
+    The boundary conditions implemented here only consider the inviscid problem,
+    as given by :class:`~pyshocks.burgers.SSWENO242`.
+    """
+
+
+@apply_boundary.register(SSWENOBurgersBoundary)
+def _apply_boundary_ssweno_burgers(
+    bc: SSWENOBurgersBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert u.size == grid.f.size
+    ja, jb = grid.nghosts, grid.f.size - grid.nghosts
+
+    # NOTE: [Fisher2013] Section 4.1.1, Equation 4.8
+    ga = -((u[ja] + abs(u[ja])) * u[ja] / 3 - bc.fa(t))
+    gb = +((u[jb] - abs(u[jb])) * u[jb] / 3 + bc.fb(t))
+
+    return jnp.squeeze(
+        ga * jnp.eye(1, grid.n, 0) + gb * jnp.eye(1, grid.n, grid.n - 1)  # type: ignore
+    )
 
 
 # }}}

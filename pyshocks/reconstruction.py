@@ -456,8 +456,26 @@ class SSWENO242(Reconstruction):
     gradients (and shocks) and boundaries. Boundaries are expected to be
     implemented as described in [Fisher2013]_ to achive an entropy-stable
     scheme.
-
     """
+
+    grid: Grid
+
+    # coefficients
+    a: ClassVar[jnp.ndarray]
+    b: ClassVar[jnp.ndarray]
+    c: ClassVar[jnp.ndarray]
+    d: ClassVar[jnp.ndarray]
+
+    def __post_init__(self) -> None:
+        from pyshocks.weno import ss_weno_242_coefficients
+
+        a, b, c, d = ss_weno_242_coefficients()
+
+        # NOTE: hack to keep the class frozen
+        object.__setattr__(self, "a", a)
+        object.__setattr__(self, "b", b)
+        object.__setattr__(self, "c", c)
+        object.__setattr__(self, "d", d)
 
     @property
     def order(self) -> int:

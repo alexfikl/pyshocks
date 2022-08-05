@@ -2,11 +2,19 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 import jax.numpy as jnp
 
 from pyshocks import Grid, SchemeBase, ConservationLawScheme, Boundary
-from pyshocks import flux, numerical_flux, predict_timestep, apply_operator
+from pyshocks import reconstruction
+from pyshocks import (
+    flux,
+    numerical_flux,
+    predict_timestep,
+    apply_operator,
+    apply_boundary,
+)
 
 
 # {{{ base
@@ -175,6 +183,10 @@ def _numerical_flux_burgers_engquist_osher(
 class ESWENO32(Scheme):
     """Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_."""
 
+    def __post_init__(self) -> None:
+        if not isinstance(self.rec, reconstruction.ESWENO32):
+            raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction")
+
 
 @numerical_flux.register(ESWENO32)
 def _numerical_flux_burgers_esweno32(
@@ -182,11 +194,9 @@ def _numerical_flux_burgers_esweno32(
 ) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_upwind
     from pyshocks.weno import es_weno_weights
-    from pyshocks import reconstruction
 
     rec = scheme.rec
-    if not isinstance(rec, reconstruction.ESWENO32):
-        raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction")
+    assert isinstance(rec, reconstruction.ESWENO32)
 
     # {{{ compute dissipative flux of ESWENO
 
@@ -214,87 +224,117 @@ def _numerical_flux_burgers_esweno32(
 
 
 @dataclass(frozen=True)
-class SSWENO242(Scheme):
-    """Fourth-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_.
+class SSWENO242(SchemeBase):
+    """Fourth-order Energy Stable WENO (ESWENO) scheme by [Fisher2013]_.
 
     .. [Fisher2013] T. C. Fisher, M. H. Carpenter, *High-Order Entropy Stable
         Finite Difference Schemes for Nonlinear Conservation Laws: Finite Domains*,
         Journal of Computational Physics, Vol. 252, pp. 518--557, 2013,
         `DOI <http://dx.doi.org/10.1016/j.jcp.2013.06.014>`__.
+
+    .. attribute:: c
+
+        Offset used in computing the entropy stable flux in Equation 3.42
+        from [Fisher2013]_.
     """
 
+    rec: reconstruction.SSWENO242
 
-@numerical_flux.register(SSWENO242)
-def _numerical_flux_burgers_ssweno242(
-    scheme: SSWENO242, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    raise NotImplementedError
+    c: float = 1.0e-2
 
-
-# }}}
-
-
-# {{{ SBP
-
-
-@dataclass(frozen=True)
-class SBP(SchemeBase):  # pylint: disable=abstract-method
-    """Implements a finite difference Summation-by-Parts (SBP) scheme with
-    a Simultaneous-Approximation-Term (SAT) for boundary conditions.
-
-    .. attribute:: tau
-
-        Weight used for the SAT term.
-    """
-
-    tau: float
+    P: ClassVar[jnp.ndarray]
 
     def __post_init__(self) -> None:
-        assert self.tau >= 0.5
+
+        if not isinstance(self.rec, reconstruction.SSWENO242):
+            raise TypeError("SSWENO242 scheme requires the SSWENO242 reconstruction")
+
+        from pyshocks.weno import ss_weno_242_operator_coefficients
+
+        p, _, _, _, _ = ss_weno_242_operator_coefficients()
+
+        from pyshocks.weno import ss_weno_norm_matrix
+
+        object.__setattr__(self, "P", ss_weno_norm_matrix(p, self.rec.grid.n + 1))
+
+    @property
+    def order(self) -> int:
+        return self.rec.order
 
     @property
     def stencil_width(self) -> int:
-        return 0
+        return self.rec.stencil_width
 
 
-@flux.register(SBP)
-def _flux_burgers_sbp(
-    scheme: SBP, t: float, x: jnp.ndarray, u: jnp.ndarray
+@flux.register(SSWENO242)
+def _flux_burgers_ssweno242(
+    scheme: SSWENO242, t: float, x: jnp.ndarray, u: jnp.ndarray
 ) -> jnp.ndarray:
-    return u**2 / 2
+    return flux.dispatch(Scheme)(scheme, t, x, u)
 
 
-@predict_timestep.register(SBP)
-def _predict_timestep_burgers_sbp(
-    scheme: SBP, grid: Grid, t: float, u: jnp.ndarray
+@predict_timestep.register(SSWENO242)
+def _predict_timestep_burgers_ssweno242(
+    scheme: SSWENO242, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    # largest wave speed i.e. max |f'(u)|
-    smax = jnp.max(jnp.abs(u[grid.i_]))
-
-    return 0.5 * grid.dx_min / smax
+    return predict_timestep.dispatch(Scheme)(scheme, grid, t, u)
 
 
-@apply_operator.register(SBP)
-def _apply_operator_sbp(
-    scheme: SBP, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+@apply_operator.register(SSWENO242)
+def _apply_operator_burgers_ssweno242(
+    scheme: SSWENO242, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    raise NotImplementedError
+    from pyshocks.scalar import SSWENOBurgersBoundary
 
+    if not isinstance(bc, SSWENOBurgersBoundary):
+        raise TypeError(f"boundary has unsupported type: '{type(bc).__name__}'")
 
-@dataclass(frozen=True)
-class SBP21(SBP):
-    @property
-    def order(self) -> int:
-        return 2
+    assert scheme.rec.grid is grid
+    assert u.shape == grid.f.shape
 
+    from pyshocks.reconstruction import reconstruct
 
-@dataclass(frozen=True)
-class SBP42(SBP):
-    @property
-    def order(self) -> int:
-        return 4
+    i = grid.i_
+
+    w = u
+    f = flux(scheme, t, grid.f[i], u[i])
+
+    # {{{ inviscid flux
+
+    # standard WENO reconstructed flux
+    fw = reconstruct(scheme.rec, grid, f)
+
+    # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
+    fs = (u[:-1] * u[:-1] + u[:-1] * u[1:] + u[1:] * u[1:]) / 6
+
+    # entropy stable flux ([Fisher2013] Equation 3.42)
+    b = (w[1:] - w[:-1]) @ (fs - fw)
+    delta = (jnp.sqrt(b**2 + scheme.c**2) - b) / jnp.sqrt(b**2 + scheme.c**2)
+    fssw = fw + delta * (fs - fw)
+
+    # }}}
+
+    # {{{ viscous dissipation for entropy stability
+
+    gssw = jnp.zeros_like(fssw)  # type: ignore[no-untyped-call]
+
+    # }}}
+
+    # {{{ handle boundary conditions
+
+    gb = apply_boundary(bc, grid, t, u)
+
+    # }}}
+
+    # [Fisher2013] Equation 3.45
+    dx = scheme.P * grid.dx[i]
+    return jnp.pad(  # type: ignore[no-untyped-call]
+        (-(fssw[1:] - fssw[:-1]) + (gssw[1:] - gssw[:-1]) + gb) / dx,
+        grid.nghosts,
+    )
 
 
 # }}}
+
 
 # vim: fdm=marker

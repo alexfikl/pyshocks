@@ -351,7 +351,7 @@ class CKRK45(Stepper):
 
     # NOTE: myth goes that this coefficients are accurate to 26 digits
 
-    a: ClassVar[jnp.ndarray] = jnp.array(
+    a: ClassVar[jnp.ndarray] = jnp.array(  # type: ignore[no-untyped-call]
         [
             0.0,
             -567301805773 / 1357537059087,
@@ -362,7 +362,7 @@ class CKRK45(Stepper):
         dtype=jnp.float64,
     )
 
-    b: ClassVar[jnp.ndarray] = jnp.array(
+    b: ClassVar[jnp.ndarray] = jnp.array(  # type: ignore[no-untyped-call]
         [
             1432997174477 / 9575080441755,
             5161836677717 / 13612068292357,
@@ -373,7 +373,7 @@ class CKRK45(Stepper):
         dtype=jnp.float64,
     )
 
-    c: ClassVar[jnp.ndarray] = jnp.array(
+    c: ClassVar[jnp.ndarray] = jnp.array(  # type: ignore[no-untyped-call]
         [
             0.0,
             1432997174477 / 9575080441755,
