@@ -10,6 +10,7 @@ Integrators
 .. autoclass:: ForwardEuler
 .. autoclass:: SSPRK33
 .. autoclass:: RK44
+.. autoclass:: CKRK45
 
 .. autoclass:: StepCompleted
     :no-show-inheritance:
@@ -22,7 +23,7 @@ Integrators
 
 from dataclasses import dataclass
 from functools import partial, singledispatch
-from typing import Callable, Iterator, List, Optional, Tuple
+from typing import Callable, ClassVar, Iterator, List, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -322,11 +323,80 @@ def _advance_rk44(stepper: RK44, dt: float, t: float, u: jnp.ndarray) -> jnp.nda
     fn = stepper.source
 
     k1 = dt * fn(t, u)
-    k2 = dt * fn(t + 0.5 * dt, u + 0.5 * k1)
-    k3 = dt * fn(t + 0.5 * dt, u + 0.5 * k2)
+    k2 = dt * fn(t + dt / 2, u + k1 / 2)
+    k3 = dt * fn(t + dt / 2, u + k2 / 2)
     k4 = dt * fn(t + dt, u + k3)
 
-    return u + 1.0 / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+    return u + (k1 + 2 * k2 + 2 * k3 + k4) / 6
+
+
+# }}}
+
+
+# {{{ CKRK45
+
+
+@dataclass(frozen=True)
+class CKRK45(Stepper):
+    """Low-storage, five-stage, fourth-order Runge-Kutta method of Carpenter
+    and Kennedy [Carpenter1994]_.
+
+    The coefficients are presented on page 13.
+
+    .. [Carpenter1994] M. H. Carpenter, C. A. Kennedy,
+        *Fourth-Order 2N-Storage Runge-Kutta Schemes*,
+        NASA Langley Research Center, 1994,
+        `URL <http://hdl.handle.net/2060/19940028444>`__.
+    """
+
+    # NOTE: myth goes that this coefficients are accurate to 26 digits
+
+    a: ClassVar[jnp.ndarray] = jnp.array(
+        [
+            0.0,
+            -567301805773 / 1357537059087,
+            -2404267990393 / 2016746695238,
+            -3550918686646 / 2091501179385,
+            -1275806237668 / 842570457699,
+        ],
+        dtype=jnp.float64,
+    )
+
+    b: ClassVar[jnp.ndarray] = jnp.array(
+        [
+            1432997174477 / 9575080441755,
+            5161836677717 / 13612068292357,
+            1720146321549 / 2090206949498,
+            3134564353537 / 4481467310338,
+            2277821191437 / 14882151754819,
+        ],
+        dtype=jnp.float64,
+    )
+
+    c: ClassVar[jnp.ndarray] = jnp.array(
+        [
+            0.0,
+            1432997174477 / 9575080441755,
+            2526269341429 / 6820363962896,
+            2006345519317 / 3224310063776,
+            2802321613138 / 2924317926251,
+        ],
+        dtype=jnp.float64,
+    )
+
+
+@advance.register(CKRK45)
+def _advance_ckrk45(
+    stepper: CKRK45, dt: float, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    fn = stepper.source
+
+    p = k = u
+    for i in range(stepper.a.size):
+        k = stepper.a[i] * k + dt * fn(t + stepper.c[i] * dt, p)
+        p = p + stepper.b[i] * k
+
+    return p
 
 
 # }}}

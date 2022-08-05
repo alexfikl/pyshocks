@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from functools import partial
 from typing import Type
 
 from pyshocks import get_logger
@@ -17,11 +16,7 @@ logger = get_logger("test_timestepping")
 
 @pytest.mark.parametrize(
     ("cls", "order"),
-    [
-        (ts.ForwardEuler, 1),
-        (ts.SSPRK33, 3),
-        (ts.RK44, 4),
-    ],
+    [(ts.ForwardEuler, 1), (ts.SSPRK33, 3), (ts.RK44, 4), (ts.CKRK45, 4)],
 )
 def test_time_convergence(
     cls: Type[ts.Stepper], order: int, visualize: bool = False
@@ -33,10 +28,6 @@ def test_time_convergence(
             visualize = False
 
     # {{{ ode
-
-    @jax.jit
-    def predict_timestep(t: float, u: jnp.ndarray, *, dt: float) -> float:
-        return dt
 
     @jax.jit
     def source(t: float, u: jnp.ndarray) -> jnp.ndarray:
@@ -67,7 +58,7 @@ def test_time_convergence(
         maxit, dt = ts.predict_maxit_from_timestep(tfinal, dt)
 
         stepper = cls(
-            predict_timestep=partial(predict_timestep, dt=dt),
+            predict_timestep=lambda t, u, dt=dt: dt,
             source=source,
             checkpoint=None,
         )
