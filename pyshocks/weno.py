@@ -15,7 +15,6 @@
 from typing import Any, Optional, Tuple
 
 import jax.numpy as jnp
-import numpy as np
 
 from pyshocks.grid import Grid
 
@@ -23,9 +22,9 @@ from pyshocks.grid import Grid
 # {{{ WENOJS
 
 
-def weno_js_32_coefficients() -> Tuple[
-    jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray
-]:
+def weno_js_32_coefficients(
+    dtype: Optional["jnp.dtype[Any]"] = None,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     r"""Initialize the coefficients of the third-order WENO-JS scheme.
 
     Let the coefficients be :math:`a, b, c` and `d`. Then, the smoothness
@@ -56,38 +55,41 @@ def weno_js_32_coefficients() -> Tuple[
         :math:`d` is of shape ``(1, 2)``.
     """
 
+    if dtype is None:
+        dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
+
     # NOTE: the arrays here are slightly modified from [Shu2009] by
     # * zero padding to the full stencil length
     # * flipping the stencils
     # so that they can be directly used with jnp.convolve for vectorization
 
     # smoothness indicator coefficients
-    a = jnp.array([1.0], dtype=jnp.float64)  # type: ignore[no-untyped-call]
+    a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
     b = jnp.array(  # type: ignore[no-untyped-call]
         [
             # i - 1, i, i + 1
             [[0.0, -1.0, 1.0]],
             [[-1.0, 1.0, 0.0]],
         ],
-        dtype=jnp.float64,
+        dtype=dtype,
     )
 
     # stencil coefficients
     c = jnp.array(  # type: ignore[no-untyped-call]
-        [[0.0, 3.0 / 2.0, -1.0 / 2.0], [1.0 / 2.0, 1.0 / 2.0, 0.0]], dtype=jnp.float64
+        [[0.0, 3.0 / 2.0, -1.0 / 2.0], [1.0 / 2.0, 1.0 / 2.0, 0.0]], dtype=dtype
     )
 
     # weights coefficients
     d = jnp.array(  # type: ignore[no-untyped-call]
-        [[1.0 / 3.0, 2.0 / 3.0]], dtype=jnp.float64
+        [[1.0 / 3.0, 2.0 / 3.0]], dtype=dtype
     ).T
 
     return a, b, c, d
 
 
-def weno_js_53_coefficients() -> Tuple[
-    jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray
-]:
+def weno_js_53_coefficients(
+    dtype: Optional["jnp.dtype[Any]"] = None,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     r"""Initialize the coefficients of the fifth-order WENO-JS scheme.
 
     :returns: a 4-tuple containing the coefficients :math:`a, b, c` and :math:`d`.
@@ -95,10 +97,12 @@ def weno_js_53_coefficients() -> Tuple[
         is of shape ``(3, 4, 2)``, :math:`c` is of shape ``(3, 5)`` and
         :math:`d` is of shape ``(1, 3)``.
     """
+    if dtype is None:
+        dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
 
     # equation 2.17 [Shu2009]
     a = jnp.array(  # type: ignore[no-untyped-call]
-        [13.0 / 12.0, 1.0 / 4.0], dtype=np.float64
+        [13.0 / 12.0, 1.0 / 4.0], dtype=dtype
     )
     b = jnp.array(  # type: ignore[no-untyped-call]
         [
@@ -106,7 +110,7 @@ def weno_js_53_coefficients() -> Tuple[
             [[0.0, 1.0, -2.0, 1.0, 0.0], [0.0, 1.0, 0.0, -1.0, 0.0]],
             [[1.0, -2.0, 1.0, 0.0, 0.0], [1.0, -4.0, 3.0, 0.0, 0.0]],
         ],
-        dtype=np.float64,
+        dtype=dtype,
     )
 
     # equation 2.11, 2.12, 2.13 [Shu2009]
@@ -116,12 +120,12 @@ def weno_js_53_coefficients() -> Tuple[
             [0.0, 2.0 / 6.0, 5.0 / 6.0, -1.0 / 6.0, 0.0],
             [-1.0 / 6.0, 5.0 / 6.0, 2.0 / 6.0, 0.0, 0.0],
         ],
-        dtype=np.float64,
+        dtype=dtype,
     )
 
     # equation 2.15 [Shu2009]
     d = jnp.array(  # type: ignore[no-untyped-call]
-        [[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=jnp.float64
+        [[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=dtype
     ).T
 
     return a, b, c, d
@@ -217,7 +221,7 @@ def es_weno_weights(
 
 
 def ss_weno_242_coefficients(
-    dtype: Optional[jnp.dtype[Any]] = None,
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Initialize coefficients for the fourth-order WENO scheme of [Fisher2013].
 
@@ -256,7 +260,7 @@ def ss_weno_242_coefficients(
 
 
 def ss_weno_242_operator_coefficients(
-    dtype: Optional[jnp.dtype[Any]] = None,
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     if dtype is None:
         dtype = jnp.ones(1).dtype  # type: ignore[no-untyped-call]
