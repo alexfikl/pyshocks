@@ -458,7 +458,7 @@ class SSWENO242(Reconstruction):
     scheme.
     """
 
-    grid: Grid
+    eps: float = 1.0e-6
 
     # coefficients
     a: ClassVar[jnp.ndarray]
@@ -466,16 +466,26 @@ class SSWENO242(Reconstruction):
     c: ClassVar[jnp.ndarray]
     d: ClassVar[jnp.ndarray]
 
+    cb: ClassVar[jnp.ndarray]
+    db: ClassVar[jnp.ndarray]
+
     def __post_init__(self) -> None:
-        from pyshocks.weno import ss_weno_242_coefficients
+        from pyshocks.weno import (
+            ss_weno_242_coefficients,
+            ss_weno_242_bounary_coefficients,
+        )
 
         a, b, c, d = ss_weno_242_coefficients()
 
-        # NOTE: hack to keep the class frozen
         object.__setattr__(self, "a", a)
         object.__setattr__(self, "b", b)
         object.__setattr__(self, "c", c)
         object.__setattr__(self, "d", d)
+
+        cb, db = ss_weno_242_bounary_coefficients()
+
+        object.__setattr__(self, "cb", cb)
+        object.__setattr__(self, "db", db)
 
     @property
     def order(self) -> int:
@@ -484,6 +494,15 @@ class SSWENO242(Reconstruction):
     @property
     def stencil_width(self) -> int:
         return 2
+
+
+def _reconstruct_ss_weno_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
+    from pyshocks.weno import weno_js_reconstruct, ss_weno_242_weights
+
+    omega = ss_weno_242_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
+    uhat = weno_js_reconstruct(u, rec.c)
+
+    return jnp.sum(omega * uhat, axis=0)
 
 
 @reconstruct.register(SSWENO242)
@@ -497,7 +516,10 @@ def _reconstruct_ssweno242(
     if not isinstance(grid, UniformGrid):
         raise NotImplementedError("SSWENO is only implemented for uniform grids")
 
-    raise NotImplementedError
+    ur = _reconstruct_ss_weno_side(rec, u)
+    ul = _reconstruct_ss_weno_side(rec, u[::-1])[::-1]
+
+    return ul, ur
 
 
 # }}}
@@ -513,6 +535,7 @@ _RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
     "wenojs32": WENOJS32,
     "wenojs53": WENOJS53,
     "esweno32": ESWENO32,
+    "ssweno242": SSWENO242,
 }
 
 

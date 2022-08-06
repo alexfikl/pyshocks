@@ -10,7 +10,7 @@ import jax.numpy as jnp
 
 from pyshocks import (
     ConservationLawScheme,
-    make_uniform_grid,
+    make_uniform_cell_grid,
     apply_operator,
     predict_timestep,
 )
@@ -43,7 +43,7 @@ def main(
     """
     # {{{ setup
 
-    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     solution = partial(burgers.ex_shock, grid)
 
     from pyshocks import make_leggauss_quadrature, cell_average

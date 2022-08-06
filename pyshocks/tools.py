@@ -182,6 +182,9 @@ class EOCRecorder:
     def estimated_order(self) -> jnp.ndarray:
         import numpy as np
 
+        if not self.history:
+            return np.nan
+
         h, error = np.array(self.history).T
         _, eoc = estimate_order_of_convergence(h, error)
         return eoc
@@ -197,24 +200,25 @@ class EOCRecorder:
         """
         import numpy as np
 
-        h, error = np.array(self.history).T
-        orders = estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
-
         # header
         lines = []
         lines.append(("h", self.name, "EOC"))
         # NOTE: these make it into a centered markdown table
         lines.append((":-:", ":-:", ":-:"))
 
-        # rows
-        for i in range(h.size):
-            lines.append(
-                (
-                    f"{h[i]:.3e}",
-                    f"{error[i]:.6e}",
-                    "---" if i == 0 else f"{orders[i - 1, 1]:.3f}",
+        if self.history:
+            h, error = np.array(self.history).T
+            orders = estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
+
+            # rows
+            for i in range(h.size):
+                lines.append(
+                    (
+                        f"{h[i]:.3e}",
+                        f"{error[i]:.6e}",
+                        "---" if i == 0 else f"{orders[i - 1, 1]:.3f}",
+                    )
                 )
-            )
 
         # footer
         lines.append(("Overall", "", f"{self.estimated_order:.3f}"))

@@ -47,7 +47,11 @@ from pyshocks.tools import TemporalFunction, VectorFunction
 
 
 def scalar_flux_upwind(
-    scheme: FiniteVolumeScheme, grid: Grid, t: float, a: jnp.ndarray, u: jnp.ndarray
+    scheme: FiniteVolumeScheme,
+    grid: Grid,
+    t: float,
+    a: jnp.ndarray,
+    u: jnp.ndarray,
 ) -> jnp.ndarray:
     r"""Implements the classic upwind flux (see [LeVeque2002]_).
 
@@ -179,7 +183,11 @@ def scalar_flux_lax_friedrichs(
 
 
 def scalar_flux_engquist_osher(
-    scheme: FiniteVolumeScheme, grid: Grid, t: float, u: jnp.ndarray, omega: float = 0.0
+    scheme: FiniteVolumeScheme,
+    grid: Grid,
+    t: float,
+    u: jnp.ndarray,
+    omega: float = 0.0,
 ) -> jnp.ndarray:
     r"""Implements the Engquist-Osher flux (see Section 12.6 in [LeVeque2002]_)
     for **convex** physical fluxes.
@@ -309,8 +317,8 @@ class SSWENOBurgersBoundary(SSWENOBoundary):
 def _apply_boundary_ssweno_burgers(
     bc: SSWENOBurgersBoundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    assert u.size == grid.f.size
-    ja, jb = grid.nghosts, grid.f.size - grid.nghosts
+    assert u.size == grid.x.size
+    ja, jb = grid.nghosts, grid.x.size - grid.nghosts
 
     # NOTE: [Fisher2013] Section 4.1.1, Equation 4.8
     ga = -((u[ja] + abs(u[ja])) * u[ja] / 3 - bc.fa(t))

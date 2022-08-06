@@ -10,7 +10,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
 from pyshocks import (
-    UniformGrid,
+    Grid,
     Boundary,
     ConservationLawScheme,
     timeme,
@@ -25,7 +25,7 @@ logger = get_logger("burgers-adjoint")
 @dataclass
 class Simulation:
     scheme: ConservationLawScheme
-    grid: UniformGrid
+    grid: Grid
     bc: Boundary
     stepper: Stepper
 
@@ -231,9 +231,9 @@ def main(
 
     # {{{ setup
 
-    from pyshocks import make_uniform_grid
+    from pyshocks import make_uniform_cell_grid
 
-    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
     from pyshocks import make_leggauss_quadrature, cell_average
 

@@ -138,7 +138,9 @@ def weno_js_53_coefficients(
     return a, b, c, d
 
 
-def weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
+def weno_js_smoothness(
+    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, *, mode: str = "same"
+) -> jnp.ndarray:
     r"""Compute the smoothness coefficients for WENO-JS.
 
     :returns: the :math:`\beta_i` smoothness coefficient for each stencil around
@@ -148,7 +150,7 @@ def weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.nd
     return jnp.stack(
         [
             sum(
-                a[j] * jnp.convolve(u, b[i, j, :], mode="same") ** 2
+                a[j] * jnp.convolve(u, b[i, j, :], mode=mode) ** 2
                 for j in range(a.size)
             )
             for i in range(b.shape[0])
@@ -156,13 +158,15 @@ def weno_js_smoothness(u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray) -> jnp.nd
     )
 
 
-def weno_js_reconstruct(u: jnp.ndarray, c: jnp.ndarray) -> jnp.ndarray:
+def weno_js_reconstruct(
+    u: jnp.ndarray, c: jnp.ndarray, *, mode: str = "same"
+) -> jnp.ndarray:
     r"""Reconstruct the variable *u* at the cell faces for WENO-JS.
 
     :returns: the :math:`\hat{u}_i` reconstruction, for each stencil in the
         scheme. The returned array has a shape of ``(c.shape[0], u.size)``.
     """
-    return jnp.stack([jnp.convolve(u, c[i, :], mode="same") for i in range(c.shape[0])])
+    return jnp.stack([jnp.convolve(u, c[i, :], mode=mode) for i in range(c.shape[0])])
 
 
 def weno_js_weights(
@@ -227,6 +231,22 @@ def es_weno_weights(
 # {{{ SSWENO
 
 
+def ss_weno_parameters(grid: Grid, u0: jnp.ndarray) -> float:
+    """Estimate the SSWENO parameters from the grid and initial condition.
+
+    :arg u0: initial condition evaluated at given points.
+    :returns: ``eps``, as given by Equation 75 in [Fisher2011]_.
+    """
+
+    # FIXME: eps should also contain the derivative of u0 away from discontinuities,
+    # but not sure how to compute that in a vaguely accurate way. Also, we mostly
+    # look at piecewise constant shock solutions where du0/dx ~ 0, so this
+    # should be sufficient for the moment.
+
+    i = grid.i_
+    return float(jnp.sum(grid.dx[i] * jnp.abs(u0[i]))) * grid.dx_min**4
+
+
 def ss_weno_242_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
@@ -241,8 +261,8 @@ def ss_weno_242_coefficients(
         `DOI <http://dx.doi.org/10.1016/j.jcp.2011.01.043>`__.
 
     :returns: a 4-tuple containing the coefficients :math:`a, b, c` and :math:`d`.
-        For a third-order scheme, :math:`a` is of shape ``(2,)``, :math:`b`
-        is of shape ``(3, 4, 2)``, :math:`c` is of shape ``(3, 5)`` and
+        For a third-order scheme, :math:`a` is of shape ``(1,)``, :math:`b`
+        is of shape ``(3, 4, 1)``, :math:`c` is of shape ``(3, 5)`` and
         :math:`d` is of shape ``(1, 3)``.
     """
 
@@ -278,6 +298,59 @@ def ss_weno_242_coefficients(
     ).T
 
     return a, b, c, d
+
+
+def ss_weno_242_bounary_coefficients(
+    dtype: Optional["jnp.dtype[Any]"] = None,
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    # boundary stencils ([Fisher2011] Equation 77)
+    c = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            [
+                [0, 0],
+                [0, 0],
+                [-7 / 12, 19 / 12],
+                [-23 / 48, 71 / 48],
+                [-25 / 48, 73 / 48],
+                [-5 / 12, 17 / 12],
+                [-31 / 48, 79 / 48],
+                [0, 0],
+            ],
+            [
+                [1, 0],
+                [31 / 48, 17 / 48],
+                [5 / 12, 7 / 12],
+                [25 / 48, 23 / 48],
+                [23 / 48, 25 / 48],
+                [7 / 12, 5 / 12],
+                [17 / 48, 31 / 48],
+                [0, 1],
+            ],
+            [
+                [0, 0],
+                [79 / 48, -31 / 48],
+                [17 / 12, -5 / 12],
+                [73 / 48, -25 / 48],
+                [71 / 48, -23 / 48],
+                [19 / 12, -7 / 12],
+                [0, 0],
+                [0, 0],
+            ],
+        ],
+        dtype=dtype,
+    )
+
+    # weights coefficients ([Fisher2011] Equation 78)
+    d = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            [0, 0, 1, 0, 0],
+            [0, 0, 24 / 31, 1013 / 4898, 3 / 158],
+            [0, 11 / 56, 51 / 70, 3 / 40, 0],
+            [3 / 142, 357 / 3266, 408 / 575, 4 / 25, 0],
+        ]
+    )
+
+    return c, d
 
 
 def ss_weno_242_operator_coefficients(
@@ -331,7 +404,9 @@ def ss_weno_242_weights(
     u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
 ) -> jnp.ndarray:
     beta = weno_js_smoothness(u, a, b)
-    tau = jnp.pad((u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, 2)  # type: ignore
+    tau = jnp.pad(  # type: ignore[no-untyped-call]
+        (u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2)
+    )
     alpha = d * (1.0 + tau / (eps + beta))
 
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)

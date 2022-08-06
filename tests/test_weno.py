@@ -1,20 +1,22 @@
 # SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from dataclasses import replace
 from itertools import product
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
 
-from pyshocks import get_logger
-from pyshocks import make_uniform_grid
+from pyshocks import get_logger, set_recommended_matplotlib
+from pyshocks import make_uniform_cell_grid, make_uniform_point_grid
 from pyshocks.reconstruction import WENOJS, reconstruct, make_reconstruction_from_name
 
 import pytest
 
 logger = get_logger("test_weno")
+set_recommended_matplotlib()
 
 
 # {{{ test_weno_smoothness_indicator_vectorization
@@ -195,7 +197,7 @@ def test_weno_vs_pyweno(
     rec = make_reconstruction_from_name(rec_name)
     assert isinstance(rec, WENOJS)
 
-    grid = make_uniform_grid(a=0, b=2.0 * jnp.pi, n=n, nghosts=rec.stencil_width)
+    grid = make_uniform_cell_grid(a=0, b=2.0 * jnp.pi, n=n, nghosts=rec.stencil_width)
 
     from pyshocks import make_leggauss_quadrature, cell_average
 
@@ -262,8 +264,17 @@ def test_weno_vs_pyweno(
 # {{{ test_weno_smooth_reconstruction_order
 
 
-def func_sine(x: jnp.ndarray, k: int = 1) -> jnp.ndarray:
-    return jnp.sin(2.0 * jnp.pi * k * x)
+def get_function(name: str) -> Callable[[jnp.ndarray], jnp.ndarray]:
+    if name == "sine":
+        return lambda x: jnp.sin(2 * jnp.pi * x)
+    elif name == "linear":
+        return lambda x: x
+    elif name == "quadratic":
+        return lambda x: x**2
+    elif name == "cubic":
+        return lambda x: x**3
+    else:
+        raise ValueError(f"unknown function name: '{name}'")
 
 
 @pytest.mark.parametrize(
@@ -274,23 +285,36 @@ def func_sine(x: jnp.ndarray, k: int = 1) -> jnp.ndarray:
         ("esweno32", 3, list(range(192, 384 + 1, 32))),
     ],
 )
-def test_weno_smooth_reconstruction_order(
-    name: str, order: int, resolutions: List[int], visualize: bool = True
+@pytest.mark.parametrize(
+    "func_name",
+    [
+        "sine",
+        # NOTE: mostly for debugging to see where the points fall
+        # "linear",
+    ],
+)
+def test_weno_smooth_reconstruction_order_avg_values(
+    name: str,
+    order: int,
+    resolutions: List[int],
+    func_name: str,
+    visualize: bool = True,
 ) -> None:
     from pyshocks import make_leggauss_quadrature, cell_average
     from pyshocks import EOCRecorder, rnorm
 
     eoc_l = EOCRecorder(name="ul")
     eoc_r = EOCRecorder(name="ur")
+    func = get_function(func_name)
 
     for n in resolutions:
         rec = make_reconstruction_from_name(name)
 
-        grid = make_uniform_grid(-1.0, 1.0, n=n, nghosts=rec.stencil_width)
+        grid = make_uniform_cell_grid(-1.0, 1.0, n=n, nghosts=rec.stencil_width)
         quad = make_leggauss_quadrature(grid, order=order + 1)
-        u0 = cell_average(quad, func_sine)
+        u0 = cell_average(quad, func)
 
-        ul_ref = ur_ref = func_sine(grid.f)
+        ul_ref = ur_ref = func(grid.f)
         ul, ur = reconstruct(rec, grid, u0)
 
         error_l = rnorm(grid, ul, ul_ref[:-1], p=jnp.inf)
@@ -305,6 +329,74 @@ def test_weno_smooth_reconstruction_order(
 
     assert eoc_l.estimated_order >= order - 0.5
     assert eoc_r.estimated_order >= order - 0.5
+
+
+@pytest.mark.parametrize(
+    ("name", "order", "resolutions"),
+    [
+        # ("wenojs32", 3, list(range(256, 384 + 1, 32))),
+        # ("wenojs53", 5, list(range(32, 256 + 1, 32))),
+        # ("esweno32", 3, list(range(192, 384 + 1, 32))),
+        ("ssweno242", 4, list(range(192, 384 + 1, 32))),
+    ],
+)
+@pytest.mark.parametrize(
+    "func_name",
+    [
+        # "sine",
+        # NOTE: mostly for debugging to see where the points fall
+        # "linear",
+        "quadratic",
+        # "cubic"
+    ],
+)
+def test_weno_smooth_reconstruction_order_point_values(
+    name: str,
+    order: int,
+    resolutions: List[int],
+    func_name: str,
+    visualize: bool = True,
+) -> None:
+    from pyshocks.weno import ss_weno_parameters
+    from pyshocks import EOCRecorder, rnorm
+
+    eoc_l = EOCRecorder(name="ul")
+    eoc_r = EOCRecorder(name="ur")
+    func = get_function(func_name)
+
+    for n in resolutions:
+        grid = make_uniform_point_grid(-1.0, 1.0, n=n, nghosts=4)
+        u0 = func(grid.x)
+
+        rec = make_reconstruction_from_name(name)
+        if name == "ssweno242":
+            rec = replace(rec, eps=ss_weno_parameters(grid, u0))
+
+        ul_ref = ur_ref = func(grid.f)
+        ul, ur = reconstruct(rec, grid, u0)
+
+        # import matplotlib.pyplot as mp
+        # fig = mp.figure()
+        # ax = fig.gca()
+        # ax.plot(grid.x[grid.i_], ul_ref[grid.i_])
+        # ax.plot(grid.x[grid.i_], ul[:-1][grid.i_])
+        # ax.set_xlabel("$x$")
+        # ax.set_ylabel("$u^L$")
+        # fig.savefig(f"test_weno_{name}")
+        # break
+
+        error_l = rnorm(grid, ul[:-1], ul_ref, p=jnp.inf)
+        error_r = rnorm(grid, ur[1:], ur_ref, p=jnp.inf)
+        logger.info("error: n %4d ul %.12e ur %.12e", n, error_l, error_r)
+
+        eoc_l.add_data_point(grid.dx_max, error_l)
+        eoc_r.add_data_point(grid.dx_max, error_r)
+
+    logger.info("\n%s", eoc_l)
+    logger.info("\n%s", eoc_r)
+
+    # assert eoc_l.estimated_order >= order - 0.5
+    # assert eoc_r.estimated_order >= order - 0.5
 
 
 # }}}

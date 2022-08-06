@@ -12,7 +12,7 @@ from pyshocks import (
     Grid,
     Boundary,
     VectorFunction,
-    make_uniform_grid,
+    make_uniform_cell_grid,
     apply_operator,
     predict_timestep,
 )
@@ -114,7 +114,7 @@ def main(
     """
     # {{{ setup
 
-    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
     from dataclasses import replace
 

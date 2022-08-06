@@ -6,7 +6,12 @@ from typing import ClassVar
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, SchemeBase, ConservationLawScheme, Boundary
+from pyshocks import (
+    Grid,
+    SchemeBase,
+    ConservationLawScheme,
+    Boundary,
+)
 from pyshocks import reconstruction
 from pyshocks import (
     flux,
@@ -239,7 +244,6 @@ class SSWENO242(SchemeBase):
     """
 
     rec: reconstruction.SSWENO242
-
     c: float = 1.0e-2
 
     P: ClassVar[jnp.ndarray]
@@ -248,14 +252,6 @@ class SSWENO242(SchemeBase):
 
         if not isinstance(self.rec, reconstruction.SSWENO242):
             raise TypeError("SSWENO242 scheme requires the SSWENO242 reconstruction")
-
-        from pyshocks.weno import ss_weno_242_operator_coefficients
-
-        p, _, _, _, _ = ss_weno_242_operator_coefficients()
-
-        from pyshocks.weno import ss_weno_norm_matrix
-
-        object.__setattr__(self, "P", ss_weno_norm_matrix(p, self.rec.grid.n + 1))
 
     @property
     def order(self) -> int:
@@ -282,22 +278,25 @@ def _predict_timestep_burgers_ssweno242(
 
 @apply_operator.register(SSWENO242)
 def _apply_operator_burgers_ssweno242(
-    scheme: SSWENO242, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+    scheme: SSWENO242,
+    grid: Grid,
+    bc: Boundary,
+    t: float,
+    u: jnp.ndarray,
 ) -> jnp.ndarray:
     from pyshocks.scalar import SSWENOBurgersBoundary
 
     if not isinstance(bc, SSWENOBurgersBoundary):
         raise TypeError(f"boundary has unsupported type: '{type(bc).__name__}'")
 
-    assert scheme.rec.grid is grid
-    assert u.shape == grid.f.shape
+    assert u.shape == grid.x.shape
 
     from pyshocks.reconstruction import reconstruct
 
     i = grid.i_
 
     w = u
-    f = flux(scheme, t, grid.f[i], u[i])
+    f = flux(scheme, t, grid.x[i], u[i])
 
     # {{{ inviscid flux
 

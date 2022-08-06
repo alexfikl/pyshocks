@@ -9,7 +9,7 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
-from pyshocks import UniformGrid, Boundary, timeme
+from pyshocks import Grid, Boundary, timeme
 from pyshocks import advection, reconstruction, limiters, get_logger
 from pyshocks.checkpointing import InMemoryCheckpoint
 from pyshocks.timestepping import Stepper, step, adjoint_step
@@ -20,7 +20,7 @@ logger = get_logger("advection-adjoint")
 @dataclass
 class Simulation:
     scheme: advection.Scheme
-    grid: UniformGrid
+    grid: Grid
     bc: Boundary
     stepper: Stepper
     tfinal: float
@@ -224,9 +224,9 @@ def main(
     # {{{ geometry
 
     from pyshocks import continuity
-    from pyshocks import make_uniform_grid
+    from pyshocks import make_uniform_cell_grid
 
-    grid = make_uniform_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     func_velocity = partial(continuity.velocity_const, grid, 0.0)
     func_ic = partial(continuity.ic_sine, grid)
 

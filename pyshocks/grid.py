@@ -9,9 +9,11 @@ Grid
 
 .. autoclass:: Grid
     :no-show-inheritance:
+
 .. autoclass:: UniformGrid
 
-.. autofunction:: make_uniform_grid
+.. autofunction:: make_uniform_cell_grid
+.. autofunction:: make_uniform_point_grid
 
 .. autoclass:: Quadrature
     :no-show-inheritance:
@@ -51,35 +53,26 @@ class Grid:
 
         Number of ghost cells
 
-    .. attribute:: ncells
-
-        Number of total cells (ghost and interior).
-
-    .. attribute:: nfaces
-
-        Number of total faces (ghost and interior).
-
     .. attribute:: x
 
-        Array of cell center coordinates of shape ``(n + 2 g,)``.
-
-    .. attribute:: f
-
-        Array of face coordinates of shape ``(n + 2 g + 1,)``.
+        Array of solution point coordinates of shape ``(n + 2 g,)``.
 
     .. attribute:: dx
 
-        Array of cell sizes (same shape as :attr:`x`).
+        Array of cell sizes (dependent on the representation).
+
+    .. attribute:: f
+
+        Midpoint between the solution points.
 
     .. attribute:: df
 
-        Array of staggered cell sizes (centered at the face coordinates)
-        of size ``(n + 2 g - 1,)``.
+        Array of cell sizes between the staggered points :attr:`f`.
 
     .. attribute:: dx_min
     .. attribute:: dx_max
 
-        Smallest (and largest) :attr:`dx` in the domain.
+        Smallest (and largest) element size in the domain.
 
     .. attribute:: i_
 
@@ -94,38 +87,28 @@ class Grid:
 
     a: float
     b: float
-
-    x: jnp.ndarray
-    f: jnp.ndarray
     nghosts: int
 
-    # NOTE: these are here explicitly because jax.jit does not work well with
-    # caching attributes (they leak outside on the first call to a jitted function)
-
+    x: jnp.ndarray
     dx: jnp.ndarray
+
+    f: jnp.ndarray
     df: jnp.ndarray
+
     dx_min: float
     dx_max: float
 
     @property
     def n(self) -> int:
-        return self.ncells - 2 * self.nghosts
-
-    @property
-    def ncells(self) -> int:
-        return int(self.x.size)
-
-    @property
-    def nfaces(self) -> int:
-        return int(self.f.size)
-
-    @property
-    def g_(self) -> Tuple[Optional[int], slice, slice]:
-        return (None, jnp.s_[: +self.nghosts], jnp.s_[-self.nghosts :])
+        return int(self.x.size) - 2 * self.nghosts
 
     @property
     def i_(self) -> slice:
-        return jnp.s_[self.nghosts : -self.nghosts]
+        return jnp.s_[self.nghosts : self.x.size - self.nghosts]
+
+    @property
+    def g_(self) -> Tuple[Optional[int], slice, slice]:
+        return (None, jnp.s_[: self.nghosts], jnp.s_[self.x.size - self.nghosts :])
 
 
 @dataclass(frozen=True)
@@ -133,11 +116,17 @@ class UniformGrid(Grid):
     pass
 
 
-def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> UniformGrid:
+# }}}
+
+
+# {{{ finite volume / cell-focused
+
+
+def make_uniform_cell_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Grid:
     """
     :arg a: left boundary of the domain :math:`[a, b]`.
     :arg b: right boundary of the domain :math:`[a, b]`.
-    :arg n: number of cells the discretize the domain.
+    :arg n: number of cells that discretize the domain.
     :arg nghosts: number of ghost cells on each side of the domain.
     """
     if b < a:
@@ -145,9 +134,6 @@ def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Unifor
 
     if n <= 0:
         raise ValueError(f"number of cells should be > 0: '{n}'")
-
-    if nghosts <= 0:
-        raise ValueError(f"number of ghost cells should be > 0: '{nghosts}'")
 
     dx0 = (b - a) / n
 
@@ -158,9 +144,6 @@ def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Unifor
 
     df = jnp.diff(x)
     dx = jnp.diff(f)
-
-    # NOTE: this seems to fail quite generously; why is that?
-    # assert jnp.linalg.norm(dx - dx0, ord=jnp.inf) < 1.0e-12 * abs(dx0)
 
     return UniformGrid(
         a=a,
@@ -173,6 +156,53 @@ def make_uniform_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Unifor
         dx_min=jnp.min(dx),
         dx_max=jnp.max(dx),
     )
+
+
+# }}}
+
+
+# {{{ finite difference / point-centered
+
+
+def make_uniform_point_grid(
+    a: float, b: float, n: int, *, nghosts: int = 1
+) -> UniformGrid:
+    """
+    :arg a: left boundary of the domain :math:`[a, b]`.
+    :arg b: right boundary of the domain :math:`[a, b]`.
+    :arg n: number of points that discretize the domain.
+    :arg nghosts: number of ghost points on each side of the domain.
+    """
+    if b < a:
+        raise ValueError(f"incorrect interval a > b: '{a}' > '{b}'")
+
+    if n <= 0:
+        raise ValueError(f"number of cells should be > 0: '{n}'")
+
+    dx0 = (b - a) / (n - 1)
+
+    x = jnp.linspace(
+        a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=jnp.float64
+    )
+    dx = jnp.diff(x)
+
+    f = (x[1:] + x[:-1]) / 2
+    df = jnp.diff(f)
+
+    return UniformGrid(
+        a=a,
+        b=b,
+        nghosts=nghosts,
+        x=x,
+        dx=dx,
+        f=f,
+        df=df,
+        dx_min=jnp.min(dx),
+        dx_max=jnp.max(dx),
+    )
+
+
+# }}}
 
 
 # }}}

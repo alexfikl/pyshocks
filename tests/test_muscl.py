@@ -10,7 +10,7 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import get_logger, set_recommended_matplotlib
-from pyshocks import make_uniform_grid
+from pyshocks import make_uniform_cell_grid
 from pyshocks.limiters import make_limiter_from_name
 
 logger = get_logger("test_muscl")
@@ -59,7 +59,7 @@ def test_flux_limiters(
     lm_name: str, lm_kwargs: Dict[str, Any], smooth: bool, visualize: bool = False
 ) -> None:
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
-    grid = make_uniform_grid(-1.0, 1.0, n=128, nghosts=1)
+    grid = make_uniform_cell_grid(-1.0, 1.0, n=128, nghosts=1)
 
     from pyshocks import make_leggauss_quadrature, cell_average
 
@@ -177,7 +177,7 @@ def test_tvd_slope_limiter_burgers(
 
     # {{{ setup
 
-    grid = make_uniform_grid(-1.0, 1.0, n=256, nghosts=3)
+    grid = make_uniform_cell_grid(-1.0, 1.0, n=256, nghosts=3)
 
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     rec = MUSCL(lm=lm)

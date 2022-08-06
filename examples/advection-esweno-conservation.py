@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    make_uniform_grid,
+    make_uniform_cell_grid,
     apply_operator,
     predict_timestep,
 )
@@ -54,7 +54,7 @@ def main(
     from pyshocks.scalar import PeriodicBoundary
     from pyshocks import make_leggauss_quadrature, cell_average
 
-    grid = make_uniform_grid(a=0.0, b=1.0, n=n, nghosts=3)
+    grid = make_uniform_cell_grid(a=0.0, b=1.0, n=n, nghosts=3)
     quad = make_leggauss_quadrature(grid, order=5)
 
     velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
