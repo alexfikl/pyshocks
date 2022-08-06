@@ -86,29 +86,7 @@ def evolve_forward(
             ln1.set_ydata(event.u[s])
             mp.pause(0.01)
 
-    # }}}
-
-    # {{{ plot
-
     if interactive:
-        mp.close(fig)
-
-    if visualize:
-        umax = jnp.max(event.u[grid.i_])
-        umin = jnp.min(event.u[grid.i_])
-        umag = jnp.max(jnp.abs(event.u[grid.i_]))
-
-        fig = mp.figure()
-        ax = fig.gca()
-        ax.plot(grid.x[grid.i_], event.u[grid.i_], label="$u(T)$")
-        ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
-
-        ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
-        ax.set_xlabel("$x$")
-        ax.set_ylabel("$u$")
-        ax.set_title(f"$T = {event.t:.3f}$")
-
-        fig.savefig(dirname / f"burgers_forward_{sim.name}")
         mp.close(fig)
 
     # }}}
@@ -188,30 +166,12 @@ def evolve_adjoint(
             ln1.set_ydata(event.p[s])
             mp.pause(0.01)
 
-    # }}}
-
-    # {{{ plot
-
     if interactive:
         mp.close(fig)
 
-    if not visualize:
-        return
-
-    fig = mp.figure()
-    ax = fig.gca()
-
-    ax.plot(grid.x[s], event.p[s])
-    ax.plot(grid.x[s], p0[s], "k--")
-    ax.axhline(0.5, color="k", linestyle=":", lw=1)
-
-    ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
-    ax.set_xlabel("$x$")
-    ax.set_ylabel("$p$")
-
-    fig.savefig(dirname / f"burgers_adjoint_{sim.name}")
-
     # }}}
+
+    return event.p
 
 
 def main(
@@ -302,7 +262,7 @@ def main(
 
     # {{{ evolve adjoint
 
-    evolve_adjoint(
+    p0 = evolve_adjoint(
         sim,
         uf,
         uf,
@@ -311,6 +271,57 @@ def main(
         interactive=interactive,
         visualize=visualize,
     )
+
+    # }}}
+
+    # {{{ plot
+
+    if not visualize:
+        return
+
+    fig = mp.figure()
+
+    # {{{ forward solution
+
+    umax = jnp.max(uf[grid.i_])
+    umin = jnp.min(uf[grid.i_])
+    umag = jnp.max(jnp.abs(uf[grid.i_]))
+
+    ax = fig.gca()
+    ax.plot(grid.x[grid.i_], uf[grid.i_], label="$u(T)$")
+    ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
+
+    ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
+    ax.set_xlabel("$x$")
+    ax.set_ylabel("$u$")
+    ax.legend()
+
+    fig.savefig(outdir / f"burgers_forward_{sim.name}")
+    fig.clf()
+
+    # }}}
+
+    # {{{ adjoint solution
+
+    pmax = jnp.max(p0[grid.i_])
+    pmin = jnp.min(p0[grid.i_])
+    pmag = jnp.max(jnp.abs(p0[grid.i_]))
+
+    ax = fig.gca()
+
+    ax.plot(grid.x[grid.i_], p0[grid.i_], label="$p(0)$")
+    ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
+    ax.axhline(0.5, color="k", linestyle=":", lw=1)
+
+    ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
+    ax.set_xlabel("$x$")
+    ax.legend()
+
+    fig.savefig(outdir / f"burgers_adjoint_{sim.name}")
+
+    # }}}
+
+    mp.close(fig)
 
     # }}}
 
