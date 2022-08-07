@@ -164,6 +164,7 @@ class EOCRecorder:
 
     .. automethod:: __init__
     .. automethod:: add_data_point
+    .. automethod:: satisfied
     .. automethod:: as_table
     """
 
@@ -192,6 +193,13 @@ class EOCRecorder:
     @property
     def max_error(self) -> jnp.ndarray:
         return max(error for _, error in self.history)
+
+    def satisfied(self, order: float, atol: float = 1.0e-12) -> bool:
+        if not self.history:
+            return True
+
+        _, error = jnp.array(self.history).T  # type: ignore[no-untyped-call]
+        return bool(self.estimated_order >= order or jnp.max(error) < atol)
 
     def as_table(self) -> str:
         """

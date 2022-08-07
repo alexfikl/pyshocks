@@ -346,10 +346,10 @@ class WENOJS53(WENOJS):
 
 
 def _reconstruct_weno_js_side(rec: WENOJS, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_js_reconstruct, weno_js_weights
+    from pyshocks.weno import weno_reconstruct, weno_js_weights
 
     omega = weno_js_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
-    uhat = weno_js_reconstruct(u, rec.c)
+    uhat = weno_reconstruct(u, rec.c)
 
     return jnp.sum(omega * uhat, axis=0)
 
@@ -416,10 +416,10 @@ class ESWENO32(Reconstruction):
 
 
 def _reconstruct_es_weno_side(rec: ESWENO32, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_js_reconstruct, es_weno_weights
+    from pyshocks.weno import weno_reconstruct, es_weno_weights
 
     omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
-    uhat = weno_js_reconstruct(u, rec.c)
+    uhat = weno_reconstruct(u, rec.c)
 
     return jnp.sum(omega * uhat, axis=0)
 
@@ -497,10 +497,10 @@ class SSWENO242(Reconstruction):
 
 
 def _reconstruct_ss_weno_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_js_reconstruct, ss_weno_242_weights
+    from pyshocks.weno import weno_reconstruct, ss_weno_242_weights
 
     omega = ss_weno_242_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
-    uhat = weno_js_reconstruct(u, rec.c)
+    uhat = weno_reconstruct(u, rec.c)
 
     return jnp.sum(omega * uhat, axis=0)
 

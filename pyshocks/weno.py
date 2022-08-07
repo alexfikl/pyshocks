@@ -19,6 +19,49 @@ import jax.numpy as jnp
 from pyshocks.grid import Grid
 
 
+def weno_smoothness(
+    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, *, mode: str = "same"
+) -> jnp.ndarray:
+    r"""Compute the smoothness coefficients for a WENO scheme.
+
+    The coefficients must have the form
+
+    .. math::
+
+        \beta^r_m = \sum_j a_j \left(\sum u_{m - k} b_{r, j, k}\right)^2.
+
+    :returns: the :math:`\beta_i` smoothness coefficient for each stencil around
+        a cell :math:`m`. The shape of the returned array is
+        ``(b.shape[0], u.size)``.
+    """
+    return jnp.stack(
+        [
+            sum(
+                a[j] * jnp.convolve(u, b[i, j, :], mode=mode) ** 2
+                for j in range(a.size)
+            )
+            for i in range(b.shape[0])
+        ]
+    )
+
+
+def weno_reconstruct(
+    u: jnp.ndarray, c: jnp.ndarray, *, mode: str = "same"
+) -> jnp.ndarray:
+    r"""Reconstruct the variable *u* at the cell faces for WENO-JS.
+
+    The reconstruction has the form
+
+    .. math::
+
+        \hat{u}^r_m = \sum u_{m - k} c_{r, k}.
+
+    :returns: the :math:`\hat{u}_i` reconstruction, for each stencil in the
+        scheme. The returned array has a shape of ``(c.shape[0], u.size)``.
+    """
+    return jnp.stack([jnp.convolve(u, c[i, :], mode=mode) for i in range(c.shape[0])])
+
+
 # {{{ WENOJS
 
 
@@ -74,9 +117,9 @@ def weno_js_32_coefficients(
     a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
     b = jnp.array(  # type: ignore[no-untyped-call]
         [
-            # i - 1, i, i + 1
-            [[0.0, -1.0, 1.0]],
-            [[-1.0, 1.0, 0.0]],
+            # i + 1, i, i - 1
+            [[0.0, 1.0, -1.0]],
+            [[1.0, -1.0, 0.0]],
         ],
         dtype=dtype,
     )
@@ -113,6 +156,7 @@ def weno_js_53_coefficients(
     )
     b = jnp.array(  # type: ignore[no-untyped-call]
         [
+            # i + 2, i + 1, i, i - 1, i - 2
             [[0.0, 0.0, 1.0, -2.0, 1.0], [0.0, 0.0, 3.0, -4.0, 1.0]],
             [[0.0, 1.0, -2.0, 1.0, 0.0], [0.0, 1.0, 0.0, -1.0, 0.0]],
             [[1.0, -2.0, 1.0, 0.0, 0.0], [1.0, -4.0, 3.0, 0.0, 0.0]],
@@ -123,6 +167,7 @@ def weno_js_53_coefficients(
     # stencil coefficients (Equation 2.11, 2.12, 2.13 [Shu2009])
     c = jnp.array(  # type: ignore[no-untyped-call]
         [
+            # i + 2, i + 1, i, i - 1, i - 2
             [0.0, 0.0, 11.0 / 6.0, -7.0 / 6.0, 2.0 / 6.0],
             [0.0, 2.0 / 6.0, 5.0 / 6.0, -1.0 / 6.0, 0.0],
             [-1.0 / 6.0, 5.0 / 6.0, 2.0 / 6.0, 0.0, 0.0],
@@ -138,37 +183,6 @@ def weno_js_53_coefficients(
     return a, b, c, d
 
 
-def weno_js_smoothness(
-    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, *, mode: str = "same"
-) -> jnp.ndarray:
-    r"""Compute the smoothness coefficients for WENO-JS.
-
-    :returns: the :math:`\beta_i` smoothness coefficient for each stencil around
-        a cell :math:`m`. The shape of the returned array is
-        ``(b.shape[0], u.size)``.
-    """
-    return jnp.stack(
-        [
-            sum(
-                a[j] * jnp.convolve(u, b[i, j, :], mode=mode) ** 2
-                for j in range(a.size)
-            )
-            for i in range(b.shape[0])
-        ]
-    )
-
-
-def weno_js_reconstruct(
-    u: jnp.ndarray, c: jnp.ndarray, *, mode: str = "same"
-) -> jnp.ndarray:
-    r"""Reconstruct the variable *u* at the cell faces for WENO-JS.
-
-    :returns: the :math:`\hat{u}_i` reconstruction, for each stencil in the
-        scheme. The returned array has a shape of ``(c.shape[0], u.size)``.
-    """
-    return jnp.stack([jnp.convolve(u, c[i, :], mode=mode) for i in range(c.shape[0])])
-
-
 def weno_js_weights(
     u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
 ) -> jnp.ndarray:
@@ -177,7 +191,7 @@ def weno_js_weights(
     :returns: the weights :math:`\omega_i` for each stencil reconstruction
         from :func:`weno_js_reconstruct`.
     """
-    beta = weno_js_smoothness(u, a, b)
+    beta = weno_smoothness(u, a, b)
     alpha = d / (eps + beta) ** 2
 
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)
@@ -216,7 +230,7 @@ def es_weno_weights(
     :returns: the weights :math:`\omega_i` for each stencil reconstruction
         from :func:`weno_js_reconstruct`.
     """
-    beta = weno_js_smoothness(u, a, b)
+    beta = weno_smoothness(u, a, b)
 
     # NOTE: see Equations 21-22 in [Yamaleev2009]
     tau = jnp.pad((u[2:] - 2 * u[1:-1] + u[:-2]) ** 2, 1)  # type: ignore
@@ -273,10 +287,10 @@ def ss_weno_242_coefficients(
     a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
     b = jnp.array(  # type: ignore[no-untyped-call]
         [
-            # i - 1, i, i + 1, i + 2
-            [[0.0, 0.0, -1.0, 1.0]],
-            [[0.0, -1.0, 1.0, 0.0]],
-            [[-1.0, 1.0, 0.0, 0.0]],
+            # i + 2, i + 1, i, i - 1, i - 2
+            [[0.0, 0.0, 1.0, -1.0, 0.0]],  # L
+            [[0.0, 1.0, -1.0, 0.0, 0.0]],  # C
+            [[1.0, -1.0, 0.0, 0.0, 0.0]],  # R
         ],
         dtype=dtype,
     )
@@ -284,10 +298,10 @@ def ss_weno_242_coefficients(
     # stencil coefficients ([Fisher2011] Equation 77)
     c = jnp.array(  # type: ignore[no-untyped-call]
         [
-            # i - 1, i, i + 1, i + 2
-            [0.0, 0.0, 3.0 / 2.0, -1.0 / 2.0],
-            [0.0, 1.0 / 2.0, 1.0 / 2.0, 0.0],
-            [-1.0 / 2.0, 3.0 / 2.0, 0.0, 0.0],
+            # i + 2, i + 1, i, i - 1, i - 2
+            [0.0, 0.0, -1.0 / 2.0, 3.0 / 2.0, 0.0],  # L
+            [0.0, 1.0 / 2.0, 1.0 / 2.0, 0.0, 0.0],  # C
+            [3.0 / 2.0, -1.0 / 2.0, 0.0, 0.0, 0.0],  # R
         ],
         dtype=dtype,
     )
@@ -403,7 +417,7 @@ def ss_weno_242_operator_coefficients(
 def ss_weno_242_weights(
     u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
 ) -> jnp.ndarray:
-    beta = weno_js_smoothness(u, a, b)
+    beta = weno_smoothness(u, a, b)
     tau = jnp.pad(  # type: ignore[no-untyped-call]
         (u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2)
     )

@@ -62,9 +62,9 @@ def test_weno_smoothness_indicator_vectorization(
             beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1]) ** 2
 
     # jnp.convolve-based
-    from pyshocks.weno import weno_js_smoothness
+    from pyshocks.weno import weno_smoothness
 
-    beta1 = weno_js_smoothness(u, a, b)
+    beta1 = weno_smoothness(u, a, b)
 
     # }}}
 
@@ -77,9 +77,9 @@ def test_weno_smoothness_indicator_vectorization(
             uhat0[i, j] = jnp.sum(u[j + stencil] * c[i, ::-1])
 
     # jnp.convolve-based
-    from pyshocks.weno import weno_js_reconstruct
+    from pyshocks.weno import weno_reconstruct
 
-    uhat1 = weno_js_reconstruct(u, c)
+    uhat1 = weno_reconstruct(u, c)
 
     # }}}
 
@@ -129,9 +129,9 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> No
 
     # {{{ compute smoothness indicator
 
-    from pyshocks.weno import weno_js_smoothness
+    from pyshocks.weno import weno_smoothness
 
-    beta = weno_js_smoothness(u, a, b)
+    beta = weno_smoothness(u, a, b)
 
     alpha = rec.d / (rec.eps + beta) ** 2
     omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
@@ -214,10 +214,10 @@ def test_weno_vs_pyweno(
 
     from pyshocks import rnorm
 
-    from pyshocks.weno import weno_js_smoothness
+    from pyshocks.weno import weno_smoothness
 
-    betar = weno_js_smoothness(u[::-1], rec.a, rec.b)[:, ::-1].T
-    betal = weno_js_smoothness(u, rec.a, rec.b).T
+    betar = weno_smoothness(u[::-1], rec.a, rec.b)[:, ::-1].T
+    betal = weno_smoothness(u, rec.a, rec.b).T
 
     error_l = rnorm(grid, sl, betal)
     error_r = rnorm(grid, sr, betar)
@@ -270,9 +270,9 @@ def get_function(name: str) -> SpatialFunction:
     if name == "linear":
         return lambda x: x
     if name == "quadratic":
-        return lambda x: x**2
+        return lambda x: x**2 + 3 * x + 1
     if name == "cubic":
-        return lambda x: x**3
+        return lambda x: x**3 - 1
 
     raise ValueError(f"unknown function name: '{name}'")
 
@@ -280,20 +280,22 @@ def get_function(name: str) -> SpatialFunction:
 @pytest.mark.parametrize(
     ("name", "order", "resolutions"),
     [
-        ("wenojs32", 3, list(range(192, 384 + 1, 32))),
-        ("wenojs53", 5, list(range(32, 256 + 1, 32))),
+        # ("wenojs32", 3, list(range(192, 384 + 1, 32))),
+        # ("wenojs53", 5, list(range(32, 256 + 1, 32))),
         ("esweno32", 3, list(range(192, 384 + 1, 32))),
     ],
 )
 @pytest.mark.parametrize(
     "func_name",
     [
-        "sine",
+        # "sine",
         # NOTE: mostly for debugging to see where the points fall
-        # "linear",
+        "linear",
+        "quadratic",
+        "cubic",
     ],
 )
-def test_weno_smooth_reconstruction_order_avg_values(
+def test_weno_smooth_reconstruction_order_cell_values(
     name: str,
     order: int,
     resolutions: List[int],
@@ -327,26 +329,26 @@ def test_weno_smooth_reconstruction_order_avg_values(
     logger.info("\n%s", eoc_l)
     logger.info("\n%s", eoc_r)
 
-    assert eoc_l.estimated_order >= order - 0.5
-    assert eoc_r.estimated_order >= order - 0.5
+    assert eoc_l.satisfied(order - 0.5)
+    assert eoc_r.satisfied(order - 0.5)
 
 
 @pytest.mark.parametrize(
     ("name", "order", "resolutions"),
     [
-        # ("wenojs32", 3, list(range(256, 384 + 1, 32))),
-        # ("wenojs53", 5, list(range(32, 256 + 1, 32))),
-        # ("esweno32", 3, list(range(192, 384 + 1, 32))),
-        ("ssweno242", 4, list(range(192, 384 + 1, 32))),
+        ("wenojs32", 3, list(range(256, 384 + 1, 32))),
+        # ("wenojs53", 5, list(range(256, 384 + 1, 32))),
+        ("esweno32", 3, list(range(192, 384 + 1, 32))),
+        # ("ssweno242", 4, list(range(192, 384 + 1, 32))),
     ],
 )
 @pytest.mark.parametrize(
     "func_name",
     [
-        # "sine",
+        "sine",
         # NOTE: mostly for debugging to see where the points fall
         # "linear",
-        "quadratic",
+        # "quadratic",
         # "cubic"
     ],
 )
@@ -364,8 +366,14 @@ def test_weno_smooth_reconstruction_order_point_values(
     eoc_r = EOCRecorder(name="ur")
     func = get_function(func_name)
 
+    if visualize:
+        import matplotlib.pyplot as mp
+
+        fig = mp.figure()
+        ax = fig.gca()
+
     for n in resolutions:
-        grid = make_uniform_point_grid(-1.0, 1.0, n=n, nghosts=4)
+        grid = make_uniform_point_grid(-1.0, 1.0, n=n, nghosts=6)
         u0 = func(grid.x)
 
         rec = make_reconstruction_from_name(name)
@@ -375,28 +383,32 @@ def test_weno_smooth_reconstruction_order_point_values(
         ul_ref = ur_ref = func(grid.f)
         ul, ur = reconstruct(rec, grid, u0)
 
-        # import matplotlib.pyplot as mp
-        # fig = mp.figure()
-        # ax = fig.gca()
-        # ax.plot(grid.x[grid.i_], ul_ref[grid.i_])
-        # ax.plot(grid.x[grid.i_], ul[:-1][grid.i_])
-        # ax.set_xlabel("$x$")
-        # ax.set_ylabel("$u^L$")
-        # fig.savefig(f"test_weno_{name}")
-        # break
+        ul = ul[1:]
+        ur = ur[:-1]
 
-        error_l = rnorm(grid, ul[:-1], ul_ref, p=jnp.inf)
-        error_r = rnorm(grid, ur[1:], ur_ref, p=jnp.inf)
+        if visualize:
+            ax.semilogy(grid.x[grid.i_], jnp.abs(ul_ref - ul)[grid.i_], "-")
+            # ax.semilogy(grid.x[grid.i_], jnp.abs(ur_ref - ur)[grid.i_], "--")
+            # ax.plot(grid.x[grid.i_], ul_ref[grid.i_])
+            # ax.plot(grid.x[grid.i_], ul[:-1][grid.i_])
+
+        error_l = rnorm(grid, ul, ul_ref, p=jnp.inf)
+        error_r = rnorm(grid, ur, ur_ref, p=jnp.inf)
         logger.info("error: n %4d ul %.12e ur %.12e", n, error_l, error_r)
 
         eoc_l.add_data_point(grid.dx_max, error_l)
         eoc_r.add_data_point(grid.dx_max, error_r)
 
+    if visualize:
+        ax.set_xlabel("$x$")
+        ax.set_ylabel("$u^L$")
+        fig.savefig(f"test_weno_{name}_{func_name}_error")
+
     logger.info("\n%s", eoc_l)
     logger.info("\n%s", eoc_r)
 
-    # assert eoc_l.estimated_order >= order - 0.5
-    # assert eoc_r.estimated_order >= order - 0.5
+    assert eoc_l.satisfied(order - 0.5)
+    assert eoc_r.satisfied(order - 0.5)
 
 
 # }}}
