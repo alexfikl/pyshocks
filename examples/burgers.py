@@ -2,15 +2,17 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-from functools import partial
-from typing import Optional
+from typing import Tuple
 
 import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    ConservationLawScheme,
-    make_uniform_cell_grid,
+    Grid,
+    Boundary,
+    SchemeBase,
+    FiniteVolumeScheme,
+    VectorFunction,
     apply_operator,
     predict_timestep,
 )
@@ -19,8 +21,43 @@ from pyshocks import burgers, limiters, reconstruction, get_logger
 logger = get_logger("burgers")
 
 
+def make_finite_volume(
+    order: float, sw: int, *, a: float, b: float, n: int
+) -> Tuple[Grid, Boundary, VectorFunction]:
+    from pyshocks.scalar import make_dirichlet_boundary
+    from pyshocks import make_uniform_cell_grid, make_leggauss_quadrature, cell_average
+
+    order = int(max(order, 1.0)) + 1
+    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=sw)
+    quad = make_leggauss_quadrature(grid, order=order)
+    boundary = make_dirichlet_boundary(ga=lambda t, x: burgers.ex_shock(grid, t, x))
+
+    def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        return cell_average(quad, lambda x: burgers.ex_shock(grid, t, x))
+
+    return grid, boundary, make_solution
+
+
+def make_finite_difference(
+    order: float, sw: int, *, a: float, b: float, n: int
+) -> Tuple[Grid, Boundary, VectorFunction]:
+    from pyshocks.scalar import make_ssweno_boundary
+    from pyshocks import make_uniform_point_grid
+
+    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
+    boundary = make_ssweno_boundary(
+        ga=lambda t: burgers.ex_shock(grid, t, grid.a),
+        gb=lambda t: burgers.ex_shock(grid, t, grid.b),
+    )
+
+    def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        return burgers.ex_shock(grid, t, x)
+
+    return grid, boundary, make_solution
+
+
 def main(
-    scheme: ConservationLawScheme,
+    scheme: SchemeBase,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
@@ -28,7 +65,6 @@ def main(
     n: int = 256,
     tfinal: float = 1.0,
     theta: float = 1.0,
-    diffusivity: Optional[float] = None,
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
@@ -43,30 +79,21 @@ def main(
     """
     # {{{ setup
 
-    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
-    solution = partial(burgers.ex_shock, grid)
-
-    from pyshocks import make_leggauss_quadrature, cell_average
-
-    order = int(max(scheme.order, 1.0)) + 1
-    quad = make_leggauss_quadrature(grid, order=order)
-
-    from pyshocks.scalar import make_dirichlet_boundary
-
-    u0 = cell_average(quad, lambda x: solution(0.0, x))
-    boundary = make_dirichlet_boundary(solution)
-
-    if diffusivity is not None:
-        from pyshocks import diffusion
-
-        d = jnp.full_like(grid.x, diffusivity)  # type: ignore[no-untyped-call]
-        scheme_d = diffusion.CenteredScheme(rec=scheme.rec, diffusivity=d)
-
-        from pyshocks.schemes import CombineConservationLawScheme
-
-        scheme = CombineConservationLawScheme(
-            rec=scheme.rec, schemes=(scheme, scheme_d)
+    if isinstance(scheme, FiniteVolumeScheme):
+        grid, boundary, solution = make_finite_volume(
+            scheme.order, scheme.stencil_width, a=a, b=b, n=n
         )
+    else:
+        grid, boundary, solution = make_finite_difference(
+            scheme.order, scheme.stencil_width, a=a, b=b, n=n
+        )
+
+    u0 = solution(0.0, grid.x)
+
+    if isinstance(scheme, burgers.SSWENO242):
+        from pyshocks.burgers.schemes import prepare_ss_weno_242_scheme
+
+        prepare_ss_weno_242_scheme(scheme, grid, boundary)
 
     # }}}
 
@@ -126,7 +153,7 @@ def main(
                 logger.info("%s umax %.5e", event, umax)
 
             if interactive:
-                uhat = cell_average(quad, lambda x, event=event: solution(event.t, x))
+                uhat = solution(event.t, grid.x)
                 ln0.set_ydata(uhat[s])
                 ln1.set_ydata(event.u[s])
                 plt.pause(0.01)
@@ -143,7 +170,7 @@ def main(
 
     from pyshocks import rnorm
 
-    uhat = cell_average(quad, lambda x: solution(tfinal, x))
+    uhat = solution(tfinal, grid.x)
     error = rnorm(grid, event.u, uhat, p=1)
 
     if verbose:
@@ -197,11 +224,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--alpha", default=1.0, type=float, help="Lax-Friedrichs scheme parameter"
     )
-    parser.add_argument(
-        "--diffusivity",
-        type=float,
-        default=None,
-    )
     parser.add_argument("-n", "--numcells", type=int, default=256)
     parser.add_argument("--interactive", action="store_true")
     parser.add_argument(
@@ -220,6 +242,5 @@ if __name__ == "__main__":
         ascheme,
         n=args.numcells,
         outdir=args.outdir,
-        diffusivity=args.diffusivity,
         interactive=args.interactive,
     )

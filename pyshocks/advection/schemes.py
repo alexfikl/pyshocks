@@ -218,10 +218,10 @@ class SBPSAT21(SBPSAT):
 def _apply_operator_sbp_sat_21(
     scheme: SBPSAT21, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    from pyshocks.scalar import TwoSidedSATBoundary
+    from pyshocks.scalar import SATBoundary
 
     assert u.shape == grid.x.shape
-    assert isinstance(bc, TwoSidedSATBoundary)
+    assert isinstance(bc, SATBoundary)
 
     from pyshocks import evaluate_boundary
 

@@ -228,6 +228,55 @@ def _numerical_flux_burgers_esweno32(
 # {{{ SSWENO242
 
 
+def prepare_ss_weno_242_scheme(
+    scheme: "SSWENO242", grid: Grid, bc: Boundary
+) -> "SSWENO242":
+    from pyshocks.weno import (
+        ss_weno_242_operator_coefficients,
+        ss_weno_242_operator_boundary_coefficients,
+        ss_weno_circulant,
+        ss_weno_norm_matrix,
+        ss_weno_derivative_matrix,
+        ss_weno_interpolation_matrix,
+    )
+
+    n = grid.x.size
+    qi, hi = ss_weno_242_operator_coefficients()
+    p, qb, hb = ss_weno_242_operator_boundary_coefficients()
+
+    from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
+
+    if isinstance(bc, PeriodicBoundary):
+        p = jnp.ones_like(p)  # type: ignore[no-untyped-call]
+        P = ss_weno_norm_matrix(p, n)  # noqa: N806
+        Q = ss_weno_circulant(qi, n)  # noqa: N806
+        H = ss_weno_circulant(hi, n)  # noqa: N806
+    elif isinstance(bc, SSWENOBurgersBoundary):
+        P = ss_weno_norm_matrix(p, n)  # noqa: N806
+        Q = ss_weno_derivative_matrix(qi, qb, n)  # noqa: N806
+        H = ss_weno_interpolation_matrix(hi, hb, n)  # noqa: N806
+    else:
+        raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
+
+    if __debug__:
+        e_i = jnp.eye(1, n, 0).squeeze()  # type: ignore[no-untyped-call]
+        e_n = jnp.eye(1, n, n - 1).squeeze()  # type: ignore[no-untyped-call]
+
+        assert jnp.linalg.norm(jnp.sum(Q, axis=1)) < 1.0e-12
+        assert (
+            jnp.linalg.norm(Q + Q.T + jnp.outer(e_i, e_i) - jnp.outer(e_n, e_n))
+            < 1.0e-12
+        )
+
+        assert jnp.linalg.norm(jnp.sum(H, axis=1) - 1) < 1.0e-12
+
+    object.__setattr__(scheme, "P", P)
+    object.__setattr__(scheme, "Q", Q)
+    object.__setattr__(scheme, "H", H)
+
+    return scheme
+
+
 @dataclass(frozen=True)
 class SSWENO242(SchemeBase):
     """Fourth-order Energy Stable WENO (ESWENO) scheme by [Fisher2013]_.
@@ -247,9 +296,10 @@ class SSWENO242(SchemeBase):
     c: float = 1.0e-2
 
     P: ClassVar[jnp.ndarray]
+    Q: ClassVar[jnp.ndarray]
+    H: ClassVar[jnp.ndarray]
 
     def __post_init__(self) -> None:
-
         if not isinstance(self.rec, reconstruction.SSWENO242):
             raise TypeError("SSWENO242 scheme requires the SSWENO242 reconstruction")
 
@@ -276,6 +326,21 @@ def _predict_timestep_burgers_ssweno242(
     return predict_timestep.dispatch(Scheme)(scheme, grid, t, u)
 
 
+def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    # FIXME: any way to write this in a nice and vectorized way?
+
+    r = []
+    for i in range(u.size):
+        fs = 0.0
+        for k in range(i + 1, u.size):
+            for j in range(i):
+                fs += 2 * q[k, j] * (u[k] * u[k] + u[k] * u[j] + u[j] * u[j]) / 6
+
+        r.append(fs)
+
+    return jnp.array(r)  # type: ignore[no-untyped-call]
+
+
 @apply_operator.register(SSWENO242)
 def _apply_operator_burgers_ssweno242(
     scheme: SSWENO242,
@@ -284,27 +349,36 @@ def _apply_operator_burgers_ssweno242(
     t: float,
     u: jnp.ndarray,
 ) -> jnp.ndarray:
-    from pyshocks.scalar import SSWENOBurgersBoundary
+    from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
 
-    if not isinstance(bc, SSWENOBurgersBoundary):
+    if not isinstance(bc, (SSWENOBurgersBoundary, PeriodicBoundary)):
         raise TypeError(f"boundary has unsupported type: '{type(bc).__name__}'")
 
     assert u.shape == grid.x.shape
 
     from pyshocks.reconstruction import reconstruct
 
-    i = grid.i_
-
+    # NOTE: w is taken to be the entropy variable ([Fisher2013] Section 4.1)
     w = u
-    f = flux(scheme, t, grid.x[i], u[i])
+
+    # NOTE: use local Lax-Friedrichs splitting
+    a = jnp.abs(u)
+    f = flux(scheme, t, grid.x, u)
+
+    fp = (f + a * u) / 2
+    fm = (f - a * u) / 2
+
+    # reconstruct
+    _, fpr = reconstruct(scheme.rec, grid, fp)
+    fml, _ = reconstruct(scheme.rec, grid, fm)
 
     # {{{ inviscid flux
 
     # standard WENO reconstructed flux
-    fw = reconstruct(scheme.rec, grid, f)
+    fw = (fml[1:] + fpr[:-1]) / 2
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = (u[:-1] * u[:-1] + u[:-1] * u[1:] + u[1:] * u[1:]) / 6
+    fs = two_point_entropy_flux(scheme.Q, u)
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
     b = (w[1:] - w[:-1]) @ (fs - fw)
@@ -326,10 +400,10 @@ def _apply_operator_burgers_ssweno242(
     # }}}
 
     # [Fisher2013] Equation 3.45
-    dx = scheme.P * grid.dx[i]
+    dx = scheme.P * grid.dx_min
     return jnp.pad(  # type: ignore[no-untyped-call]
         (-(fssw[1:] - fssw[:-1]) + (gssw[1:] - gssw[:-1]) + gb) / dx,
-        grid.nghosts,
+        1,
     )
 
 

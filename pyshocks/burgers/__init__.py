@@ -57,6 +57,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,
     "esweno32": ESWENO32,
+    "ssweno242": SSWENO242,  # type: ignore[dict-item]
 }
 
 

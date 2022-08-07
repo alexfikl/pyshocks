@@ -261,6 +261,21 @@ def ss_weno_parameters(grid: Grid, u0: jnp.ndarray) -> float:
     return float(jnp.sum(grid.dx[i] * jnp.abs(u0[i]))) * grid.dx_min**4
 
 
+def ss_weno_242_weights(
+    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
+) -> jnp.ndarray:
+    beta = weno_smoothness(u, a, b)
+    tau = jnp.pad(  # type: ignore[no-untyped-call]
+        (u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2)
+    )
+    alpha = d * (1.0 + tau / (eps + beta))
+
+    return alpha / jnp.sum(alpha, axis=0, keepdims=True)
+
+
+# {{{ reconstruction
+
+
 def ss_weno_242_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
@@ -367,9 +382,32 @@ def ss_weno_242_bounary_coefficients(
     return c, d
 
 
+# }}}
+
+
+# {{{ operators
+
+
 def ss_weno_242_operator_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    # [Fisher2013] Appendix A, Equation A.2 interior
+    qi = jnp.array(  # type: ignore[no-untyped-call]
+        [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12]
+    )
+
+    # [Fisher2013] Appendix A, Equation A.5 interior
+    hi = jnp.array(  # type: ignore[no-untyped-call]
+        [-1 / 12, 7 / 12, 7 / 12, -1 / 12, 0],
+        dtype=dtype,
+    )
+
+    return qi, hi
+
+
+def ss_weno_242_operator_boundary_coefficients(
+    dtype: Optional["jnp.dtype[Any]"] = None,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
@@ -390,11 +428,6 @@ def ss_weno_242_operator_coefficients(
         dtype=dtype,
     )
 
-    # [Fisher2013] Appendix A, Equation A.2 interior
-    qi = jnp.array(  # type: ignore[no-untyped-call]
-        [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12]
-    )
-
     # [Fisher2013] Appendix A, Equation A.5 boundary
     hb = jnp.array(  # type: ignore[no-untyped-call]
         [
@@ -406,29 +439,13 @@ def ss_weno_242_operator_coefficients(
         dtype=dtype,
     )
 
-    # [Fisher2013] Appendix A, Equation A.5 interior
-    hi = jnp.array(  # type: ignore[no-untyped-call]
-        [-1 / 12, 7 / 12, 7 / 12, -1 / 12],
-        dtype=dtype,
-    )
-    return p, qb, qi, hb, hi
-
-
-def ss_weno_242_weights(
-    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
-) -> jnp.ndarray:
-    beta = weno_smoothness(u, a, b)
-    tau = jnp.pad(  # type: ignore[no-untyped-call]
-        (u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2)
-    )
-    alpha = d * (1.0 + tau / (eps + beta))
-
-    return alpha / jnp.sum(alpha, axis=0, keepdims=True)
+    return p, qb, hb
 
 
 def ss_weno_norm_matrix(p: jnp.ndarray, n: int) -> jnp.ndarray:
     assert n > 2 * p.size
 
+    # [Fisher2013] Appendix A, Equation A.1
     P = jnp.concatenate(  # noqa: N806
         [
             p,
@@ -436,9 +453,52 @@ def ss_weno_norm_matrix(p: jnp.ndarray, n: int) -> jnp.ndarray:
             p[::-1],
         ]
     )
-
     assert P.shape == (n,)
     return P
 
+
+def ss_weno_derivative_matrix(qi: jnp.ndarray, qb: jnp.ndarray, n: int) -> jnp.ndarray:
+    # [Fisher2013] Appendix A.1, Equation A.4
+    m = qi.size // 2
+    Q: jnp.ndarray = sum(  # noqa: N806
+        qi[k] * jnp.eye(n, n, k=k - m, dtype=qi.dtype)  # type: ignore[no-untyped-call]
+        for k in range(qi.size)
+    )
+
+    # [Fisher2013] Appendix A.1, Equation A.2
+    n, m = qb.shape
+    Q = Q.at[:n, :m].set(qb)  # noqa: N806
+    Q = Q.at[-n:, -m:].set(-qb[::-1, ::-1])  # noqa: N806
+
+    return Q
+
+
+def ss_weno_interpolation_matrix(
+    hi: jnp.ndarray, hb: jnp.ndarray, n: int
+) -> jnp.ndarray:
+    # [Fisher2013] Appendix A.1, Equation A.4
+    m = hi.size // 2
+    H: jnp.ndarray = sum(  # noqa: N806
+        hi[k] * jnp.eye(n, n, k=k - m, dtype=hi.dtype)  # type: ignore[no-untyped-call]
+        for k in range(hi.size)
+    )
+
+    # [Fisher2013] Appendix A.1, Equation A.2
+    n, m = hb.shape
+    H = H.at[:n, :m].set(hb)  # noqa: N806
+    H = H.at[-n:, -m:].set(hb[::-1, ::-1])  # noqa: N806
+
+    return H
+
+
+def ss_weno_circulant(q: jnp.ndarray, n: int) -> jnp.ndarray:
+    m = q.size // 2
+    return sum(
+        jnp.roll(q[i] * jnp.eye(n, n), i - m, axis=1)  # type: ignore
+        for i in range(q.size)
+    )
+
+
+# }}}
 
 # }}}

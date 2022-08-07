@@ -24,8 +24,8 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autofunction:: make_neumann_boundary
 .. autofunction:: make_sat_boundary
 
-.. autoclass:: SSWENOBoundary
 .. autoclass:: SSWENOBurgersBoundary
+.. autoclass:: TwoSidedSSWENOBurgersBoundary
 """
 
 from dataclasses import dataclass
@@ -378,13 +378,13 @@ def make_sat_boundary(
     if gb is None:
         gb = ga
 
-    ba = SATBoundary(side=-1, g=ga)
-    bb = SATBoundary(side=+1, g=gb)
-    return TwoSidedSATBoundary(left=ba, right=bb)
+    ba = OneSidedSATBoundary(side=-1, g=ga)
+    bb = OneSidedSATBoundary(side=+1, g=gb)
+    return SATBoundary(left=ba, right=bb)
 
 
 @dataclass(frozen=True)
-class SATBoundary(OneSidedBoundary):
+class OneSidedSATBoundary(OneSidedBoundary):
     r"""Simultaneous Approximation Term (SAT) Dirichlet-type boundary conditions.
 
     Returns the penalty term that needs to be added to weakly impose the
@@ -410,22 +410,22 @@ class SATBoundary(OneSidedBoundary):
 
 
 @dataclass(frozen=True)
-class TwoSidedSATBoundary(TwoSidedBoundary):
-    left: Optional[SATBoundary]
-    right: Optional[SATBoundary]
+class SATBoundary(TwoSidedBoundary):
+    left: Optional[OneSidedSATBoundary]
+    right: Optional[OneSidedSATBoundary]
 
 
-@evaluate_boundary.register(SATBoundary)
+@evaluate_boundary.register(OneSidedSATBoundary)
 def _evaluate_boundary_sat(
-    bc: SATBoundary, grid: Grid, t: float, u: jnp.ndarray
+    bc: OneSidedSATBoundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert grid.nghosts == 0
-    gd = bc.g(t)
+    assert grid.x.shape == u.shape
 
     i = grid.b_[bc.side]
     e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
 
-    return bc.tau * (u[i] - gd) * e_i
+    return bc.tau * (u[i] - bc.g(t)) * e_i
 
 
 # }}}
@@ -434,37 +434,46 @@ def _evaluate_boundary_sat(
 # {{{ SSWENO
 
 
+def make_ssweno_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> TwoSidedBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = OneSidedSSWENOBurgersBoundary(side=-1, g=ga)
+    bb = OneSidedSSWENOBurgersBoundary(side=+1, g=gb)
+    return SSWENOBurgersBoundary(left=ba, right=bb)
+
+
 @dataclass(frozen=True)
-class SSWENOBoundary(Boundary):
-    """Entropy-stable boundary conditions for the SSWENO scheme."""
-
-    fa: TemporalFunction
-    fb: TemporalFunction
-
-
-@dataclass(frozen=True)
-class SSWENOBurgersBoundary(SSWENOBoundary):
+class OneSidedSSWENOBurgersBoundary(OneSidedSATBoundary):
     """SSWENO boundary conditions for Burgers' equation.
 
     The boundary conditions implemented here only consider the inviscid problem,
-    as given by :class:`~pyshocks.burgers.SSWENO242`.
+    as given by :class:`~pyshocks.burgers.SSWENO242`. They are described in
+    [Fisher2013]_ Equation 4.8.
     """
 
 
-@apply_boundary.register(SSWENOBurgersBoundary)
-def _apply_boundary_ssweno_burgers(
-    bc: SSWENOBurgersBoundary, grid: Grid, t: float, u: jnp.ndarray
+@dataclass(frozen=True)
+class SSWENOBurgersBoundary(TwoSidedBoundary):
+    left: Optional[OneSidedSSWENOBurgersBoundary]
+    right: Optional[OneSidedSSWENOBurgersBoundary]
+
+
+@evaluate_boundary.register(OneSidedSSWENOBurgersBoundary)
+def _evaluate_boundary_ssweno_burgers(
+    bc: OneSidedSSWENOBurgersBoundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    assert u.size == grid.x.size
-    ja, jb = grid.nghosts, grid.x.size - grid.nghosts
+    assert grid.nghosts == 0
+    assert grid.x.shape == u.shape
 
-    # NOTE: [Fisher2013] Section 4.1.1, Equation 4.8
-    ga = -((u[ja] + abs(u[ja])) * u[ja] / 3 - bc.fa(t))
-    gb = +((u[jb] - abs(u[jb])) * u[jb] / 3 + bc.fb(t))
+    i = grid.b_[bc.side]
+    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
 
-    return jnp.squeeze(
-        ga * jnp.eye(1, grid.n, 0) + gb * jnp.eye(1, grid.n, grid.n - 1)  # type: ignore
-    )
+    # NOTE: [Fisher2013] Equation 4.8
+    s = bc.side
+    return s * ((u[i] + s * abs(u[i])) * u[i] / 3 + s * bc.g(t)) * e_i
 
 
 # }}}
