@@ -431,10 +431,10 @@ def ss_weno_242_operator_boundary_coefficients(
     # [Fisher2013] Appendix A, Equation A.5 boundary
     hb = jnp.array(  # type: ignore[no-untyped-call]
         [
-            [1.0, 0.0, 0.0, 0.0, 0.0],
-            [1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0],
-            [-11 / 96, 59 / 96, 17 / 32, -1 / 32, 0.0],
-            [-1 / 32, 0.0, 17 / 32, 7 / 12, -1 / 12],
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
+            [-11 / 96, 59 / 96, 17 / 32, -1 / 32, 0.0, 0.0],
+            [-1 / 32, 0.0, 17 / 32, 7 / 12, -1 / 12, 0.0],
         ],
         dtype=dtype,
     )
@@ -484,9 +484,9 @@ def ss_weno_interpolation_matrix(
     )
 
     # [Fisher2013] Appendix A.1, Equation A.2
-    n, m = hb.shape
-    H = H.at[:n, :m].set(hb)  # noqa: N806
-    H = H.at[-n:, -m:].set(hb[::-1, ::-1])  # noqa: N806
+    m, p = hb.shape
+    H = H.at[:m, :p].set(hb)  # noqa: N806
+    H = H.at[-m:, -p:].set(hb[::-1, ::-1])  # noqa: N806
 
     return H
 

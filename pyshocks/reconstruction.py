@@ -505,19 +505,25 @@ def _reconstruct_ss_weno_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
     return jnp.sum(omega * uhat, axis=0)
 
 
+def _reconstruct_ss_weno_boundary_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
+    pass
+
+
 @reconstruct.register(SSWENO242)
 def _reconstruct_ssweno242(
     rec: SSWENO242, grid: Grid, u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     from pyshocks import UniformGrid
 
-    assert grid.nghosts >= rec.stencil_width
-
     if not isinstance(grid, UniformGrid):
         raise NotImplementedError("SSWENO is only implemented for uniform grids")
 
-    ur = _reconstruct_ss_weno_side(rec, u)
-    ul = _reconstruct_ss_weno_side(rec, u[::-1])[::-1]
+    if grid.nghosts == 0:
+        ur = _reconstruct_ss_weno_side(rec, u)
+        ul = _reconstruct_ss_weno_side(rec, u[::-1])[::-1]
+    else:
+        ur = _reconstruct_ss_weno_side(rec, u)
+        ul = _reconstruct_ss_weno_side(rec, u[::-1])[::-1]
 
     return ul, ur
 

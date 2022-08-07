@@ -329,14 +329,13 @@ def _apply_boundary_scalar_neumann(
     # gets reversed.
 
     g = grid.nghosts
-    ifrom = grid.gi_[-bc.side]
+    ifrom = grid.gi_[bc.side]
     if bc.side == -1:
         ito = jnp.arange(g - 1, -1, -1)
     else:
-        ito = jnp.arange(u.size - 1, u.size - g, -1)
+        ito = jnp.arange(u.size - 1, u.size - g - 1, -1)
 
-    gn = bc.side * bc.g(t)
-    ub = u[ifrom] + (grid.x[ifrom] - grid.x[ito]) * gn
+    ub = u[ifrom] + bc.side * (grid.x[ifrom] - grid.x[ito]) * bc.g(t)
 
     return u.at[ito].set(ub, unique_indices=True)
 
