@@ -16,6 +16,7 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autofunction:: scalar_flux_engquist_osher
 
 .. autoclass:: DirichletBoundary
+.. autoclass:: NeumannBoundary
 .. autoclass:: PeriodicBoundary
 .. autofunction:: dirichlet_boundary
 
@@ -30,7 +31,7 @@ import jax.numpy as jnp
 
 from pyshocks.grid import Grid
 from pyshocks.schemes import (
-    FiniteVolumeScheme,
+    ConservationLawScheme,
     flux,
     Boundary,
     OneSidedBoundary,
@@ -47,7 +48,7 @@ from pyshocks.tools import TemporalFunction, VectorFunction
 
 
 def scalar_flux_upwind(
-    scheme: FiniteVolumeScheme,
+    scheme: ConservationLawScheme,
     grid: Grid,
     t: float,
     a: jnp.ndarray,
@@ -93,7 +94,7 @@ def scalar_flux_upwind(
 
 
 def scalar_flux_rusanov(
-    scheme: FiniteVolumeScheme,
+    scheme: ConservationLawScheme,
     grid: Grid,
     t: float,
     a: jnp.ndarray,
@@ -155,7 +156,7 @@ def scalar_flux_rusanov(
 
 
 def scalar_flux_lax_friedrichs(
-    scheme: FiniteVolumeScheme,
+    scheme: ConservationLawScheme,
     grid: Grid,
     t: float,
     a: jnp.ndarray,
@@ -183,7 +184,7 @@ def scalar_flux_lax_friedrichs(
 
 
 def scalar_flux_engquist_osher(
-    scheme: FiniteVolumeScheme,
+    scheme: ConservationLawScheme,
     grid: Grid,
     t: float,
     u: jnp.ndarray,
@@ -239,7 +240,12 @@ def dirichlet_boundary(
 
 @dataclass(frozen=True)
 class DirichletBoundary(OneSidedBoundary):
-    """
+    """Imposes Dirichlet-type boundary conditions of the form
+
+    .. math::
+
+        u(t, a) = g_d(t).
+
     .. attribute:: f
 
         Callable that can be used to evaluate the boundary condition in the
@@ -259,6 +265,76 @@ def _apply_boundary_scalar_dirichlet(
 
     ito = grid.g_[bc.side]
     return u.at[ito].set(bc.f(t, grid.x[ito]), unique_indices=True)
+
+
+# }}}
+
+
+# {{{ Neumann boundary conditions
+
+
+def neumann_boundary(
+    fa: TemporalFunction,
+    fb: Optional[TemporalFunction] = None,
+) -> TwoSidedBoundary:
+    if fb is None:
+        fb = fa
+
+    ba = NeumannBoundary(side=-1, f=fa)
+    bb = NeumannBoundary(side=+1, f=fb)
+    return TwoSidedBoundary(left=ba, right=bb)
+
+
+@dataclass(frozen=True)
+class NeumannBoundary(OneSidedBoundary):
+    r"""Imposes Neumann-type boundary conditions of the form
+
+    .. math::
+
+        \pm \frac{\partial u}{\partial x}(t, a) = g_n(t).
+
+    using a second-order approximation.
+
+    .. attribute:: f
+
+        Callable that can be used to evaluate the boundary condition in the
+        ghost cells on the given :attr:`~pyshocks.OneSidedBoundary.side`.
+
+    .. automethod:: __init__
+    """
+
+    f: TemporalFunction
+
+
+@apply_boundary.register(NeumannBoundary)
+def _apply_boundary_scalar_neumann(
+    bc: NeumannBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert u.size == grid.x.size
+
+    # NOTE: the indexing here is computed as follows (for nghosts = 3)
+    #                        3     4     5
+    #   |-----|-----|-----|-----|-----|-----|-----
+    #      0     1     2  a
+    #
+    # where we need to compute
+    #
+    #   (u_{i + k} - u_{i - k}) / (x_{i + k} - x_{i - k}) = \pm g_n
+    #
+    # for k in {0, 1, 2} and i = 3. So basically the first batch {0, 1, 2}
+    # gets reversed.
+
+    g = grid.nghosts
+    if bc.side == -1:
+        ito = jnp.arange(g - 1, -1, -1)
+        ifrom = jnp.s_[g : 2 * g]
+    else:
+        ito = jnp.arange(u.size - 1, u.size - g, -1)
+        ifrom = jnp.s_[u.size - 2 * g : u.size - g]
+
+    gn = bc.side * bc.f(t)
+    ub = u[ifrom] + (grid.x[ifrom] - grid.x[ito]) * gn
+    return u.at[ito].set(ub, unique_indices=True)
 
 
 # }}}

@@ -104,18 +104,16 @@ def evolve_adjoint(
     maxit: int,
     interactive: bool,
     visualize: bool,
-) -> None:
+) -> jnp.ndarray:
     grid = sim.grid
     stepper = sim.stepper
 
     # {{{ setup
 
     from pyshocks import apply_boundary
-    from pyshocks.scalar import dirichlet_boundary
+    from pyshocks.scalar import neumann_boundary
 
-    bc = dirichlet_boundary(
-        lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
-    )
+    bc = neumann_boundary(lambda t: 0.0)
 
     @jax.jit
     def _apply_boundary(t: float, u: jnp.ndarray, p: jnp.ndarray) -> jnp.ndarray:

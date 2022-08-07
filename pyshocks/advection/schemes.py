@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
+from functools import singledispatch
 from typing import Optional
 
 import jax.numpy as jnp
 
 from pyshocks import Grid, FiniteVolumeScheme, Boundary
-from pyshocks import numerical_flux, apply_operator, predict_timestep
+from pyshocks import apply_operator, predict_timestep
 
 
 # {{{ base
@@ -20,6 +21,7 @@ class SpatialVelocity:
     velocity: jnp.ndarray
 
     def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
+        assert self.velocity.shape == x.shape
         return self.velocity
 
 
@@ -38,6 +40,13 @@ class Scheme(FiniteVolumeScheme):
     # FIXME: we want this to be a function so that we can evaluate it at
     # (t, x) every time
     velocity: Optional[jnp.ndarray]
+
+
+@singledispatch
+def apply_derivative(
+    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    raise NotImplementedError(type(scheme).__name__)
 
 
 @predict_timestep.register(Scheme)
@@ -60,9 +69,9 @@ def _apply_operator_advection(
     from pyshocks import apply_boundary
 
     u = apply_boundary(bc, grid, t, u)
-    f = numerical_flux(scheme, grid, t, u)
+    du = apply_derivative(scheme, grid, t, u)
 
-    return -scheme.velocity * (f[1:] - f[:-1]) / grid.dx
+    return -scheme.velocity * (du[1:] - du[:-1]) / grid.dx
 
 
 # }}}
@@ -93,8 +102,8 @@ class Godunov(Scheme):
     """
 
 
-@numerical_flux.register(Godunov)
-def _numerical_flux_advection_godunov(
+@apply_derivative.register(Godunov)
+def _apply_derivative_advection_godunov(
     scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.velocity is not None
@@ -132,8 +141,8 @@ class ESWENO32(Scheme):
     """
 
 
-@numerical_flux.register(ESWENO32)
-def _numerical_flux_burgers_esweno32(
+@apply_derivative.register(ESWENO32)
+def _apply_derivative_burgers_esweno32(
     scheme: ESWENO32, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.weno import es_weno_weights
@@ -161,5 +170,10 @@ def _numerical_flux_burgers_esweno32(
 
     return esweno_lf_flux(scheme, grid, u) + gnum
 
+
+# }}}
+
+
+# {{{ SBP
 
 # }}}

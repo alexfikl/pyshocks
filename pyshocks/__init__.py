@@ -17,6 +17,7 @@ from pyshocks.grid import (
 )
 from pyshocks.schemes import (
     SchemeBase,
+    CombineScheme,
     FiniteVolumeScheme,
     ConservationLawScheme,
     CombineConservationLawScheme,
@@ -28,6 +29,7 @@ from pyshocks.schemes import (
     OneSidedBoundary,
     TwoSidedBoundary,
     apply_boundary,
+    evaluate_boundary,
 )
 from pyshocks.tools import (
     T,
@@ -71,6 +73,7 @@ __all__ = (
     "make_uniform_cell_grid",
     "make_uniform_point_grid",
     "SchemeBase",
+    "CombineScheme",
     "FiniteVolumeScheme",
     "ConservationLawScheme",
     "CombineConservationLawScheme",
@@ -82,6 +85,7 @@ __all__ = (
     "OneSidedBoundary",
     "TwoSidedBoundary",
     "apply_boundary",
+    "evaluate_boundary",
     "Quadrature",
     "make_leggauss_quadrature",
     "cell_average",

@@ -9,6 +9,13 @@ Schemes
 
 .. autoclass:: SchemeBase
     :no-show-inheritance:
+.. autoclass:: CombineScheme
+
+.. autofunction:: apply_operator
+.. autofunction:: predict_timestep
+
+Finite Volume Schemes
+~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: ConservationLawScheme
@@ -16,8 +23,6 @@ Schemes
 
 .. autofunction:: flux
 .. autofunction:: numerical_flux
-.. autofunction:: apply_operator
-.. autofunction:: predict_timestep
 
 Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^
@@ -27,7 +32,9 @@ Boundary Conditions
 .. autoclass:: OneSidedBoundary
 .. autoclass:: TwoSidedBoundary
 
+.. autofunction:: evaluate_boundary
 .. autofunction:: apply_boundary
+
 """
 
 from dataclasses import dataclass
@@ -54,6 +61,16 @@ class SchemeBase:
         \frac{\partial \mathbf{u}}{\partial t} =
             \mathbf{A}(t, \mathbf{x}, \mathbf{u}, \nabla \mathbf{u}).
 
+    To define a scheme for such an equation, a new implementation of
+    :func:`apply_operator` needs to be provided. Optionally, :func:`predict_timestep`
+    can also be implemented to take advantage of the knowledge of the
+    :math:`\mathbf{A}` operator.
+
+    .. attribute:: name
+
+        A string identifier for the scheme in question (these are not expected
+        to be unique).
+
     .. attribute:: order
 
         Expected order of the scheme. This is the minimum convergence order
@@ -63,12 +80,11 @@ class SchemeBase:
     .. attribute:: stencil_width
 
         The required stencil width for the scheme and reconstruction.
-
     """
 
     @property
     def name(self) -> str:
-        return type(self).__name__
+        return type(self).__name__.lower()
 
     @property
     def order(self) -> int:
@@ -80,40 +96,6 @@ class SchemeBase:
 
 
 @singledispatch
-def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
-    """Evaluate the physical flux at the given parameters.
-
-    :param scheme: scheme for which to compute the (physical) flux. The
-        scheme also identifies the type of equations we are solving.
-    :param t: time at which to evaluate the flux.
-    :param x: coordinates at which to evaluate the flux.
-    :param u: variable values at which to evaluate the flux, whose size must
-        match that of *x*.
-
-    :returns: an array the size of *u* with the flux.
-    """
-    raise NotImplementedError(type(scheme).__name__)
-
-
-@singledispatch
-def numerical_flux(
-    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    """Approximate the flux at each cell-cell interface.
-
-    :param scheme: scheme for which to compute the (numerical) flux.
-    :param grid: grid on which to evaluate the flux.
-    :param t: time at which to evaluate the flux.
-    :param u: variable values at which to evaluate the flux, whose size must
-        match the number of cells in the *grid* (including ghost cells).
-
-    :returns: the numerical flux at each face in the mesh, i.e. matches the
-        size of :attr:`Grid.f`.
-    """
-    raise NotImplementedError(type(scheme).__name__)
-
-
-@singledispatch
 def apply_operator(
     scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
@@ -122,13 +104,12 @@ def apply_operator(
 
     .. math::
 
-        \frac{\partial u}{\partial t} = A(t, u),
+        \frac{\partial \mathbf{u}}{\partial t} = \mathbf{A}(t, u),
 
-    where :math:`A` is the nonlinear differential operator (in general)
+    where :math:`\mathbf{A}` is the nonlinear differential operator (in general)
     computed by this function.
 
-    :param scheme: scheme used to approximated the operator, effectively
-        describes the :func:`numerical_flux` used.
+    :param scheme: scheme used to approximated the operator.
     :param grid: grid on which to evaluate the operator.
     :param bc: boundary conditions for *u*.
     :param t: time at which to evaluate the operator.
@@ -168,7 +149,75 @@ def predict_timestep(
 # }}}
 
 
-# {{{
+# {{{ scheme linear combination
+
+
+@dataclass(frozen=True)
+class CombineScheme(SchemeBase):  # pylint: disable=W0223
+    r"""Implements a combined operator for multiple schemes.
+
+    In this case, we consider an equation of the form
+
+    .. math::
+
+        \frac{\partial \mathbf{u}}{\partial t}
+        + \sum_{k = 0}^M \mathbf{A}_k(t, \mathbf{x}, \mathbf{u}, \nabla \mathbf{u})
+        = 0,
+
+    where each :math:`\mathbf{A}_k` is defined by an element of
+    :attr:`schemes`. This class makes no attempt at checking if the different
+    schemes are consistent in any way.
+
+    The expectation is that each one implements a different operator and they
+    are combined as is. For example, one can combine a scheme implementing the
+    advective operator, one for the diffusive operator and one for the
+    reactive operator in a advection-diffusion-reaction equation.
+
+    .. attribute:: schemes
+
+        A tuple of :class:`SchemeBase` objects.
+    """
+    schemes: Tuple[SchemeBase, ...]
+
+    def __post_init__(self) -> None:
+        assert len(self.schemes) > 1
+        assert all(isinstance(s, SchemeBase) for s in self.schemes)
+
+    @property
+    def order(self) -> int:
+        return min(s.order for s in self.schemes)
+
+    @property
+    def stencil_width(self) -> int:
+        return max(s.stencil_width for s in self.schemes)
+
+
+@predict_timestep.register(CombineScheme)
+def _predict_time_combine(
+    scheme: CombineScheme, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from functools import reduce
+
+    return reduce(
+        jnp.minimum, [predict_timestep(s, grid, t, u) for s in scheme.schemes], jnp.inf
+    )
+
+
+@apply_operator.register(CombineScheme)
+def _apply_operator_combine(
+    scheme: CombineScheme,
+    grid: Grid,
+    bc: "Boundary",
+    t: float,
+    u: jnp.ndarray,
+) -> jnp.ndarray:
+    return sum(apply_operator(s, grid, bc, t, u) for s in scheme.schemes)
+
+
+# }}}
+
+
+# {{{ finite volume schemes
 
 
 @dataclass(frozen=True)
@@ -214,10 +263,47 @@ class ConservationLawScheme(FiniteVolumeScheme):
     .. math::
 
         \frac{\partial \mathbf{u}}{\partial t}
-        + \nabla \cdot \mathbf{f}(\mathbf{u}) = 0,
+        = -\nabla \cdot \mathbf{f}(\mathbf{u}),
 
-    where :math:`\mathbf{f}` is the (possibly nonlinear) flux.
+    where :math:`\mathbf{f}` is the (possibly nonlinear) flux. To define
+    a scheme for a conservation law of this form, one needs to implement
+    :func:`flux` and :func:`numerical_flux`. These functions are used in a
+    :func:`apply_operator` to define the approximation.
     """
+
+
+@singledispatch
+def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    """Evaluate the physical flux at the given parameters.
+
+    :param scheme: scheme for which to compute the (physical) flux. The
+        scheme also identifies the type of equations we are solving.
+    :param t: time at which to evaluate the flux.
+    :param x: coordinates at which to evaluate the flux.
+    :param u: variable values at which to evaluate the flux, whose size must
+        match that of *x*.
+
+    :returns: an array the size of *u* with the flux.
+    """
+    raise NotImplementedError(type(scheme).__name__)
+
+
+@singledispatch
+def numerical_flux(
+    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    """Approximate the flux at each cell-cell interface.
+
+    :param scheme: scheme for which to compute the (numerical) flux.
+    :param grid: grid on which to evaluate the flux.
+    :param t: time at which to evaluate the flux.
+    :param u: variable values at which to evaluate the flux, whose size must
+        match the number of cells in the *grid* (including ghost cells).
+
+    :returns: the numerical flux at each face in the mesh, i.e. matches the
+        size of :attr:`Grid.f`.
+    """
+    raise NotImplementedError(type(scheme).__name__)
 
 
 @apply_operator.register(ConservationLawScheme)
@@ -231,49 +317,12 @@ def _apply_operator_conservation_law(
 
 
 @dataclass(frozen=True)
-class CombineConservationLawScheme(ConservationLawScheme):  # pylint: disable=W0223
-    r"""Implements a combined operator of conservation laws.
-
-    In this case, we consider a conservation law in the form
-
-    .. math::
-
-        \frac{\partial \mathbf{u}}{\partial t}
-        + \sum_{k = 0}^M \nabla \cdot \mathbf{f}_k(\mathbf{u}) = 0,
-
-    where each flux :math:`\mathbf{f}_k` is defined by an element of
-    :attr:`schemes`. The main benefit of using this class is that it avoids
-    applying the boundary conditions on every call to :func:`apply_operator`
-    (and the additional convenience).
-
-    .. attribute:: schemes
-
-        A tuple of :class:`ConservationLawScheme` objects.
-    """
+class CombineConservationLawScheme(CombineScheme, ConservationLawScheme):
     schemes: Tuple[ConservationLawScheme, ...]
 
     def __post_init__(self) -> None:
         assert len(self.schemes) > 1
         assert all(isinstance(s, ConservationLawScheme) for s in self.schemes)
-
-    @property
-    def order(self) -> int:
-        return min(s.order for s in self.schemes)
-
-    @property
-    def stencil_width(self) -> int:
-        return max(s.stencil_width for s in self.schemes)
-
-
-@predict_timestep.register(CombineConservationLawScheme)
-def _predict_time_combine_conservation_law(
-    scheme: CombineConservationLawScheme, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    dt = jnp.inf
-    for s in scheme.schemes:
-        dt = jnp.minimum(dt, predict_timestep(s, grid, t, u))
-
-    return dt
 
 
 @numerical_flux.register(CombineConservationLawScheme)
@@ -326,6 +375,22 @@ def apply_boundary(bc: Boundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.nd
     raise NotImplementedError(type(bc).__name__)
 
 
+@singledispatch
+def evaluate_boundary(
+    bc: Boundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    """Evaluates the boundary conditions out of place.
+
+    Unlike :func:`apply_boundary`, this function simply returns a set of
+    boundary values at the required boundary points and zero elsewhere.
+
+    :returns: an array of the same shape as *u* containing the boundary
+        conditions.
+    """
+
+    raise NotImplementedError(type(bc).__name__)
+
+
 @dataclass(frozen=True)
 class OneSidedBoundary(Boundary):
     """
@@ -371,6 +436,20 @@ def _apply_boundary_two_sided(
         u = apply_boundary(bc.right, grid, t, u)
 
     return u
+
+
+@evaluate_boundary.register(TwoSidedBoundary)
+def _evaluate_boundary_two_sided(
+    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    ub = 0
+    if bc.left is not None:
+        ub = ub + evaluate_boundary(bc.left, grid, t, u)
+
+    if bc.right is not None:
+        ub = ub + evaluate_boundary(bc.right, grid, t, u)
+
+    return ub
 
 
 # }}}

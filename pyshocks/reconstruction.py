@@ -93,7 +93,7 @@ def reconstruct(
 
     :returns: a :class:`tuple` of ``(ul, ur)`` containing a reconstructed
         state on the left and right side of each cell face. The dimension
-        of the returned arrays matches :attr:`pyshocks.Grid.ncells`.
+        of the returned arrays matches :attr:`pyshocks.Grid.x`.
     """
     raise NotImplementedError(type(rec).__name__)
 

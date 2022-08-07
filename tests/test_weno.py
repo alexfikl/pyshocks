@@ -3,14 +3,14 @@
 
 from dataclasses import replace
 from itertools import product
-from typing import Callable, List, Tuple
+from typing import List, Tuple
 
 import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
 
 from pyshocks import get_logger, set_recommended_matplotlib
-from pyshocks import make_uniform_cell_grid, make_uniform_point_grid
+from pyshocks import SpatialFunction, make_uniform_cell_grid, make_uniform_point_grid
 from pyshocks.reconstruction import WENOJS, reconstruct, make_reconstruction_from_name
 
 import pytest
@@ -264,17 +264,17 @@ def test_weno_vs_pyweno(
 # {{{ test_weno_smooth_reconstruction_order
 
 
-def get_function(name: str) -> Callable[[jnp.ndarray], jnp.ndarray]:
+def get_function(name: str) -> SpatialFunction:
     if name == "sine":
         return lambda x: jnp.sin(2 * jnp.pi * x)
-    elif name == "linear":
+    if name == "linear":
         return lambda x: x
-    elif name == "quadratic":
+    if name == "quadratic":
         return lambda x: x**2
-    elif name == "cubic":
+    if name == "cubic":
         return lambda x: x**3
-    else:
-        raise ValueError(f"unknown function name: '{name}'")
+
+    raise ValueError(f"unknown function name: '{name}'")
 
 
 @pytest.mark.parametrize(
