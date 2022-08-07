@@ -3,11 +3,11 @@
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Optional
+from typing import ClassVar, Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, FiniteVolumeScheme, Boundary
+from pyshocks import Grid, SchemeBase, FiniteVolumeScheme, Boundary
 from pyshocks import apply_operator, predict_timestep
 
 
@@ -27,7 +27,8 @@ class SpatialVelocity:
 
 @dataclass(frozen=True)
 class Scheme(FiniteVolumeScheme):
-    """Base class for numerical schemes for the linear advection equation.
+    """Base class for finite volume numerical schemes for the linear advection
+    equation.
 
     .. attribute:: velocity
 
@@ -174,6 +175,65 @@ def _apply_derivative_burgers_esweno32(
 # }}}
 
 
-# {{{ SBP
+# {{{ SBP-SAT
+
+
+@dataclass(frozen=True)
+class SBPSAT(SchemeBase):  # pylint: disable=abstract-method
+    velocity: Optional[jnp.ndarray]
+
+    # FIXME: this should really be matrix free
+    Q: ClassVar[jnp.ndarray]
+    H: ClassVar[jnp.ndarray]
+
+
+@predict_timestep.register(SBPSAT)
+def _predict_timestep_advection_sbp(
+    scheme: SBPSAT, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    return predict_timestep.dispatch(Scheme)(scheme, grid, t, u)
+
+
+@dataclass(frozen=True)
+class SBPSAT21(SBPSAT):
+    def __post_init__(self) -> None:
+        from pyshocks.sbp import get_sbp_21_matrices
+
+        if self.velocity is not None:
+            H, Q = get_sbp_21_matrices(self.velocity.size)  # noqa: N806
+
+            object.__setattr__(self, "Q", Q)
+            object.__setattr__(self, "H", H)
+
+    @property
+    def order(self) -> int:
+        return 1
+
+    @property
+    def stencil_width(self) -> int:
+        return 1
+
+
+@apply_operator.register(SBPSAT21)
+def _apply_operator_sbp_sat_21(
+    scheme: SBPSAT21, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.scalar import TwoSidedSATBoundary
+
+    assert u.shape == grid.x.shape
+    assert isinstance(bc, TwoSidedSATBoundary)
+
+    from pyshocks import evaluate_boundary
+
+    assert bc.left is not None and bc.right is not None
+    ua = evaluate_boundary(bc.left, grid, t, u)
+    ub = evaluate_boundary(bc.right, grid, t, u)
+
+    ap = jnp.maximum(+jnp.sign(scheme.velocity), 0.0)
+    am = jnp.maximum(-jnp.sign(scheme.velocity), 0.0)
+
+    hinv = jnp.diag(1 / (scheme.H * grid.dx))  # type: ignore[no-untyped-call]
+    return scheme.velocity * (hinv @ (-scheme.Q @ u + am * ub - ap * ua))
+
 
 # }}}

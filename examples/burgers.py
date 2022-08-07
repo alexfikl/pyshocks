@@ -51,10 +51,10 @@ def main(
     order = int(max(scheme.order, 1.0)) + 1
     quad = make_leggauss_quadrature(grid, order=order)
 
-    from pyshocks.scalar import dirichlet_boundary
+    from pyshocks.scalar import make_dirichlet_boundary
 
     u0 = cell_average(quad, lambda x: solution(0.0, x))
-    boundary = dirichlet_boundary(solution)
+    boundary = make_dirichlet_boundary(solution)
 
     if diffusivity is not None:
         from pyshocks import diffusion

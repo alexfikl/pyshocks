@@ -22,6 +22,9 @@ Schemes
 .. autoclass:: Godunov
 .. autoclass:: ESWENO32
 
+.. autoclass:: SBPSAT
+.. autoclass:: SBPSAT21
+
 .. class:: Upwind
 
     An alias for :class:`Godunov`.
@@ -32,7 +35,7 @@ Schemes
 
 from typing import Any, Dict, Tuple, Type
 
-from pyshocks.advection.schemes import Scheme, Godunov, ESWENO32
+from pyshocks.advection.schemes import Scheme, Godunov, ESWENO32, SBPSAT, SBPSAT21
 
 # NOTE: just providing an alias for common usage
 Upwind = Godunov
@@ -76,6 +79,8 @@ __all__ = (
     "Godunov",
     "Upwind",
     "ESWENO32",
+    "SBPSAT",
+    "SBPSAT21",
     "scheme_ids",
     "make_scheme_from_name",
 )

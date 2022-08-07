@@ -81,9 +81,9 @@ def make_boundary_conditions(
                 t, x, a=+a, u0=partial(solution, t)
             )
 
-        from pyshocks.scalar import dirichlet_boundary
+        from pyshocks.scalar import make_dirichlet_boundary
 
-        bc = dirichlet_boundary(fa=jax.jit(bc_left), fb=jax.jit(bc_right))
+        bc = make_dirichlet_boundary(ga=jax.jit(bc_left), gb=jax.jit(bc_right))
     else:
         raise ValueError(f"unknown example: '{name}'")
 

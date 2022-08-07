@@ -81,9 +81,9 @@ def evolve(
 
         boundary: Boundary = PeriodicBoundary()
     else:
-        from pyshocks.scalar import dirichlet_boundary
+        from pyshocks.scalar import make_dirichlet_boundary
 
-        boundary = dirichlet_boundary(solution_wrap)
+        boundary = make_dirichlet_boundary(solution_wrap)
 
     # }}}
 

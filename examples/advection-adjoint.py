@@ -130,9 +130,9 @@ def evolve_adjoint(
     # setting both left and right boundaries!
 
     from pyshocks import apply_boundary
-    from pyshocks.scalar import dirichlet_boundary
+    from pyshocks.scalar import make_dirichlet_boundary
 
-    bc = dirichlet_boundary(
+    bc = make_dirichlet_boundary(
         lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
     )
 
@@ -252,9 +252,9 @@ def main(
 
         boundary = PeriodicBoundary()
     elif bctype == "dirichlet":
-        from pyshocks.scalar import dirichlet_boundary
+        from pyshocks.scalar import make_dirichlet_boundary
 
-        boundary = dirichlet_boundary(solution)
+        boundary = make_dirichlet_boundary(solution)
     else:
         raise ValueError(bctype)
 

@@ -50,11 +50,11 @@ def main(
 
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
 
-    from pyshocks.scalar import dirichlet_boundary
+    from pyshocks.scalar import make_dirichlet_boundary
 
-    boundary = dirichlet_boundary(
-        fa=lambda t, x: jnp.ones_like(x),  # type: ignore[no-untyped-call]
-        fb=lambda t, x: jnp.zeros_like(x),  # type: ignore[no-untyped-call]
+    boundary = make_dirichlet_boundary(
+        ga=lambda t, x: jnp.ones_like(x),  # type: ignore[no-untyped-call]
+        gb=lambda t, x: jnp.zeros_like(x),  # type: ignore[no-untyped-call]
     )
 
     mid = (grid.a + grid.b) / 2.0

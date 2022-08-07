@@ -111,9 +111,9 @@ def evolve_adjoint(
     # {{{ setup
 
     from pyshocks import apply_boundary
-    from pyshocks.scalar import neumann_boundary
+    from pyshocks.scalar import make_neumann_boundary
 
-    bc = neumann_boundary(lambda t: 0.0)
+    bc = make_neumann_boundary(lambda t: 0.0)
 
     @jax.jit
     def _apply_boundary(t: float, u: jnp.ndarray, p: jnp.ndarray) -> jnp.ndarray:
@@ -205,9 +205,9 @@ def main(
     solution = partial(burgers.ex_shock, grid)
     u0 = cell_average(quad, lambda x: solution(0.0, x))
 
-    from pyshocks.scalar import dirichlet_boundary
+    from pyshocks.scalar import make_dirichlet_boundary
 
-    boundary = dirichlet_boundary(solution)
+    boundary = make_dirichlet_boundary(solution)
 
     # }}}
 

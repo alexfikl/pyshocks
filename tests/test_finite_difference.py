@@ -46,9 +46,9 @@ def test_advection_vs_continuity(
 
         boundary: Boundary = PeriodicBoundary()
     elif bc_type == "dirichlet":
-        from pyshocks.scalar import dirichlet_boundary
+        from pyshocks.scalar import make_dirichlet_boundary
 
-        boundary = dirichlet_boundary(
+        boundary = make_dirichlet_boundary(
             lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
         )
     else:
@@ -136,9 +136,9 @@ def test_advection_finite_difference_jacobian(
 
         boundary: Boundary = PeriodicBoundary()
     elif bc_type == "dirichlet":
-        from pyshocks.scalar import dirichlet_boundary
+        from pyshocks.scalar import make_dirichlet_boundary
 
-        boundary = dirichlet_boundary(
+        boundary = make_dirichlet_boundary(
             lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
         )
     else:

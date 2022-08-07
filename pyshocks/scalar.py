@@ -18,7 +18,11 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autoclass:: DirichletBoundary
 .. autoclass:: NeumannBoundary
 .. autoclass:: PeriodicBoundary
-.. autofunction:: dirichlet_boundary
+.. autoclass:: SATBoundary
+
+.. autofunction:: make_dirichlet_boundary
+.. autofunction:: make_neumann_boundary
+.. autofunction:: make_sat_boundary
 
 .. autoclass:: SSWENOBoundary
 .. autoclass:: SSWENOBurgersBoundary
@@ -37,6 +41,7 @@ from pyshocks.schemes import (
     OneSidedBoundary,
     TwoSidedBoundary,
     apply_boundary,
+    evaluate_boundary,
 )
 from pyshocks.reconstruction import reconstruct
 from pyshocks.tools import TemporalFunction, VectorFunction
@@ -224,14 +229,14 @@ def scalar_flux_engquist_osher(
 # {{{ boundary conditions
 
 
-def dirichlet_boundary(
-    fa: VectorFunction, fb: Optional[VectorFunction] = None
+def make_dirichlet_boundary(
+    ga: VectorFunction, gb: Optional[VectorFunction] = None
 ) -> TwoSidedBoundary:
-    if fb is None:
-        fb = fa
+    if gb is None:
+        gb = ga
 
-    ba = DirichletBoundary(side=-1, f=fa)
-    bb = DirichletBoundary(side=+1, f=fb)
+    ba = DirichletBoundary(side=-1, g=ga)
+    bb = DirichletBoundary(side=+1, g=gb)
     return TwoSidedBoundary(left=ba, right=bb)
 
 
@@ -254,7 +259,7 @@ class DirichletBoundary(OneSidedBoundary):
     .. automethod:: __init__
     """
 
-    f: VectorFunction
+    g: VectorFunction
 
 
 @apply_boundary.register(DirichletBoundary)
@@ -264,7 +269,7 @@ def _apply_boundary_scalar_dirichlet(
     assert u.size == grid.x.size
 
     ito = grid.g_[bc.side]
-    return u.at[ito].set(bc.f(t, grid.x[ito]), unique_indices=True)
+    return u.at[ito].set(bc.g(t, grid.x[ito]), unique_indices=True)
 
 
 # }}}
@@ -273,15 +278,14 @@ def _apply_boundary_scalar_dirichlet(
 # {{{ Neumann boundary conditions
 
 
-def neumann_boundary(
-    fa: TemporalFunction,
-    fb: Optional[TemporalFunction] = None,
+def make_neumann_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
 ) -> TwoSidedBoundary:
-    if fb is None:
-        fb = fa
+    if gb is None:
+        gb = ga
 
-    ba = NeumannBoundary(side=-1, f=fa)
-    bb = NeumannBoundary(side=+1, f=fb)
+    ba = NeumannBoundary(side=-1, g=ga)
+    bb = NeumannBoundary(side=+1, g=gb)
     return TwoSidedBoundary(left=ba, right=bb)
 
 
@@ -303,7 +307,7 @@ class NeumannBoundary(OneSidedBoundary):
     .. automethod:: __init__
     """
 
-    f: TemporalFunction
+    g: TemporalFunction
 
 
 @apply_boundary.register(NeumannBoundary)
@@ -325,15 +329,15 @@ def _apply_boundary_scalar_neumann(
     # gets reversed.
 
     g = grid.nghosts
+    ifrom = grid.gi_[-bc.side]
     if bc.side == -1:
         ito = jnp.arange(g - 1, -1, -1)
-        ifrom = jnp.s_[g : 2 * g]
     else:
         ito = jnp.arange(u.size - 1, u.size - g, -1)
-        ifrom = jnp.s_[u.size - 2 * g : u.size - g]
 
-    gn = bc.side * bc.f(t)
+    gn = bc.side * bc.g(t)
     ub = u[ifrom] + (grid.x[ifrom] - grid.x[ito]) * gn
+
     return u.at[ito].set(ub, unique_indices=True)
 
 
@@ -353,17 +357,75 @@ def _apply_boundary_scalar_periodic(
     bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert u.size == grid.x.size
-    g = grid.nghosts
 
-    # left
-    ito = grid.g_[+1]
-    u = u.at[ito].set(u[-2 * g : -g], unique_indices=True)
-
-    # right
-    ito = grid.g_[-1]
-    u = u.at[ito].set(u[g : 2 * g], unique_indices=True)
+    for side in [+1, -1]:
+        ito = grid.g_[side]
+        ifrom = grid.gi_[-side]
+        u = u.at[ito].set(u[ifrom], unique_indices=True)
 
     return u
+
+
+# }}}
+
+
+# {{{ SAT
+
+
+def make_sat_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> TwoSidedBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = SATBoundary(side=-1, g=ga)
+    bb = SATBoundary(side=+1, g=gb)
+    return TwoSidedSATBoundary(left=ba, right=bb)
+
+
+@dataclass(frozen=True)
+class SATBoundary(OneSidedBoundary):
+    r"""Simultaneous Approximation Term (SAT) Dirichlet-type boundary conditions.
+
+    Returns the penalty term that needs to be added to weakly impose the
+    required boundary condition. The form of this penalty term is given by
+
+    .. math::
+
+        \tau (u_i - g) \mathbf{e}_i.
+
+     where :math:`i` is either the first or last point in the grid.
+
+    .. attribute:: g
+    .. attribute:: tau
+
+        Weight used in the SAT penalty term.
+    """
+
+    g: TemporalFunction
+    tau: float = 1.0
+
+    def __post_init__(self) -> None:
+        assert self.tau >= 0.5
+
+
+@dataclass(frozen=True)
+class TwoSidedSATBoundary(TwoSidedBoundary):
+    left: Optional[SATBoundary]
+    right: Optional[SATBoundary]
+
+
+@evaluate_boundary.register(SATBoundary)
+def _evaluate_boundary_sat(
+    bc: SATBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert grid.nghosts == 0
+    gd = bc.g(t)
+
+    i = grid.b_[bc.side]
+    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
+
+    return bc.tau * (u[i] - gd) * e_i
 
 
 # }}}

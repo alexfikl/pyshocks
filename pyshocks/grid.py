@@ -74,6 +74,13 @@ class Grid:
 
         Smallest (and largest) element size in the domain.
 
+    .. attribute:: b_
+
+        Gives the index of the first and last point :attr:`x` that is not a
+        ghost point. The indices are obtained from ``Grid.b_[-1]`` and
+        ``Grid.b_[+1]``, respectively. Note that these can be the same as
+        :attr:`a` and :attr:`b`, but not necessarily.
+
     .. attribute:: i_
 
         A :class:`slice` of interior indices, i.e. without the ghost cell layer.
@@ -83,6 +90,11 @@ class Grid:
         A :class:`tuple` of ghost indices. ``Grid.g_[+1]`` and ``Grid.g_[-1]``
         give a :class:`slice` for the ghost indices on the right and left sides,
         respectively.
+
+    .. attribute:: gi_
+
+        Similar to :attr:`g_`, but gives the first and last ``nghosts`` interior
+        points.
     """
 
     a: float
@@ -107,8 +119,17 @@ class Grid:
         return jnp.s_[self.nghosts : self.x.size - self.nghosts]
 
     @property
-    def g_(self) -> Tuple[Optional[int], slice, slice]:
-        return (None, jnp.s_[: self.nghosts], jnp.s_[self.x.size - self.nghosts :])
+    def b_(self) -> Tuple[None, int, int]:
+        return (None, self.x.size - self.nghosts - 1, self.nghosts)
+
+    @property
+    def g_(self) -> Tuple[None, slice, slice]:
+        return (None, jnp.s_[self.x.size - self.nghosts :], jnp.s_[: self.nghosts])
+
+    @property
+    def gi_(self) -> Tuple[None, slice, slice]:
+        g = self.nghosts
+        return (None, jnp.s_[self.x.size - 2 * g : self.x.size - g], jnp.s_[g : 2 * g])
 
 
 @dataclass(frozen=True)
@@ -184,7 +205,7 @@ def make_uniform_point_grid(
     x = jnp.linspace(
         a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=jnp.float64
     )
-    dx = jnp.diff(x)
+    dx = jnp.full_like(x, dx0)  # type: ignore[no-untyped-call]
 
     f = (x[1:] + x[:-1]) / 2
     df = jnp.diff(f)
