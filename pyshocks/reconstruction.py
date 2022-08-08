@@ -493,7 +493,7 @@ class SSWENO242(Reconstruction):
 
     @property
     def stencil_width(self) -> int:
-        return 2
+        return 3
 
 
 def _reconstruct_ss_weno_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
