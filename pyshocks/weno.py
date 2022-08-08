@@ -54,7 +54,7 @@ def weno_reconstruct(
 
     .. math::
 
-        \hat{u}^r_m = \sum u_{m - k} c_{r, k}.
+        \hat{u}^r_m = \sum c_{r, k} u_{m - k}.
 
     :returns: the :math:`\hat{u}_i` reconstruction, for each stencil in the
         scheme. The returned array has a shape of ``(c.shape[0], u.size)``.
