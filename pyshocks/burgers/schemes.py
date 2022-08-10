@@ -281,7 +281,7 @@ class SSWENO242(SchemeBase):
     """
 
     rec: reconstruction.SSWENO242
-    c: float = 1.0e-2
+    c: float = 1.0e-12
 
     P: ClassVar[jnp.ndarray]
     Q: ClassVar[jnp.ndarray]
@@ -319,12 +319,15 @@ def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
     uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
     qfs = q * (jnp.outer(u, u) + uu + uu.T) / 3
 
-    fss = jnp.empty_like(u)  # type: ignore[no-untyped-call]
-    for i in range(u.size):
-        # sum(k, i + 1, N) sum(l, 1, i) 2 q[l, k] f(u_l, u_k)
-        fss = fss.at[i].set(jnp.sum(qfs[:i, i:]))
+    # NOTE: u is numbered [1, N] and fluxes are number [0, N] ([Fisher2013] Fig. 1)
+    fss = jnp.empty(u.size - 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
 
-    return fss
+    # FIXME: jax unrolls this to `u.size` statements, which is horrible!
+    for i in range(u.size - 1):
+        # sum(k, i, N) sum(l, 1, i + 1) 2 q[l, k] f(u_l, u_k)
+        fss = fss.at[i].set(jnp.sum(qfs[: i + 1, i:]))
+
+    return jnp.pad(fss, 1)  # type: ignore[no-untyped-call]
 
 
 @apply_operator.register(SSWENO242)
@@ -347,29 +350,30 @@ def _apply_operator_burgers_ssweno242(
     # NOTE: w is taken to be the entropy variable ([Fisher2013] Section 4.1)
     w = u
 
-    # NOTE: use local Lax-Friedrichs splitting
-    a = jnp.abs(u)
+    # NOTE: use a global Lax-Friedrichs splitting as recommended in [Frenzel2021]
     f = flux(scheme, t, grid.x, u)
-
-    fp = (f + a * u) / 2
-    fm = (f - a * u) / 2
+    alpha = jnp.max(jnp.abs(u))
+    fp = (f + alpha * u) / 2
+    fm = (f - alpha * u) / 2
 
     # reconstruct
-    _, fpr = reconstruct(scheme.rec, grid, fp)
-    fml, _ = reconstruct(scheme.rec, grid, fm)
+    fp, _ = reconstruct(scheme.rec, grid, fp)
+    _, fm = reconstruct(scheme.rec, grid, fm)
 
     # {{{ inviscid flux
 
     # standard WENO reconstructed flux
-    fw = (fml[1:] + fpr[:-1]) / 2
+    fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
     fs = two_point_entropy_flux(scheme.Q, u)
+    assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
-    b = (w[1:] - w[:-1]) @ (fs[1:] - fw)
+    b = jnp.pad((w[1:] - w[:-1]) * (fs[1:-1] - fw[1:-1]), 1)  # type: ignore
     delta = (jnp.sqrt(b**2 + scheme.c**2) - b) / jnp.sqrt(b**2 + scheme.c**2)
-    fssw = fw + delta * (fs[1:] - fw)
+    fssw = fw + delta * (fs - fw)
+    assert fssw.shape == grid.f.shape
 
     # }}}
 
@@ -381,19 +385,21 @@ def _apply_operator_burgers_ssweno242(
 
     # {{{ handle boundary conditions
 
-    gb = apply_boundary(bc, grid, t, u)
+    from pyshocks import evaluate_boundary
+
+    gb = evaluate_boundary(bc, grid, t, u)
 
     # }}}
 
     # [Fisher2013] Equation 3.45
     dx = scheme.P * grid.dx_min
-    return (
-        jnp.pad(  # type: ignore[no-untyped-call]
-            (-(fssw[1:] - fssw[:-1]) + (gssw[1:] - gssw[:-1]) + gb[1:-1]),
-            1,
-        )
-        / dx
-    )
+    r = (-(fssw[1:] - fssw[:-1]) + (gssw[1:] - gssw[:-1]) + gb) / dx
+
+    # NOTE: a bit hacky, but cleans any boundary goo
+    if isinstance(bc, PeriodicBoundary):
+        r = apply_boundary(bc, grid, t, r)
+
+    return r
 
 
 # }}}

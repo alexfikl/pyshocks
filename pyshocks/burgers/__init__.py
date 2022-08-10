@@ -111,6 +111,10 @@ def ic_sine(grid: Grid, x: jnp.ndarray) -> jnp.ndarray:
 # {{{ forward analytic solutions
 
 
+def ex_constant(grid: Grid, t: float, x: jnp.ndarray, *, c: float = 1.0) -> jnp.ndarray:
+    return jnp.full_like(x, c)  # type: ignore[no-untyped-call]
+
+
 def ex_shock(
     grid: Grid,
     t: float,
@@ -253,6 +257,7 @@ __all__ = (
     "make_scheme_from_name",
     "ic_rarefaction",
     "ic_sine",
+    "ex_constant",
     "ex_shock",
     "ex_tophat",
 )

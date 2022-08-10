@@ -49,14 +49,15 @@ def make_finite_difference(
 ) -> Tuple[Grid, Boundary, VectorFunction]:
     from pyshocks import make_uniform_point_grid
 
-    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=3)
     if periodic:
         from pyshocks.scalar import PeriodicBoundary
 
+        grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=3)
         boundary: Boundary = PeriodicBoundary()
     else:
         from pyshocks.scalar import make_ss_weno_boundary
 
+        grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
         boundary = make_ss_weno_boundary(
             ga=lambda t: burgers.ex_tophat(grid, t, grid.a),
             gb=lambda t: burgers.ex_tophat(grid, t, grid.b),
@@ -76,7 +77,7 @@ def main(
     b: float = +1.5,
     n: int = 256,
     tfinal: float = 1.0,
-    theta: float = 1.0,
+    theta: float = 0.5,
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
@@ -168,7 +169,7 @@ def main(
                 uhat = solution(event.t, grid.x)
                 ln0.set_ydata(uhat[s])
                 ln1.set_ydata(event.u[s])
-                plt.pause(0.01)
+                plt.pause(0.2)
     except StopIteration:
         pass
 

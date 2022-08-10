@@ -69,11 +69,30 @@ def test_ss_weno_burgers_matrices(bc_type: str) -> None:
 # {{{ test_ss_weno_burgers_two_point_flux
 
 
+def test_ss_weno_burgers_two_point_flux_first_order() -> None:
+    from pyshocks.weno import ss_weno_circulant
+
+    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
+    q = ss_weno_circulant(
+        jnp.array([-0.5, 0, 0.5], dtype=grid.x.dtype), grid.x.size  # type: ignore
+    )
+
+    from pyshocks.burgers.schemes import two_point_entropy_flux
+
+    u = jnp.full_like(grid.x, 1.0)  # type: ignore
+    fs = two_point_entropy_flux(q, u)
+
+    # NOTE: constant solutions should just do nothing
+    error = jnp.linalg.norm(fs[2:-1] - u[1:-1] ** 2 / 2)
+    assert error < 1.0e-15
+
+
+@pytest.mark.skip
 @pytest.mark.parametrize("bc_type", ["periodic"])
 def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
     from pyshocks.scalar import PeriodicBoundary
 
-    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=256, nghosts=0)
+    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
     if bc_type == "periodic":
         bc = PeriodicBoundary()
     else:
@@ -87,12 +106,12 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
     def two_point_flux_numpy_v0(u: jnp.ndarray) -> jnp.ndarray:
         q = jax.device_get(Q)
         w = jax.device_get(u)
-        fs = np.zeros_like(w)
+        fs = np.zeros(w.size + 2, dtype=w.dtype)
 
-        for i in range(u.size):
-            for j in range(i):
+        for i in range(w.size):
+            for j in range(i + 1):
                 for k in range(i, u.size):
-                    fs[i] += q[j, k] * (w[k] * w[k] + w[k] * w[j] + w[j] * w[j]) / 3
+                    fs[i + 1] += q[j, k] * (w[k] * w[k] + w[k] * w[j] + w[j] * w[j]) / 3
 
         return jax.device_put(fs)
 
@@ -103,9 +122,9 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
         ww = np.tile((w * w).reshape(-1, 1), w.size)
         qfs = q * (np.outer(w, w) + ww + ww.T) / 3
 
-        fs = np.empty_like(w)
-        for i in range(u.size):
-            fs[i] = np.sum(qfs[:i, i:])
+        fs = np.empty(w.size + 2, dtype=w.dtype)
+        for i in range(w.size - 1):
+            fs[i + 1] = np.sum(qfs[: i + 1, i:])
 
         return jax.device_put(fs)
 
@@ -116,22 +135,11 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
         ww = np.tile((w * w).reshape(-1, 1), w.size)
         qfs = q * (np.outer(w, w) + ww + ww.T) / 3
 
-        fs = np.empty_like(w)
-        for i in range(u.size):
-            fs[i] = np.sum(qfs[:i, i:])
+        fs = np.empty(w.size + 2, dtype=w.dtype)
+        for i in range(w.size - 1):
+            fs[i + 1] = np.sum(qfs[: i + 1, i:])
 
         return jax.device_put(fs)
-
-    @jax.jit
-    def two_point_flux_jax_v0(u: jnp.ndarray) -> jnp.ndarray:
-        uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
-        qfs = Q * (jnp.outer(u, u) + uu + uu.T) / 3
-
-        fss = jnp.empty_like(u)  # type: ignore[no-untyped-call]
-        for i in range(u.size):
-            fss = fss.at[i].set(jnp.sum(qfs[:i, i:]))
-
-        return fss
 
     @jax.jit
     def two_point_flux_jax_v1(u: jnp.ndarray) -> jnp.ndarray:
@@ -180,8 +188,10 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
 
     # {{{ jax
 
+    from pyshocks.burgers.schemes import two_point_entropy_flux
+
     with BlockTimer() as bt:
-        fs_jax = two_point_flux_jax_v0(u0)
+        fs_jax = two_point_entropy_flux(Q, u0)
     logger.info("%s", bt)
 
     error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)

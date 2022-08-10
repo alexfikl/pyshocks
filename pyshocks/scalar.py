@@ -364,6 +364,13 @@ def _apply_boundary_scalar_periodic(
     return u
 
 
+@evaluate_boundary.register(PeriodicBoundary)
+def _evaluate_boundary_scalar_periodic(
+    bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    return jnp.zeros_like(u)  # type: ignore[no-untyped-call]
+
+
 # }}}
 
 
