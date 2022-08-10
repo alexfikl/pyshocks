@@ -376,9 +376,9 @@ def _apply_operator_burgers_ssweno242(
     fs = two_point_entropy_flux(scheme.Q, u)
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
-    b = (w[1:] - w[:-1]) @ (fs - fw)
+    b = (w[1:] - w[:-1]) @ (fs[1:] - fw)
     delta = (jnp.sqrt(b**2 + scheme.c**2) - b) / jnp.sqrt(b**2 + scheme.c**2)
-    fssw = fw + delta * (fs - fw)
+    fssw = fw + delta * (fs[1:] - fw)
 
     # }}}
 
@@ -396,9 +396,12 @@ def _apply_operator_burgers_ssweno242(
 
     # [Fisher2013] Equation 3.45
     dx = scheme.P * grid.dx_min
-    return jnp.pad(  # type: ignore[no-untyped-call]
-        (-(fssw[1:] - fssw[:-1]) + (gssw[1:] - gssw[:-1]) + gb) / dx,
-        1,
+    return (
+        jnp.pad(  # type: ignore[no-untyped-call]
+            (-(fssw[1:] - fssw[:-1]) + (gssw[1:] - gssw[:-1]) + gb[1:-1]),
+            1,
+        )
+        / dx
     )
 
 
