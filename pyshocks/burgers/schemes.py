@@ -316,22 +316,13 @@ def _predict_timestep_burgers_ssweno242(
 
 @jax.jit
 def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
-    import numpy as np
-
     uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
     qfs = q * (jnp.outer(u, u) + uu + uu.T) / 3
 
     fss = jnp.empty_like(u)  # type: ignore[no-untyped-call]
-    j = np.arange(u.size)
-
     for i in range(u.size):
-        # NOTE: jnp.ix_ is not implemented for boolean arguments
-        (irow,) = np.where(j >= i)
-        (icol,) = np.where(j < i)
-
-        fss = fss.at[i].set(
-            jnp.sum(qfs[jnp.ix_(irow, icol)])  # type: ignore[no-untyped-call]
-        )
+        # sum(k, i + 1, N) sum(l, 1, i) 2 q[l, k] f(u_l, u_k)
+        fss = fss.at[i].set(jnp.sum(qfs[:i, i:]))
 
     return fss
 

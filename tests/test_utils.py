@@ -73,7 +73,7 @@ def test_ss_weno_burgers_matrices(bc_type: str) -> None:
 def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
     from pyshocks.scalar import PeriodicBoundary
 
-    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
+    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=256, nghosts=0)
     if bc_type == "periodic":
         bc = PeriodicBoundary()
     else:
@@ -92,66 +92,64 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
         for i in range(u.size):
             for j in range(i):
                 for k in range(i, u.size):
-                    fs[i] += 2 * q[k, j] * (w[k] * w[k] + w[k] * w[j] + w[j] * w[j]) / 6
+                    fs[i] += q[j, k] * (w[k] * w[k] + w[k] * w[j] + w[j] * w[j]) / 3
 
         return jax.device_put(fs)
 
     def two_point_flux_numpy_v1(u: jnp.ndarray) -> jnp.ndarray:
         q = jax.device_get(Q)
         w = jax.device_get(u)
-        fs = np.zeros_like(w)
 
-        ws = np.tile((w * w).reshape(-1, 1), w.size)
-        gs = (np.outer(w, w) + ws + ws.T) / 6
-        qgs = 2 * q * gs
+        ww = np.tile((w * w).reshape(-1, 1), w.size)
+        qfs = q * (np.outer(w, w) + ww + ww.T) / 3
 
+        fs = np.empty_like(w)
         for i in range(u.size):
-            for j in range(i):
-                for k in range(i, u.size):
-                    fs[i] += qgs[k, j]
+            fs[i] = np.sum(qfs[:i, i:])
 
         return jax.device_put(fs)
 
     def two_point_flux_numpy_v2(u: jnp.ndarray) -> jnp.ndarray:
         q = jax.device_get(Q)
         w = jax.device_get(u)
-        fs = np.zeros_like(w)
 
-        ws = np.tile((w * w).reshape(-1, 1), w.size)
-        gs = (np.outer(w, w) + ws + ws.T) / 6
-        qgs = 2 * q * gs
+        ww = np.tile((w * w).reshape(-1, 1), w.size)
+        qfs = q * (np.outer(w, w) + ww + ww.T) / 3
 
-        j = np.arange(w.size)
+        fs = np.empty_like(w)
         for i in range(u.size):
-            irow = j >= i
-            icol = j < i
-
-            fs[i] = np.sum(qgs[np.ix_(irow, icol)])
+            fs[i] = np.sum(qfs[:i, i:])
 
         return jax.device_put(fs)
 
     @jax.jit
-    def two_point_flux_jax(u: jnp.ndarray) -> jnp.ndarray:
-        us = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore
-        fs = (jnp.outer(u, u) + us + us.T) / 6
-        qfs = 2 * Q * fs
+    def two_point_flux_jax_v0(u: jnp.ndarray) -> jnp.ndarray:
+        uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
+        qfs = Q * (jnp.outer(u, u) + uu + uu.T) / 3
 
-        fss = jnp.empty_like(u)  # type: ignore
-        j = np.arange(u.size)
-
+        fss = jnp.empty_like(u)  # type: ignore[no-untyped-call]
         for i in range(u.size):
-            (irow,) = np.where(j >= i)
-            (icol,) = np.where(j < i)
-
-            fss = fss.at[i].set(jnp.sum(qfs[np.ix_(irow, icol)]))
+            fss = fss.at[i].set(jnp.sum(qfs[:i, i:]))
 
         return fss
+
+    @jax.jit
+    def two_point_flux_jax_v1(u: jnp.ndarray) -> jnp.ndarray:
+        uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore
+        qfs = Q * (jnp.outer(u, u) + uu + uu.T) / 3
+
+        def body(i: int, fss: jnp.ndarray) -> jnp.ndarray:
+            return fss.at[i].set(jnp.sum(qfs[:i, i:]))
+
+        return jax.lax.fori_loop(
+            0, u.size, body, jnp.empty_like(u)  # type: ignore[no-untyped-call]
+        )
 
     # {{{ reference numpy version
 
     u0 = jnp.sin(2.0 * jnp.pi * grid.x) ** 2
     with BlockTimer() as bt:
-        fs_v0 = two_point_flux_numpy_v0(u0)
+        fs_ref = two_point_flux_numpy_v0(u0)
     logger.info("%s", bt)
 
     # }}}
@@ -159,10 +157,10 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
     # {{{ numpy v1
 
     with BlockTimer() as bt:
-        fs_v1 = two_point_flux_numpy_v1(u0)
+        fs_np = two_point_flux_numpy_v1(u0)
     logger.info("%s", bt)
 
-    error = jnp.linalg.norm(fs_v0 - fs_v1) / jnp.linalg.norm(fs_v0)
+    error = jnp.linalg.norm(fs_ref - fs_np) / jnp.linalg.norm(fs_ref)
     logger.info("error: %.12e", error)
     assert error < 1.0e-15
 
@@ -171,10 +169,10 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
     # {{{ numpy v2
 
     with BlockTimer() as bt:
-        fs_v2 = two_point_flux_numpy_v2(u0)
+        fs_np = two_point_flux_numpy_v2(u0)
     logger.info("%s", bt)
 
-    error = jnp.linalg.norm(fs_v0 - fs_v2) / jnp.linalg.norm(fs_v0)
+    error = jnp.linalg.norm(fs_ref - fs_np) / jnp.linalg.norm(fs_ref)
     logger.info("error: %.12e", error)
     assert error < 1.0e-15
 
@@ -183,12 +181,20 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
     # {{{ jax
 
     with BlockTimer() as bt:
-        fs_jax = two_point_flux_jax(u0)
+        fs_jax = two_point_flux_jax_v0(u0)
     logger.info("%s", bt)
 
-    error = jnp.linalg.norm(fs_v0 - fs_jax) / jnp.linalg.norm(fs_v0)
+    error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)
     logger.info("error: %.12e", error)
     assert error < 1.0e-15
+
+    # with BlockTimer() as bt:
+    #     fs_jax = two_point_flux_jax_v1(u0)
+    # logger.info("%s", bt)
+
+    # error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)
+    # logger.info("error: %.12e", error)
+    # assert error < 1.0e-15
 
     # }}}
 
