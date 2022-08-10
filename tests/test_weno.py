@@ -283,7 +283,6 @@ def get_function(name: str) -> SpatialFunction:
         ("wenojs32", 3, list(range(192, 384 + 1, 32))),
         ("wenojs53", 5, list(range(32, 256 + 1, 32))),
         ("esweno32", 3, list(range(192, 384 + 1, 32))),
-        # FIXME: this should be 4th order!
         ("ssweno242", 4, list(range(192, 384 + 1, 32))),
     ],
 )
@@ -302,7 +301,7 @@ def test_weno_smooth_reconstruction_order_cell_values(
     order: int,
     resolutions: List[int],
     func_name: str,
-    visualize: bool = True,
+    visualize: bool = False,
 ) -> None:
     from pyshocks import make_leggauss_quadrature, cell_average
     from pyshocks import EOCRecorder, rnorm
@@ -338,8 +337,8 @@ def test_weno_smooth_reconstruction_order_cell_values(
 @pytest.mark.parametrize(
     ("name", "order", "resolutions"),
     [
-        # ("wenojs32", 3, list(range(256, 384 + 1, 32))),
-        # ("esweno32", 3, list(range(192, 384 + 1, 32))),
+        ("wenojs32", 3, list(range(256, 384 + 1, 32))),
+        ("esweno32", 3, list(range(192, 384 + 1, 32))),
         # FIXME: this should be 5th order!
         # ("wenojs53", 2, list(range(256, 384 + 1, 32))),
         # FIXME: this should be 4th order!
@@ -384,7 +383,7 @@ def test_weno_smooth_reconstruction_order_point_values(
         if name == "ssweno242":
             rec = replace(rec, eps=ss_weno_parameters(grid, u0))
 
-        ul_ref = ur_ref = func(grid.f)
+        ul_ref = ur_ref = func(grid.f[1:-1])
         ul, ur = reconstruct(rec, grid, u0)
 
         ul = ul[1:]
@@ -394,7 +393,7 @@ def test_weno_smooth_reconstruction_order_point_values(
             ax.semilogy(grid.x[grid.i_], jnp.abs(ul_ref - ul)[grid.i_], "-")
             # ax.semilogy(grid.x[grid.i_], jnp.abs(ur_ref - ur)[grid.i_], "--")
             # ax.plot(grid.x[grid.i_], ul_ref[grid.i_])
-            # ax.plot(grid.x[grid.i_], ul[:-1][grid.i_])
+            # ax.plot(grid.x[grid.i_], ul[grid.i_])
 
         error_l = rnorm(grid, ul, ul_ref, p=jnp.inf)
         error_r = rnorm(grid, ur, ur_ref, p=jnp.inf)
@@ -442,7 +441,7 @@ def test_weno_boundary_reconstruction(
     order: int,
     resolutions: List[int],
     func_name: str,
-    visualize: bool = True,
+    visualize: bool = False,
 ) -> None:
     from pyshocks.weno import ss_weno_parameters
 
