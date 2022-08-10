@@ -506,7 +506,12 @@ def _reconstruct_ss_weno_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
 
 
 def _reconstruct_ss_weno_boundary_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
-    pass
+    from pyshocks.weno import weno_reconstruct, ss_weno_242_weights
+
+    omega = ss_weno_242_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
+    uhat = weno_reconstruct(u, rec.c)
+
+    return jnp.sum(omega * uhat, axis=0)
 
 
 @reconstruct.register(SSWENO242)
@@ -518,9 +523,12 @@ def _reconstruct_ssweno242(
     if not isinstance(grid, UniformGrid):
         raise NotImplementedError("SSWENO is only implemented for uniform grids")
 
+    assert grid.nghosts == 0 or grid.nghosts >= rec.stencil_width
+
     if grid.nghosts == 0:
-        ur = _reconstruct_ss_weno_side(rec, u)
-        ul = _reconstruct_ss_weno_side(rec, u[::-1])[::-1]
+        # FIXME: need a cleaner way to denote we need the boundary stencils
+        ur = _reconstruct_ss_weno_boundary_side(rec, u)
+        ul = _reconstruct_ss_weno_boundary_side(rec, u[::-1])[::-1]
     else:
         ur = _reconstruct_ss_weno_side(rec, u)
         ul = _reconstruct_ss_weno_side(rec, u[::-1])[::-1]

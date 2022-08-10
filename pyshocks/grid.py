@@ -207,7 +207,7 @@ def make_uniform_point_grid(
     )
     dx = jnp.full_like(x, dx0)  # type: ignore[no-untyped-call]
 
-    f = (x[1:] + x[:-1]) / 2
+    f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])  # type: ignore
     df = jnp.diff(f)
 
     return UniformGrid(

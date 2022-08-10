@@ -335,35 +335,47 @@ def ss_weno_242_bounary_coefficients(
     # boundary stencils ([Fisher2011] Equation 77)
     c = jnp.array(  # type: ignore[no-untyped-call]
         [
-            [
-                [0, 0],
-                [0, 0],
-                [-7 / 12, 19 / 12],
-                [-23 / 48, 71 / 48],
-                [-25 / 48, 73 / 48],
-                [-5 / 12, 17 / 12],
-                [-31 / 48, 79 / 48],
-                [0, 0],
+            [  # I_L
+                [
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [-7 / 12, 19 / 12, 0, 0],
+                    [-23 / 48, 71 / 48, 0, 0],
+                ],
+                [
+                    [-25 / 48, 73 / 48, 0, 0],
+                    [-5 / 12, 17 / 12, 0, 0],
+                    [-31 / 48, 79 / 48, 0, 0],
+                    [0, 0, 0, 0],
+                ],
             ],
-            [
-                [1, 0],
-                [31 / 48, 17 / 48],
-                [5 / 12, 7 / 12],
-                [25 / 48, 23 / 48],
-                [23 / 48, 25 / 48],
-                [7 / 12, 5 / 12],
-                [17 / 48, 31 / 48],
-                [0, 1],
+            [  # I_C
+                [
+                    [0, 1, 0, 0],
+                    [0, 31 / 48, 17 / 48, 0],
+                    [0, 5 / 12, 7 / 12, 0],
+                    [0, 25 / 48, 23 / 48, 0],
+                ],
+                [
+                    [0, 23 / 48, 25 / 48, 0],
+                    [0, 7 / 12, 5 / 12, 0],
+                    [0, 17 / 48, 31 / 48, 0],
+                    [0, 0, 1, 0],
+                ],
             ],
-            [
-                [0, 0],
-                [79 / 48, -31 / 48],
-                [17 / 12, -5 / 12],
-                [73 / 48, -25 / 48],
-                [71 / 48, -23 / 48],
-                [19 / 12, -7 / 12],
-                [0, 0],
-                [0, 0],
+            [  # I_R
+                [
+                    [0, 0, 0, 0],
+                    [0, 0, 79 / 48, -31 / 48],
+                    [0, 0, 17 / 12, -5 / 12],
+                    [0, 0, 73 / 48, -25 / 48],
+                ],
+                [
+                    [0, 0, 71 / 48, -23 / 48],
+                    [0, 0, 19 / 12, -7 / 12],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                ],
             ],
         ],
         dtype=dtype,
@@ -392,17 +404,17 @@ def ss_weno_242_operator_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     # [Fisher2013] Appendix A, Equation A.2 interior
-    qi = jnp.array(  # type: ignore[no-untyped-call]
+    q = jnp.array(  # type: ignore[no-untyped-call]
         [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12]
     )
 
     # [Fisher2013] Appendix A, Equation A.5 interior
-    hi = jnp.array(  # type: ignore[no-untyped-call]
+    h = jnp.array(  # type: ignore[no-untyped-call]
         [-1 / 12, 7 / 12, 7 / 12, -1 / 12, 0],
         dtype=dtype,
     )
 
-    return qi, hi
+    return q, h
 
 
 def ss_weno_242_operator_boundary_coefficients(

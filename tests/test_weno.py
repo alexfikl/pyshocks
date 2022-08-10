@@ -338,10 +338,10 @@ def test_weno_smooth_reconstruction_order_cell_values(
 @pytest.mark.parametrize(
     ("name", "order", "resolutions"),
     [
-        ("wenojs32", 3, list(range(256, 384 + 1, 32))),
-        ("esweno32", 3, list(range(192, 384 + 1, 32))),
+        # ("wenojs32", 3, list(range(256, 384 + 1, 32))),
+        # ("esweno32", 3, list(range(192, 384 + 1, 32))),
         # FIXME: this should be 5th order!
-        ("wenojs53", 2, list(range(256, 384 + 1, 32))),
+        # ("wenojs53", 2, list(range(256, 384 + 1, 32))),
         # FIXME: this should be 4th order!
         ("ssweno242", 2, list(range(192, 384 + 1, 32))),
     ],
@@ -406,13 +406,77 @@ def test_weno_smooth_reconstruction_order_point_values(
     if visualize:
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u^L$")
-        fig.savefig(f"test_weno_{name}_{func_name}_error")
+        fig.savefig(f"test_weno_point_{name}_{func_name}_error")
 
     logger.info("\n%s", eoc_l)
     logger.info("\n%s", eoc_r)
 
     assert eoc_l.satisfied(order - 0.5)
     assert eoc_r.satisfied(order - 0.5)
+
+
+# }}}
+
+
+# {{{ test_weno_boundary_reconstruction
+
+
+@pytest.mark.parametrize(
+    ("name", "order", "resolutions"),
+    [
+        ("ssweno242", 2, list(range(192, 384 + 1, 32))),
+    ],
+)
+@pytest.mark.parametrize(
+    "func_name",
+    [
+        "sine",
+        # NOTE: mostly for debugging to see where the points fall
+        # "linear",
+        # "quadratic",
+        # "cubic"
+    ],
+)
+def test_weno_boundary_reconstruction(
+    name: str,
+    order: int,
+    resolutions: List[int],
+    func_name: str,
+    visualize: bool = True,
+) -> None:
+    from pyshocks.weno import ss_weno_parameters
+
+    func = get_function(func_name)
+
+    if visualize:
+        import matplotlib.pyplot as mp
+
+        fig = mp.figure()
+        ax = fig.gca()
+
+    for n in resolutions:
+        grid = make_uniform_point_grid(-1.0, 1.0, n=n, nghosts=0)
+        u0 = func(grid.x)
+
+        rec = make_reconstruction_from_name(name)
+        if name == "ssweno242":
+            rec = replace(rec, eps=ss_weno_parameters(grid, u0))
+
+        ul_ref = func(grid.f)
+        ul, _ = reconstruct(rec, grid, u0)
+
+        if visualize:
+            # ax.semilogy(grid.x[grid.i_], jnp.abs(ul_ref - ul)[grid.i_], "-")
+            # ax.semilogy(grid.x[grid.i_], jnp.abs(ur_ref - ur)[grid.i_], "--")
+            ax.plot(grid.x[grid.i_], ul[grid.i_])
+            ax.plot(grid.x[grid.i_], ul_ref[grid.i_], "--")
+
+        break
+
+    if visualize:
+        ax.set_xlabel("$x$")
+        ax.set_ylabel("$u^L$")
+        fig.savefig(f"test_weno_bdry_{name}_{func_name}")
 
 
 # }}}

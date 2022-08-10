@@ -30,28 +30,40 @@ def make_finite_volume(
     order = int(max(order, 1.0)) + 1
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=sw)
     quad = make_leggauss_quadrature(grid, order=order)
-    boundary = make_dirichlet_boundary(ga=lambda t, x: burgers.ex_shock(grid, t, x))
+    boundary = make_dirichlet_boundary(ga=lambda t, x: burgers.ex_tophat(grid, t, x))
 
     def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return cell_average(quad, lambda x: burgers.ex_shock(grid, t, x))
+        return cell_average(quad, lambda x: burgers.ex_tophat(grid, t, x))
 
     return grid, boundary, make_solution
 
 
 def make_finite_difference(
-    order: float, sw: int, *, a: float, b: float, n: int
+    order: float,
+    sw: int,
+    *,
+    a: float,
+    b: float,
+    n: int,
+    periodic: bool = True,
 ) -> Tuple[Grid, Boundary, VectorFunction]:
-    from pyshocks.scalar import make_ssweno_boundary
     from pyshocks import make_uniform_point_grid
 
-    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
-    boundary = make_ssweno_boundary(
-        ga=lambda t: burgers.ex_shock(grid, t, grid.a),
-        gb=lambda t: burgers.ex_shock(grid, t, grid.b),
-    )
+    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=3)
+    if periodic:
+        from pyshocks.scalar import PeriodicBoundary
+
+        boundary: Boundary = PeriodicBoundary()
+    else:
+        from pyshocks.scalar import make_ssweno_boundary
+
+        boundary = make_ssweno_boundary(
+            ga=lambda t: burgers.ex_tophat(grid, t, grid.a),
+            gb=lambda t: burgers.ex_tophat(grid, t, grid.b),
+        )
 
     def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return burgers.ex_shock(grid, t, x)
+        return burgers.ex_tophat(grid, t, x)
 
     return grid, boundary, make_solution
 
@@ -60,8 +72,8 @@ def main(
     scheme: SchemeBase,
     *,
     outdir: pathlib.Path,
-    a: float = -1.0,
-    b: float = +1.0,
+    a: float = -1.5,
+    b: float = +1.5,
     n: int = 256,
     tfinal: float = 1.0,
     theta: float = 1.0,
