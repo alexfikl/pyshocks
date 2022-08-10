@@ -55,9 +55,9 @@ def make_finite_difference(
 
         boundary: Boundary = PeriodicBoundary()
     else:
-        from pyshocks.scalar import make_ssweno_boundary
+        from pyshocks.scalar import make_ss_weno_boundary
 
-        boundary = make_ssweno_boundary(
+        boundary = make_ss_weno_boundary(
             ga=lambda t: burgers.ex_tophat(grid, t, grid.a),
             gb=lambda t: burgers.ex_tophat(grid, t, grid.b),
         )

@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, Tuple
 
+import jax
 import jax.numpy as jnp
 
 from pyshocks import (
@@ -228,48 +229,35 @@ def _numerical_flux_burgers_esweno32(
 # {{{ SSWENO242
 
 
-def prepare_ss_weno_242_scheme(
-    scheme: "SSWENO242", grid: Grid, bc: Boundary
-) -> "SSWENO242":
-    from pyshocks.weno import (
-        ss_weno_242_operator_coefficients,
-        ss_weno_242_operator_boundary_coefficients,
-        ss_weno_circulant,
-        ss_weno_norm_matrix,
-        ss_weno_derivative_matrix,
-        ss_weno_interpolation_matrix,
-    )
+def make_ss_weno_242_matrices(
+    bc: Boundary, n: int
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    import pyshocks.weno as w
 
-    n = grid.x.size
-    qi, hi = ss_weno_242_operator_coefficients()
-    p, qb, hb = ss_weno_242_operator_boundary_coefficients()
+    qi, hi = w.ss_weno_242_operator_coefficients()
+    p, qb, hb = w.ss_weno_242_operator_boundary_coefficients()
 
     from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
 
     if isinstance(bc, PeriodicBoundary):
         p = jnp.ones_like(p)  # type: ignore[no-untyped-call]
-        P = ss_weno_norm_matrix(p, n)  # noqa: N806
-        Q = ss_weno_circulant(qi, n)  # noqa: N806
-        H = ss_weno_circulant(hi, n)  # noqa: N806
+        P = w.ss_weno_norm_matrix(p, n)  # noqa: N806
+        Q = w.ss_weno_circulant(qi, n)  # noqa: N806
+        H = w.ss_weno_circulant(hi, n)  # noqa: N806
     elif isinstance(bc, SSWENOBurgersBoundary):
-        P = ss_weno_norm_matrix(p, n)  # noqa: N806
-        Q = ss_weno_derivative_matrix(qi, qb, n)  # noqa: N806
-        H = ss_weno_interpolation_matrix(hi, hb, n)  # noqa: N806
+        P = w.ss_weno_norm_matrix(p, n)  # noqa: N806
+        Q = w.ss_weno_derivative_matrix(qi, qb, n)  # noqa: N806
+        H = w.ss_weno_interpolation_matrix(hi, hb, n)  # noqa: N806
     else:
         raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
 
-    if __debug__:
-        e_i = jnp.eye(1, n, 0).squeeze()  # type: ignore[no-untyped-call]
-        e_n = jnp.eye(1, n, n - 1).squeeze()  # type: ignore[no-untyped-call]
+    return P, Q, H
 
-        assert jnp.linalg.norm(jnp.sum(Q, axis=1)) < 1.0e-12
-        assert (
-            jnp.linalg.norm(Q + Q.T + jnp.outer(e_i, e_i) - jnp.outer(e_n, e_n))
-            < 1.0e-12
-        )
 
-        assert jnp.linalg.norm(jnp.sum(H, axis=1) - 1) < 1.0e-12
-
+def prepare_ss_weno_242_scheme(
+    scheme: "SSWENO242", grid: Grid, bc: Boundary
+) -> "SSWENO242":
+    P, Q, H = make_ss_weno_242_matrices(bc, grid.x.size)  # noqa: N806
     object.__setattr__(scheme, "P", P)
     object.__setattr__(scheme, "Q", Q)
     object.__setattr__(scheme, "H", H)
@@ -326,19 +314,26 @@ def _predict_timestep_burgers_ssweno242(
     return predict_timestep.dispatch(Scheme)(scheme, grid, t, u)
 
 
+@jax.jit
 def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
-    # FIXME: any way to write this in a nice and vectorized way?
+    import numpy as np
 
-    r = []
+    uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
+    qfs = q * (jnp.outer(u, u) + uu + uu.T) / 3
+
+    fss = jnp.empty_like(u)  # type: ignore[no-untyped-call]
+    j = np.arange(u.size)
+
     for i in range(u.size):
-        fs = 0.0
-        for k in range(i + 1, u.size):
-            for j in range(i):
-                fs += 2 * q[k, j] * (u[k] * u[k] + u[k] * u[j] + u[j] * u[j]) / 6
+        # NOTE: jnp.ix_ is not implemented for boolean arguments
+        (irow,) = np.where(j >= i)
+        (icol,) = np.where(j < i)
 
-        r.append(fs)
+        fss = fss.at[i].set(
+            jnp.sum(qfs[jnp.ix_(irow, icol)])  # type: ignore[no-untyped-call]
+        )
 
-    return jnp.array(r)  # type: ignore[no-untyped-call]
+    return fss
 
 
 @apply_operator.register(SSWENO242)

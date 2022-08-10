@@ -19,13 +19,12 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autoclass:: NeumannBoundary
 .. autoclass:: PeriodicBoundary
 .. autoclass:: SATBoundary
+.. autoclass:: SSWENOBurgersBoundary
 
 .. autofunction:: make_dirichlet_boundary
 .. autofunction:: make_neumann_boundary
 .. autofunction:: make_sat_boundary
-
-.. autoclass:: SSWENOBurgersBoundary
-.. autoclass:: TwoSidedSSWENOBurgersBoundary
+.. autofunction:: make_ssweno_boundary
 """
 
 from dataclasses import dataclass
@@ -433,7 +432,7 @@ def _evaluate_boundary_sat(
 # {{{ SSWENO
 
 
-def make_ssweno_boundary(
+def make_ss_weno_boundary(
     ga: TemporalFunction, gb: Optional[TemporalFunction] = None
 ) -> TwoSidedBoundary:
     if gb is None:
