@@ -18,13 +18,15 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autoclass:: DirichletBoundary
 .. autoclass:: NeumannBoundary
 .. autoclass:: PeriodicBoundary
+.. autoclass:: OneSidedSATBoundary
 .. autoclass:: SATBoundary
+.. autoclass:: OneSidedSSWENOBurgersBoundary
 .. autoclass:: SSWENOBurgersBoundary
 
 .. autofunction:: make_dirichlet_boundary
 .. autofunction:: make_neumann_boundary
 .. autofunction:: make_sat_boundary
-.. autofunction:: make_ssweno_boundary
+.. autofunction:: make_ss_weno_boundary
 """
 
 from dataclasses import dataclass

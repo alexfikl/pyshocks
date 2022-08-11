@@ -28,10 +28,10 @@ Schemes
 Data
 ^^^^
 
-.. autofunction:: ic_tophat
 .. autofunction:: ic_rarefaction
 .. autofunction:: ic_sine
 .. autofunction:: ex_shock
+.. autofunction:: ex_tophat
 """
 
 from typing import Any, Dict, Optional, Tuple, Type

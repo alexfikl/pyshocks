@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 """
+.. autofunction:: weno_smoothness
+.. autofunction:: weno_reconstruct
+
 .. autofunction:: weno_js_32_coefficients
 .. autofunction:: weno_js_53_coefficients
-.. autofunction:: weno_js_smoothness
-.. autofunction:: weno_js_reconstruct
 .. autofunction:: weno_js_weights
 
 .. autofunction:: es_weno_weights
@@ -189,7 +190,7 @@ def weno_js_weights(
     r"""Compute the standard WENO-JS weights.
 
     :returns: the weights :math:`\omega_i` for each stencil reconstruction
-        from :func:`weno_js_reconstruct`.
+        from :func:`weno_reconstruct`.
     """
     beta = weno_smoothness(u, a, b)
     alpha = d / (eps + beta) ** 2
@@ -228,7 +229,7 @@ def es_weno_weights(
     r"""Compute the ESWENO weights.
 
     :returns: the weights :math:`\omega_i` for each stencil reconstruction
-        from :func:`weno_js_reconstruct`.
+        from :func:`weno_reconstruct`.
     """
     beta = weno_smoothness(u, a, b)
 
