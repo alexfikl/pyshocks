@@ -3,7 +3,6 @@
 
 import pathlib
 from dataclasses import dataclass, replace
-from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -12,7 +11,8 @@ import matplotlib.pyplot as mp
 from pyshocks import (
     Grid,
     Boundary,
-    ConservationLawScheme,
+    SchemeBase,
+    FiniteVolumeScheme,
     timeme,
 )
 from pyshocks import burgers, reconstruction, limiters, get_logger
@@ -24,17 +24,104 @@ logger = get_logger("burgers-adjoint")
 
 @dataclass
 class Simulation:
-    scheme: ConservationLawScheme
+    scheme: SchemeBase
     grid: Grid
     bc: Boundary
     stepper: Stepper
 
+    u0: jnp.ndarray
     tfinal: float
 
     @property
     def name(self) -> str:
         n = self.grid.n
         return f"{self.scheme.name}_{type(self.stepper).__name__}_{n:05d}".lower()
+
+
+def make_time_stepper(
+    scheme: SchemeBase, grid: Grid, bc: Boundary, *, theta: float
+) -> Stepper:
+    from pyshocks import predict_timestep, apply_operator
+
+    def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+        return theta * predict_timestep(scheme, grid, _t, _u)
+
+    def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+        return apply_operator(scheme, grid, bc, _t, _u)
+
+    from pyshocks.timestepping import SSPRK33
+
+    return SSPRK33(
+        predict_timestep=jax.jit(forward_predict_timestep),
+        source=jax.jit(forward_operator),
+        checkpoint=InMemoryCheckpoint(basename="Iteration"),
+    )
+
+
+def make_finite_volume_simulation(
+    scheme: FiniteVolumeScheme,
+    *,
+    a: float,
+    b: float,
+    n: int,
+    theta: float,
+    tfinal: float,
+) -> Simulation:
+    assert isinstance(scheme, FiniteVolumeScheme)
+
+    from pyshocks import make_uniform_cell_grid, make_leggauss_quadrature
+
+    order = int(max(scheme.order, 1)) + 1
+    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    quad = make_leggauss_quadrature(grid, order=order)
+
+    from pyshocks import cell_average
+
+    u0 = cell_average(quad, lambda x: burgers.ex_tophat(grid, 0.0, x))
+
+    if isinstance(scheme.rec, reconstruction.ESWENO32):
+        from pyshocks.weno import es_weno_parameters
+
+        # NOTE: prefer the parameters recommended by Carpenter!
+        eps, delta = es_weno_parameters(grid, u0)
+        scheme = replace(scheme, rec=replace(rec, eps=eps, delta=delta))
+
+    from pyshocks.scalar import make_dirichlet_boundary
+
+    bc = make_dirichlet_boundary(ga=lambda t, x: burgers.ex_tophat(grid, t, x))
+    stepper = make_time_stepper(scheme, grid, bc, theta=theta)
+
+    return Simulation(
+        scheme=scheme, grid=grid, bc=bc, stepper=stepper, u0=u0, tfinal=tfinal
+    )
+
+
+def make_finite_difference_simulation(
+    scheme: FiniteVolumeScheme,
+    *,
+    a: float,
+    b: float,
+    n: int,
+    theta: float,
+    tfinal: float,
+) -> Simulation:
+    from pyshocks import make_uniform_point_grid
+    from pyshocks.scalar import PeriodicBoundary
+
+    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
+    bc = PeriodicBoundary()
+
+    if isinstance(scheme, burgers.SSWENO242):
+        from pyshocks.burgers.schemes import prepare_ss_weno_242_scheme
+
+        scheme = prepare_ss_weno_242_scheme(scheme, grid, bc)
+
+    u0 = burgers.ex_tophat(grid, 0.0, grid.x)
+    stepper = make_time_stepper(scheme, grid, bc, theta=theta)
+
+    return Simulation(
+        scheme=scheme, grid=grid, bc=bc, stepper=stepper, u0=u0, tfinal=tfinal
+    )
 
 
 @timeme
@@ -173,13 +260,13 @@ def evolve_adjoint(
 
 
 def main(
-    scheme: ConservationLawScheme,
+    scheme: SchemeBase,
     *,
     outdir: pathlib.Path,
-    a: float = -1.0,
-    b: float = +1.0,
-    n: int = 257,
-    tfinal: float = 1.0,
+    a: float = -1.5,
+    b: float = +1.5,
+    n: int = 128,
+    tfinal: float = 0.75,
     theta: float = 1.0,
     interactive: bool = False,
     visualize: bool = True,
@@ -187,78 +274,22 @@ def main(
     if not outdir.exists():
         outdir.mkdir()
 
-    # {{{ setup
+    if isinstance(scheme, FiniteVolumeScheme):
+        factory = make_finite_volume_simulation
+    else:
+        factory = make_finite_difference_simulation
 
-    from pyshocks import make_uniform_cell_grid
+    sim = factory(scheme, a=a, b=b, n=n, theta=theta, tfinal=tfinal)
 
-    grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
-
-    from pyshocks import make_leggauss_quadrature, cell_average
-
-    order = int(max(scheme.order, 1.0)) + 1
-    quad = make_leggauss_quadrature(grid, order=order)
-
-    # }}}
-
-    # {{{ initial condition
-
-    solution = partial(burgers.ex_shock, grid)
-    u0 = cell_average(quad, lambda x: solution(0.0, x))
-
-    from pyshocks.scalar import make_dirichlet_boundary
-
-    boundary = make_dirichlet_boundary(solution)
-
-    # }}}
-
-    # {{{ time stepping
-
-    if isinstance(scheme.rec, reconstruction.ESWENO32):
-        from pyshocks.weno import es_weno_parameters
-
-        # NOTE: prefer the parameters recommended by Carpenter!
-        eps, delta = es_weno_parameters(grid, u0)
-        scheme = replace(scheme, rec=replace(rec, eps=eps, delta=delta))
-
-    from pyshocks import predict_timestep, apply_operator
-
-    def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
-        return theta * predict_timestep(scheme, grid, _t, _u)
-
-    def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
-        return apply_operator(scheme, grid, boundary, _t, _u)
-
-    from pyshocks.timestepping import SSPRK33
-
-    stepper = SSPRK33(
-        predict_timestep=jax.jit(forward_predict_timestep),
-        source=jax.jit(forward_operator),
-        checkpoint=InMemoryCheckpoint(basename="Iteration"),
-    )
-
-    # }}}
-
-    # {{{ evolve forward
-
-    sim = Simulation(
-        scheme=scheme,
-        grid=grid,
-        bc=boundary,
-        stepper=stepper,
-        tfinal=tfinal,
-    )
+    # {{{ evolve forward <-> backward
 
     uf, maxit = evolve_forward(
         sim,
-        u0,
+        sim.u0,
         dirname=outdir,
         interactive=False,
         visualize=visualize,
     )
-
-    # }}}
-
-    # {{{ evolve adjoint
 
     p0 = evolve_adjoint(
         sim,
@@ -278,16 +309,18 @@ def main(
         return
 
     fig = mp.figure()
+    grid = sim.grid
+    i = sim.grid.i_
 
     # {{{ forward solution
 
-    umax = jnp.max(uf[grid.i_])
-    umin = jnp.min(uf[grid.i_])
-    umag = jnp.max(jnp.abs(uf[grid.i_]))
+    umax = jnp.max(uf[i])
+    umin = jnp.min(uf[i])
+    umag = jnp.max(jnp.abs(uf[i]))
 
     ax = fig.gca()
-    ax.plot(grid.x[grid.i_], uf[grid.i_], label="$u(T)$")
-    ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
+    ax.plot(grid.x[i], uf[i], label="$u(T)$")
+    ax.plot(grid.x[i], sim.u0[i], "k--", label="$u(0)$")
 
     ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
     ax.set_xlabel("$x$")
@@ -301,14 +334,14 @@ def main(
 
     # {{{ adjoint solution
 
-    pmax = jnp.max(p0[grid.i_])
-    pmin = jnp.min(p0[grid.i_])
-    pmag = jnp.max(jnp.abs(p0[grid.i_]))
+    pmax = jnp.max(p0[i])
+    pmin = jnp.min(p0[i])
+    pmag = jnp.max(jnp.abs(p0[i]))
 
     ax = fig.gca()
 
-    ax.plot(grid.x[grid.i_], p0[grid.i_], label="$p(0)$")
-    ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
+    ax.plot(grid.x[i], p0[i], label="$p(0)$")
+    ax.plot(grid.x[i], sim.u0[i], "k--", label="$u(0)$")
     ax.axhline(0.5, color="k", linestyle=":", lw=1)
 
     ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
