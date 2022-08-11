@@ -197,13 +197,12 @@ def _predict_timestep_advection_sbp(
 @dataclass(frozen=True)
 class SBPSAT21(SBPSAT):
     def __post_init__(self) -> None:
-        from pyshocks.sbp import get_sbp_21_matrices
+        from pyshocks import sbp
 
         if self.velocity is not None:
-            H, Q = get_sbp_21_matrices(self.velocity.size)  # noqa: N806
-
-            object.__setattr__(self, "Q", Q)
-            object.__setattr__(self, "H", H)
+            (n,) = self.velocity.shape
+            object.__setattr__(self, "Q", sbp.get_sbp_21_first_derivative_matrix(n))
+            object.__setattr__(self, "H", sbp.get_sbp_21_norm_matrix(n))
 
     @property
     def order(self) -> int:

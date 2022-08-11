@@ -283,7 +283,7 @@ def make_ss_weno_242_sbp_matrices(
     Q: jnp.ndarray,  # noqa: N803
     *,
     dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> jnp.ndarray:
     from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
 
     n = P.shape[0]
@@ -291,9 +291,9 @@ def make_ss_weno_242_sbp_matrices(
     assert P.shape == Q.shape
 
     if isinstance(bc, PeriodicBoundary):
-        M = Q.T @ jnp.diag(1.0 / P) @ Q  # noqa: N806
+        M = Q.T @ jnp.diag(1.0 / P) @ Q  # type: ignore # noqa: N806
     elif isinstance(bc, SSWENOBurgersBoundary):
-        M = Q.T @ jnp.diag(1.0 / P) @ Q  # noqa: N806
+        M = Q.T @ jnp.diag(1.0 / P) @ Q  # type: ignore # noqa: N806
     else:
         raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
 
@@ -431,7 +431,7 @@ def _apply_operator_burgers_ssweno242(
     # not as a flux, in [Fisher2013], so we're keeping it that way here too
 
     gssw = -(scheme.M @ u)
-    gssw = jnp.zeros_like(u)
+    gssw = jnp.zeros_like(u)  # type: ignore
 
     # }}}
 

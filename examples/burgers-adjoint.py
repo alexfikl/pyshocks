@@ -59,7 +59,7 @@ def make_time_stepper(
 
 
 def make_finite_volume_simulation(
-    scheme: FiniteVolumeScheme,
+    scheme: SchemeBase,
     *,
     a: float,
     b: float,
@@ -97,7 +97,7 @@ def make_finite_volume_simulation(
 
 
 def make_finite_difference_simulation(
-    scheme: FiniteVolumeScheme,
+    scheme: SchemeBase,
     *,
     a: float,
     b: float,
