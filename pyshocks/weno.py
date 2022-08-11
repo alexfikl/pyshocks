@@ -330,9 +330,12 @@ def ss_weno_242_coefficients(
     return a, b, c, d
 
 
-def ss_weno_242_bounary_coefficients(
+def ss_weno_242_boundary_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
     # boundary stencils ([Fisher2011] Equation 77)
     c = jnp.array(  # type: ignore[no-untyped-call]
         [
@@ -404,9 +407,13 @@ def ss_weno_242_bounary_coefficients(
 def ss_weno_242_operator_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
     # [Fisher2013] Appendix A, Equation A.2 interior
     q = jnp.array(  # type: ignore[no-untyped-call]
-        [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12]
+        [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12],
+        dtype=dtype,
     )
 
     # [Fisher2013] Appendix A, Equation A.5 interior
@@ -506,14 +513,6 @@ def ss_weno_interpolation_matrix(
         H = H.at[-m:, -p:].set(hb[::-1, ::-1])  # noqa: N806
 
     return H
-
-
-def ss_weno_circulant(q: jnp.ndarray, n: int) -> jnp.ndarray:
-    m = q.size // 2
-    return sum(
-        jnp.roll(q[i] * jnp.eye(n, n, dtype=q.dtype), i - m, axis=1)  # type: ignore
-        for i in range(q.size)
-    )
 
 
 # }}}

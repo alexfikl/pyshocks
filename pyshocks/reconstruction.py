@@ -472,7 +472,7 @@ class SSWENO242(Reconstruction):
     def __post_init__(self) -> None:
         from pyshocks.weno import (
             ss_weno_242_coefficients,
-            ss_weno_242_bounary_coefficients,
+            ss_weno_242_boundary_coefficients,
         )
 
         a, b, c, d = ss_weno_242_coefficients()
@@ -482,7 +482,7 @@ class SSWENO242(Reconstruction):
         object.__setattr__(self, "c", c)
         object.__setattr__(self, "d", d)
 
-        cb, db = ss_weno_242_bounary_coefficients()
+        cb, db = ss_weno_242_boundary_coefficients()
 
         object.__setattr__(self, "cb", cb)
         object.__setattr__(self, "db", db)

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Tuple
+from typing import Any, ClassVar, Optional, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -250,25 +250,26 @@ def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
 
 
 def make_ss_weno_242_matrices(
-    bc: Boundary, n: int
+    bc: Boundary, n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    import pyshocks.weno as w
+    from pyshocks import weno
 
-    qi, hi = w.ss_weno_242_operator_coefficients()
-    p, qb, hb = w.ss_weno_242_operator_boundary_coefficients()
+    qi, hi = weno.ss_weno_242_operator_coefficients(dtype=dtype)
+    p, qb, hb = weno.ss_weno_242_operator_boundary_coefficients(dtype=dtype)
 
+    from pyshocks.tools import circulant_matrix
     from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
 
     if isinstance(bc, PeriodicBoundary):
         p = jnp.ones_like(p)  # type: ignore[no-untyped-call]
-        P = w.ss_weno_norm_matrix(p, n)  # noqa: N806
-        Q = w.ss_weno_circulant(qi, n)  # noqa: N806
-        H = w.ss_weno_circulant(hi, n)  # noqa: N806
-        Qs = w.ss_weno_derivative_matrix(qi, None, n)  # noqa: N806
+        P = weno.ss_weno_norm_matrix(p, n)  # noqa: N806
+        Q = circulant_matrix(qi, n)  # noqa: N806
+        H = circulant_matrix(hi, n)  # noqa: N806
+        Qs = weno.ss_weno_derivative_matrix(qi, None, n)  # noqa: N806
     elif isinstance(bc, SSWENOBurgersBoundary):
-        P = w.ss_weno_norm_matrix(p, n)  # noqa: N806
-        Q = w.ss_weno_derivative_matrix(qi, qb, n)  # noqa: N806
-        H = w.ss_weno_interpolation_matrix(hi, hb, n)  # noqa: N806
+        P = weno.ss_weno_norm_matrix(p, n)  # noqa: N806
+        Q = weno.ss_weno_derivative_matrix(qi, qb, n)  # noqa: N806
+        H = weno.ss_weno_interpolation_matrix(hi, hb, n)  # noqa: N806
         Qs = Q  # noqa: N806
     else:
         raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
@@ -276,14 +277,44 @@ def make_ss_weno_242_matrices(
     return P, Q, H, Qs
 
 
+def make_ss_weno_242_sbp_matrices(
+    bc: Boundary,
+    P: jnp.ndarray,  # noqa: N803
+    Q: jnp.ndarray,  # noqa: N803
+    *,
+    dtype: Optional["jnp.dtype[Any]"] = None,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
+
+    n = P.shape[0]
+    assert P.shape == (n, n)
+    assert P.shape == Q.shape
+
+    if isinstance(bc, PeriodicBoundary):
+        M = Q.T @ jnp.diag(1.0 / P) @ Q  # noqa: N806
+    elif isinstance(bc, SSWENOBurgersBoundary):
+        M = Q.T @ jnp.diag(1.0 / P) @ Q  # noqa: N806
+    else:
+        raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
+
+    return M
+
+
 def prepare_ss_weno_242_scheme(
     scheme: "SSWENO242", grid: Grid, bc: Boundary
 ) -> "SSWENO242":
-    P, Q, H, Qs = make_ss_weno_242_matrices(bc, grid.x.size)  # noqa: N806
+    P, Q, H, Qs = make_ss_weno_242_matrices(  # noqa: N806
+        bc, grid.x.size, dtype=grid.x.dtype
+    )
+
     object.__setattr__(scheme, "P", P)
     object.__setattr__(scheme, "Q", Q)
     object.__setattr__(scheme, "H", H)
     object.__setattr__(scheme, "Qs", Qs)
+
+    M = make_ss_weno_242_sbp_matrices(bc, P, Q, dtype=grid.x.dtype)  # noqa: N806
+
+    object.__setattr__(scheme, "M", M)
 
     return scheme
 
@@ -306,9 +337,13 @@ class SSWENO242(SchemeBase):
     rec: reconstruction.SSWENO242
     c: float = 1.0e-12
 
+    # first derivative
     P: ClassVar[jnp.ndarray]
     Q: ClassVar[jnp.ndarray]
     H: ClassVar[jnp.ndarray]
+
+    # second derivative
+    M: ClassVar[jnp.ndarray]
 
     Qs: ClassVar[jnp.ndarray]
 
@@ -336,7 +371,10 @@ def _flux_burgers_ssweno242(
 def _predict_timestep_burgers_ssweno242(
     scheme: SSWENO242, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    return predict_timestep.dispatch(Scheme)(scheme, grid, t, u)
+    return jnp.minimum(
+        predict_timestep.dispatch(Scheme)(scheme, grid, t, u),
+        jnp.inf * grid.dx_min**2,
+    )
 
 
 @apply_operator.register(SSWENO242)
@@ -358,6 +396,7 @@ def _apply_operator_burgers_ssweno242(
 
     # NOTE: w is taken to be the entropy variable ([Fisher2013] Section 4.1)
     w = u
+    dx = scheme.P * grid.dx_min
 
     # NOTE: use a global Lax-Friedrichs splitting as recommended in [Frenzel2021]
     f = flux(scheme, t, grid.x, u)
@@ -366,13 +405,13 @@ def _apply_operator_burgers_ssweno242(
     fm = (f - alpha * u) / 2
 
     # reconstruct
-    fp, _ = reconstruct(scheme.rec, grid, fp)
-    _, fm = reconstruct(scheme.rec, grid, fm)
+    _, fp = reconstruct(scheme.rec, grid, fp)
+    fm, _ = reconstruct(scheme.rec, grid, fm)
 
     # {{{ inviscid flux
 
     # standard WENO reconstructed flux
-    fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
+    fw = jnp.pad(fp[:-1] + fm[1:], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
     fs = two_point_entropy_flux(scheme.Qs, u)
@@ -388,7 +427,11 @@ def _apply_operator_burgers_ssweno242(
 
     # {{{ viscous dissipation for entropy stability
 
-    gssw = jnp.zeros_like(fssw)  # type: ignore[no-untyped-call]
+    # NOTE: the viscous part is described only in terms of the SBP matrices,
+    # not as a flux, in [Fisher2013], so we're keeping it that way here too
+
+    gssw = -(scheme.M @ u)
+    gssw = jnp.zeros_like(u)
 
     # }}}
 
@@ -401,8 +444,7 @@ def _apply_operator_burgers_ssweno242(
     # }}}
 
     # [Fisher2013] Equation 3.45
-    dx = scheme.P * grid.dx_min
-    r = (-(fssw[1:] - fssw[:-1]) + (gssw[1:] - gssw[:-1]) + gb) / dx
+    r = (-(fssw[1:] - fssw[:-1]) + gssw + gb) / dx
 
     # NOTE: a bit hacky, but cleans any boundary goo
     if isinstance(bc, PeriodicBoundary):
