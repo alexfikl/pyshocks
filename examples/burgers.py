@@ -75,7 +75,7 @@ def main(
     outdir: pathlib.Path,
     a: float = -1.5,
     b: float = +1.5,
-    n: int = 128,
+    n: int = 256,
     tfinal: float = 1.0,
     theta: float = 1.0,
     interactive: bool = False,

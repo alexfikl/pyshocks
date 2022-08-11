@@ -86,12 +86,12 @@ def get_sbp_norm_matrix(pb: jnp.ndarray, n: int) -> jnp.ndarray:
     """
     p = jnp.ones(n, dtype=pb.dtype)  # type: ignore[no-untyped-call]
     p = p.at[: pb.size].set(pb)
-    p = p.at[pb.size :].set(pb[::-1])
+    p = p.at[-pb.size :].set(pb[::-1])
 
     return p
 
 
-def get_sbp_derivative_matrix(
+def get_sbp_banded_matrix(
     qi: jnp.ndarray,
     qb: Optional[jnp.ndarray],
     n: int,
@@ -150,7 +150,7 @@ def get_sbp_21_first_derivative_matrix(
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
-    return get_sbp_derivative_matrix(
+    return get_sbp_banded_matrix(
         jnp.array([-0.5, 0.0, 0.5], dtype=dtype),  # type: ignore[no-untyped-call]
         jnp.array([[-0.5, 0.5]], dtype=dtype),  # type: ignore[no-untyped-call]
         n,
@@ -169,9 +169,51 @@ def get_sbp_21_second_derivative_matrix(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    return get_sbp_derivative_matrix(
+    return get_sbp_banded_matrix(
         jnp.array([-1, 2, -1], dtype=dtype),  # type: ignore[no-untyped-call]
         jnp.array([1, -1], dtype=dtype),  # type: ignore[no-untyped-call]
+        n,
+    )
+
+
+def get_sbp_21_second_derivative_s_matrix(
+    n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
+) -> jnp.ndarray:
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
+    # [Mattsson2012] Appendix A.1
+    return get_sbp_banded_matrix(
+        jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
+        jnp.array([[-3 / 2, 2, -1 / 2]], dtype=dtype),  # type: ignore[no-untyped-call]
+        n,
+    )
+
+
+def get_sbp_21_second_derivative_d22_matrix(
+    n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
+) -> jnp.ndarray:
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
+    # [Mattsson2012] Appendix A.1
+    return get_sbp_banded_matrix(
+        jnp.array([1, -2, 1], dtype=dtype),  # type: ignore[no-untyped-call]
+        jnp.array([[1, -2, 1]], dtype=dtype),  # type: ignore[no-untyped-call]
+        n,
+    )
+
+
+def get_sbp_21_second_derivative_c22_matrix(
+    n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
+) -> jnp.ndarray:
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
+    # [Mattsson2012] Appendix A.1
+    return get_sbp_banded_matrix(
+        jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
+        jnp.array([[0]], dtype=dtype),  # type: ignore[no-untyped-call]
         n,
     )
 

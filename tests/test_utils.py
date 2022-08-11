@@ -38,7 +38,7 @@ def test_ss_weno_burgers_matrices(bc_type: str) -> None:
 
     for n in range(192, 384 + 1, 32):
         grid = make_uniform_point_grid(a=-1.0, b=1.0, n=n, nghosts=0)
-        P, Q, H, _ = make_ss_weno_242_matrices(bc, n)  # noqa: N806
+        P, Q, H, _ = make_ss_weno_242_matrices(grid, bc)  # noqa: N806
 
         # NOTE: check P can integrate to 4th order
         u0 = jnp.sin(2.0 * jnp.pi * grid.x) ** 2

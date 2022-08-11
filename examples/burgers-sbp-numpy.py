@@ -5,9 +5,6 @@
 
 import numpy as np
 
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
 
 # {{{ initial conditions
 
@@ -80,8 +77,8 @@ def SecondDerivMatrix(dx, H, invH, D1, nu: float):  # noqa: N802,N803
 
     # Bbar-matrix
     Bbar = np.zeros((nx + 1, nx + 1))  # noqa: N806
-    Bbar[0][0] = -B[0][0]
-    Bbar[-1][-1] = B[-1][-1]
+    Bbar[0, 0] = -B[0, 0]
+    Bbar[-1, -1] = B[-1, -1]
 
     # D_2^(2)-matrix
     diagv = -2 * np.ones(nx + 1)
@@ -248,14 +245,14 @@ def main(
     tf: float = 1.0,  # final time
     ul: float = 1.5,  # initial left state
     ur: float = 0.5,  # initial right state
-    nu: float = 0e-2,  # "laminar" viscosity
+    nu: float = 0.0e-2,  # "laminar" viscosity
 ) -> None:
     # derived constants
     L = b - a  # noqa: N806
     T = tf - t0  # noqa: N806
 
     # set time array
-    dt = T / (nt - 1)  # noqa: F841
+    # dt = T / (nt - 1)
     tspan = np.linspace(0, T, nt)
 
     # set x arrays
@@ -294,6 +291,8 @@ def main(
     # code originally lifted and modified from
     # https://matplotlib.org/examples/animation/simple_anim.html
 
+    import matplotlib.pyplot as plt
+
     fig = plt.figure()
     ax = plt.axes()
 
@@ -316,6 +315,8 @@ def main(
     def init():
         line.set_ydata(np.ma.array(x, mask=True))
         return (line,)
+
+    from matplotlib import animation
 
     animation.FuncAnimation(
         fig, animate, np.arange(1, nt), init_func=init, interval=25, blit=True
