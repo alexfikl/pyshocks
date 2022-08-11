@@ -466,7 +466,7 @@ def ss_weno_norm_matrix(p: jnp.ndarray, n: int) -> jnp.ndarray:
     assert n > 2 * p.size
 
     # [Fisher2013] Appendix A, Equation A.1
-    P = jnp.concatenate(  # noqa: N806
+    P = jnp.concatenate(
         [
             p,
             jnp.ones(n - 2 * p.size, dtype=p.dtype),  # type: ignore[no-untyped-call]
@@ -482,7 +482,7 @@ def ss_weno_derivative_matrix(
 ) -> jnp.ndarray:
     # [Fisher2013] Appendix A.1, Equation A.4
     m = qi.size // 2
-    Q: jnp.ndarray = sum(  # noqa: N806
+    Q: jnp.ndarray = sum(
         qi[k] * jnp.eye(n, n, k=k - m, dtype=qi.dtype)  # type: ignore[no-untyped-call]
         for k in range(qi.size)
     )
@@ -490,8 +490,8 @@ def ss_weno_derivative_matrix(
     # [Fisher2013] Appendix A.1, Equation A.2
     if qb is not None:
         n, m = qb.shape
-        Q = Q.at[:n, :m].set(qb)  # noqa: N806
-        Q = Q.at[-n:, -m:].set(-qb[::-1, ::-1])  # noqa: N806
+        Q = Q.at[:n, :m].set(qb)
+        Q = Q.at[-n:, -m:].set(-qb[::-1, ::-1])
 
     return Q
 
@@ -501,7 +501,7 @@ def ss_weno_interpolation_matrix(
 ) -> jnp.ndarray:
     # [Fisher2013] Appendix A.1, Equation A.4
     m = hi.size // 2
-    H: jnp.ndarray = sum(  # noqa: N806
+    H: jnp.ndarray = sum(
         hi[k] * jnp.eye(n, n, k=k - m, dtype=hi.dtype)  # type: ignore[no-untyped-call]
         for k in range(hi.size)
     )
@@ -509,8 +509,8 @@ def ss_weno_interpolation_matrix(
     # [Fisher2013] Appendix A.1, Equation A.2
     if hb is not None:
         m, p = hb.shape
-        H = H.at[:m, :p].set(hb)  # noqa: N806
-        H = H.at[-m:, -p:].set(hb[::-1, ::-1])  # noqa: N806
+        H = H.at[:m, :p].set(hb)
+        H = H.at[-m:, -p:].set(hb[::-1, ::-1])
 
     return H
 

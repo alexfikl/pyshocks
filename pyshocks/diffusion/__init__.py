@@ -82,7 +82,7 @@ def ex_expansion(
     assert len(modes) == len(amplitudes)
     assert diffusivity > 0
 
-    L = grid.b - grid.a  # noqa: N806
+    L = grid.b - grid.a
     return sum(
         [
             a

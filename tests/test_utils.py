@@ -38,7 +38,7 @@ def test_ss_weno_burgers_matrices(bc_type: str) -> None:
 
     for n in range(192, 384 + 1, 32):
         grid = make_uniform_point_grid(a=-1.0, b=1.0, n=n, nghosts=0)
-        P, Q, H, _ = make_ss_weno_242_matrices(grid, bc)  # noqa: N806
+        P, Q, H, _ = make_ss_weno_242_matrices(grid, bc)
 
         # NOTE: check P can integrate to 4th order
         u0 = jnp.sin(2.0 * jnp.pi * grid.x) ** 2
@@ -121,7 +121,7 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
     from pyshocks import weno
 
     qi, _ = weno.ss_weno_242_operator_coefficients()
-    Q = weno.ss_weno_derivative_matrix(qi, None, grid.x.size)  # noqa: N806
+    Q = weno.ss_weno_derivative_matrix(qi, None, grid.x.size)
 
     def two_point_flux_numpy_v0(u: jnp.ndarray) -> jnp.ndarray:
         q = jax.device_get(Q)

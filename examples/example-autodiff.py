@@ -12,22 +12,18 @@ from pyshocks import get_logger
 logger = get_logger("example-autodiff")
 
 
-def scalar_fn(
-    A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray  # noqa: N803
-) -> jnp.ndarray:
+def scalar_fn(A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     y = A @ x + b
     return (y @ y) / 2.0
 
 
-def vector_fn(
-    A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray  # noqa: N803
-) -> jnp.ndarray:
+def vector_fn(A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     return A @ x + b
 
 
 def main(n: int = 128) -> None:
     key = jax.random.PRNGKey(42)
-    A = jax.random.uniform(key, shape=(n, n), dtype=np.float64)  # noqa: N806
+    A = jax.random.uniform(key, shape=(n, n), dtype=np.float64)
     b = jax.random.uniform(key, shape=(n,), dtype=np.float64)
 
     x0 = jax.random.uniform(key, shape=(n,), dtype=np.float64)

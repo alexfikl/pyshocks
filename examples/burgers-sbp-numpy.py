@@ -9,8 +9,8 @@ import numpy as np
 # {{{ initial conditions
 
 
-def RiemannIC(x, ul: float, ur: float):  # noqa: N802
-    L = x[-1] - x[0]  # noqa: N806
+def ic_riemann(x, ul: float, ur: float):
+    L = x[-1] - x[0]
 
     x0 = x[0] + 0.25 * L
     u0 = np.zeros_like(x)
@@ -24,8 +24,8 @@ def RiemannIC(x, ul: float, ur: float):  # noqa: N802
     return u0
 
 
-def TanhIC(x, ul: float, ur: float):  # noqa: N802
-    L = x[-1] - x[0]  # noqa: N806
+def ic_tanh(x, ul: float, ur: float):
+    L = x[-1] - x[0]
 
     x0 = x[0] + 0.25 * L
     delta = L / 20
@@ -40,7 +40,7 @@ def TanhIC(x, ul: float, ur: float):  # noqa: N802
 # {{{ SBP operators
 
 
-def NormMatrix(dx, nx: int):  # noqa: N802
+def norm_matrix(dx, nx: int):
     mat = dx * np.eye(nx + 1)
     mat[0, 0] = 0.5 * dx
     mat[-1, -1] = 0.5 * dx
@@ -48,7 +48,7 @@ def NormMatrix(dx, nx: int):  # noqa: N802
     return mat
 
 
-def FirstDerivMatrix(invH):  # noqa: N802,N803
+def first_derivative_matrix(invH):
     nx = invH.shape[0] - 1
 
     diagv = np.zeros(nx + 1)
@@ -64,19 +64,19 @@ def FirstDerivMatrix(invH):  # noqa: N802,N803
     return invH @ mat
 
 
-def SecondDerivMatrix(dx, H, invH, D1, nu: float):  # noqa: N802,N803
+def second_derivative_matrix(dx, H, invH, D1, nu: float):
     nx = H.shape[0] - 1
 
     # S-matrix
-    S = np.eye(nx + 1)  # noqa: N806
+    S = np.eye(nx + 1)
     S[0, 0:3] = [-1.5, 2, -0.5]
     S[-1, :] = -np.flip(S[0])
 
     # B-matrix = B22 for 2nd order
-    B = nu * np.eye(nx + 1)  # noqa: N806
+    B = nu * np.eye(nx + 1)
 
     # Bbar-matrix
-    Bbar = np.zeros((nx + 1, nx + 1))  # noqa: N806
+    Bbar = np.zeros((nx + 1, nx + 1))
     Bbar[0, 0] = -B[0, 0]
     Bbar[-1, -1] = B[-1, -1]
 
@@ -85,22 +85,20 @@ def SecondDerivMatrix(dx, H, invH, D1, nu: float):  # noqa: N802,N803
     diagv[0] = 1
     diagv[-1] = 1
 
-    D22 = (  # noqa: N806
-        np.diag(diagv) + np.diag(np.ones(nx), -1) + np.diag(np.ones(nx), +1)
-    )
+    D22 = np.diag(diagv) + np.diag(np.ones(nx), -1) + np.diag(np.ones(nx), +1)
     D22[0, 0:3] = [1, -2, 1]
     D22[-1, :] = np.flip(D22[0])
 
     # C_2^(2)-matrix
-    C22 = np.eye(nx + 1)  # noqa: N806
+    C22 = np.eye(nx + 1)
     C22[0, 0] = 0.0
     C22[-1, -1] = 0.0
 
     # R^(b) matrix
-    R = 0.25 * dx**3 * (D22.T @ C22 @ B @ D22)  # noqa: N806
+    R = 0.25 * dx**3 * (D22.T @ C22 @ B @ D22)
 
     # M^b matrix
-    M = D1.T @ H @ B @ D1 + R  # noqa: N806
+    M = D1.T @ H @ B @ D1 + R
 
     # D2 operator
     return invH @ (-M + Bbar @ S)
@@ -116,11 +114,11 @@ def slope_limiter(r):
     return np.maximum(0.0, np.minimum(1, r))
 
 
-def MUSCL_ArtDiss(invH, u):  # noqa: N802, N803
+def artificial_dissipation_muscl(invH, u):
     nx = invH.shape[0] - 1
 
     # D1hat-matrix
-    D1hat = -np.identity(nx + 1) + np.diag(np.ones(nx), 1)  # noqa: N806
+    D1hat = -np.identity(nx + 1) + np.diag(np.ones(nx), 1)
     D1hat[-1, -1] = 1
     D1hat[-1, -2] = -1
 
@@ -155,7 +153,7 @@ def MUSCL_ArtDiss(invH, u):  # noqa: N802, N803
     bv[1] = bv[2]
     bv[nx - 1] = bv[nx - 2]
     bv[nx] = bv[nx - 2]
-    BM = np.diag(bv)  # noqa: N806
+    BM = np.diag(bv)
 
     # -P^{-1} D1Hat^T BM D1Hat u
 
@@ -168,12 +166,12 @@ def MUSCL_ArtDiss(invH, u):  # noqa: N802, N803
 # {{{ Roe
 
 
-def Roe_ArtDiss(invH, u):  # noqa: N802,N803
+def artificial_dissipation_roe(invH, u):
     nx = invH.shape[0] - 1
 
     # D1hat-matrix
 
-    D1hat = -np.eye(nx + 1) + np.diag(np.ones(nx), 1)  # noqa: N806
+    D1hat = -np.eye(nx + 1) + np.diag(np.ones(nx), 1)
     D1hat[-1, -1] = 1
     D1hat[-1, -2] = -1
 
@@ -187,18 +185,18 @@ def Roe_ArtDiss(invH, u):  # noqa: N802,N803
     bv[1] = bv[2]
     bv[nx - 1] = bv[nx - 2]
     bv[nx] = bv[nx - 2]
-    BM = np.diag(bv)  # noqa: N806
+    BM = np.diag(bv)
 
     # -P^{-1} D1Hat^T BM D1Hat u
     return -(invH @ (D1hat.T @ (BM @ (D1hat @ u))))
 
 
-def ROE_ArtDiss_LogarithmicEntropyVars(invH, u):  # noqa: N802, N803
+def artificial_dissipation_roe_logarithmic_entropy_variables(invH, u):
     nx = invH.shape[0] - 1
     w = 1 / u
 
     # D1hat-matrix
-    D1hat = -np.eye(nx + 1) + np.diag(np.ones(nx), 1)  # noqa: N806
+    D1hat = -np.eye(nx + 1) + np.diag(np.ones(nx), 1)
     D1hat[-1, -1] = 1
     D1hat[-1, -2] = -1
 
@@ -212,7 +210,7 @@ def ROE_ArtDiss_LogarithmicEntropyVars(invH, u):  # noqa: N802, N803
     bv[1] = bv[2]
     bv[nx - 1] = bv[nx - 2]
     bv[nx] = bv[nx - 2]
-    BM = np.diag(bv)  # noqa: N806
+    BM = np.diag(bv)
 
     # -P^{-1} D1Hat^T BM D1Hat u
     return -(invH @ (D1hat.T @ (BM @ (D1hat @ w))))
@@ -221,18 +219,18 @@ def ROE_ArtDiss_LogarithmicEntropyVars(invH, u):  # noqa: N802, N803
 # }}}
 
 
-def burgers_rhs(
-    t, u, e0, invH, D1, D2, ul: float, tau: float = 1.0 / 3.0  # noqa: N803
-):
-    A = np.diag(u)  # noqa: N806
-    E = invH @ (np.outer(e0, e0) @ A)  # noqa: N806
+def burgers_rhs(t, u, e0, invH, D1, D2, ul: float, tau: float = 1.0 / 3.0):
+    A = np.diag(u)
+    E = invH @ (np.outer(e0, e0) @ A)
 
     f = u**2 / 2
     return (
         -(D1 @ f)
         - 2.0 * tau * (E @ (A @ (u - ul * e0)))
         + (D2 @ u)
-        + MUSCL_ArtDiss(invH, u)
+        + artificial_dissipation_muscl(invH, u)
+        # + artificial_dissipation_roe(invH, u)
+        # + artificial_dissipation_roe_logarithmic_entropy_variables(invH, u)
     )
 
 
@@ -248,8 +246,8 @@ def main(
     nu: float = 0.0e-2,  # "laminar" viscosity
 ) -> None:
     # derived constants
-    L = b - a  # noqa: N806
-    T = tf - t0  # noqa: N806
+    L = b - a
+    T = tf - t0
 
     # set time array
     # dt = T / (nt - 1)
@@ -260,18 +258,18 @@ def main(
     x = np.linspace(a, b, nx + 1)
 
     # initialize the state
-    u0 = RiemannIC(x, ul, ur)
-    # u0 = TanhIC(x, ul, ur)
+    u0 = ic_riemann(x, ul, ur)
+    # u0 = ic_tanh(x, ul, ur)
 
     # return static matrices
-    H = NormMatrix(dx, nx)  # noqa: N806
-    invH = np.linalg.inv(H)  # noqa: N806
+    H = norm_matrix(dx, nx)
+    invH = np.linalg.inv(H)
 
     e0 = np.zeros(nx + 1)
     e0[0] = 1
 
-    D1 = FirstDerivMatrix(invH)  # noqa: N806
-    D2 = SecondDerivMatrix(dx, H, invH, D1, nu)  # noqa: N806
+    D1 = first_derivative_matrix(invH)
+    D2 = second_derivative_matrix(dx, H, invH, D1, nu)
 
     print("Starting integration ...", end=" ")
 

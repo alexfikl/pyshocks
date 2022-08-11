@@ -266,15 +266,15 @@ def make_ss_weno_242_matrices(
 
     if isinstance(bc, PeriodicBoundary):
         p = jnp.ones_like(p)  # type: ignore[no-untyped-call]
-        P = weno.ss_weno_norm_matrix(p, n)  # noqa: N806
-        Q = circulant_matrix(qi, n)  # noqa: N806
-        H = circulant_matrix(hi, n)  # noqa: N806
-        Qs = weno.ss_weno_derivative_matrix(qi, None, n)  # noqa: N806
+        P = weno.ss_weno_norm_matrix(p, n)
+        Q = circulant_matrix(qi, n)
+        H = circulant_matrix(hi, n)
+        Qs = weno.ss_weno_derivative_matrix(qi, None, n)
     elif isinstance(bc, SSWENOBurgersBoundary):
-        P = weno.ss_weno_norm_matrix(p, n)  # noqa: N806
-        Q = weno.ss_weno_derivative_matrix(qi, qb, n)  # noqa: N806
-        H = weno.ss_weno_interpolation_matrix(hi, hb, n)  # noqa: N806
-        Qs = Q  # noqa: N806
+        P = weno.ss_weno_norm_matrix(p, n)
+        Q = weno.ss_weno_derivative_matrix(qi, qb, n)
+        H = weno.ss_weno_interpolation_matrix(hi, hb, n)
+        Qs = Q
     else:
         raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
 
@@ -321,7 +321,7 @@ def make_ss_weno_242_sbp_matrix(
     Bbar = Bbar.at[-1, -1].set(B[-1, -1])
 
     # get S matrix
-    S = sbp.get_sbp_21_second_derivative_s_matrix(n, dtype=dtype)  # noqa: N806
+    S = sbp.get_sbp_21_second_derivative_s_matrix(n, dtype=dtype)
 
     # put it all together
     M = D.T @ P @ B @ D + R
@@ -436,7 +436,7 @@ def _apply_operator_burgers_ssweno242(
     # {{{ inviscid flux
 
     # standard WENO reconstructed flux
-    fw = jnp.pad(fp[:-1] + fm[1:], 1)  # type: ignore[no-untyped-call]
+    fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
     fs = two_point_entropy_flux(scheme.Qs, u)
