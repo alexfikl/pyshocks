@@ -16,7 +16,7 @@ def RiemannIC(x, ul: float, ur: float):  # noqa: N802
     L = x[-1] - x[0]  # noqa: N806
 
     x0 = x[0] + 0.25 * L
-    u0 = 0.0 * x
+    u0 = np.zeros_like(x)
 
     for i in range(x.size):
         if x[i] < x0:
@@ -54,7 +54,7 @@ def NormMatrix(dx, nx: int):  # noqa: N802
 def FirstDerivMatrix(invH):  # noqa: N802,N803
     nx = invH.shape[0] - 1
 
-    diagv = np.zeros_like(invH)
+    diagv = np.zeros(nx + 1)
     diagv[0] = -0.5
     diagv[-1] = 0.5
 
@@ -64,7 +64,6 @@ def FirstDerivMatrix(invH):  # noqa: N802,N803
     diagvm1 = -np.flip(diagvp1)
 
     mat = np.diag(diagv) + np.diag(diagvp1, 1) + np.diag(diagvm1, -1)
-
     return invH @ mat
 
 
@@ -225,14 +224,16 @@ def ROE_ArtDiss_LogarithmicEntropyVars(invH, u):  # noqa: N802, N803
 # }}}
 
 
-def burgers_rhs(t, u, e0, invH, D1, D2, uL):  # noqa: N803
+def burgers_rhs(
+    t, u, e0, invH, D1, D2, ul: float, tau: float = 1.0 / 3.0  # noqa: N803
+):
     A = np.diag(u)  # noqa: N806
     E = invH @ (np.outer(e0, e0) @ A)  # noqa: N806
 
-    f = 0.5 * u * u
+    f = u**2 / 2
     return (
         -(D1 @ f)
-        - 2.0 / 3.0 * (E @ (A @ u - uL * e0))
+        - 2.0 * tau * (E @ (A @ (u - ul * e0)))
         + (D2 @ u)
         + MUSCL_ArtDiss(invH, u)
     )
@@ -320,3 +321,7 @@ def main(
         fig, animate, np.arange(1, nt), init_func=init, interval=25, blit=True
     )
     plt.show()
+
+
+if __name__ == "__main__":
+    main()

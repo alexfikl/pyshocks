@@ -12,3 +12,5 @@ Spatial Discretization
 .. automodule:: pyshocks.reconstruction
 
 .. automodule:: pyshocks.weno
+
+.. automodule:: pyshocks.sbp
