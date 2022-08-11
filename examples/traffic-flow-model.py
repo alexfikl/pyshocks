@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2020 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-License-Identifier: MIT
+
 from dataclasses import dataclass
 
 import jax

@@ -7,6 +7,6 @@ Files: docs/* *.md *.rst *.cfg *Makefile
 Copyright: 2022 Alexandru Fikl <alexfikl@gmail.com>
 License: CC0-1.0
 
-Files: .gitignore .readthedocs.yml pyproject.toml .github/workflows/ci.yml
+Files: .gitignore .readthedocs.yml pyproject.toml .github/workflows/ci.yml .codespell-ignore .pre-commit-config.yaml
 Copyright: 2022 Alexandru Fikl <alexfikl@gmail.com>
 License: CC0-1.0
