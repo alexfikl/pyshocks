@@ -63,3 +63,5 @@ Sphinx ca can also generate LaTeX documentation with
 
     make latex && cd _build/latex && latexrun pyshocks.tex
     xdg-open pyshocks.pdf
+
+The documentation is also hosted on `readthedocs <https://pyshocks.readthedocs.io/en/latest/index.html>`__.
