@@ -469,7 +469,9 @@ def ss_weno_norm_matrix(p: jnp.ndarray, n: int) -> jnp.ndarray:
     return P
 
 
-def ss_weno_derivative_matrix(qi: jnp.ndarray, qb: jnp.ndarray, n: int) -> jnp.ndarray:
+def ss_weno_derivative_matrix(
+    qi: jnp.ndarray, qb: Optional[jnp.ndarray], n: int
+) -> jnp.ndarray:
     # [Fisher2013] Appendix A.1, Equation A.4
     m = qi.size // 2
     Q: jnp.ndarray = sum(  # noqa: N806
@@ -478,15 +480,16 @@ def ss_weno_derivative_matrix(qi: jnp.ndarray, qb: jnp.ndarray, n: int) -> jnp.n
     )
 
     # [Fisher2013] Appendix A.1, Equation A.2
-    n, m = qb.shape
-    Q = Q.at[:n, :m].set(qb)  # noqa: N806
-    Q = Q.at[-n:, -m:].set(-qb[::-1, ::-1])  # noqa: N806
+    if qb is not None:
+        n, m = qb.shape
+        Q = Q.at[:n, :m].set(qb)  # noqa: N806
+        Q = Q.at[-n:, -m:].set(-qb[::-1, ::-1])  # noqa: N806
 
     return Q
 
 
 def ss_weno_interpolation_matrix(
-    hi: jnp.ndarray, hb: jnp.ndarray, n: int
+    hi: jnp.ndarray, hb: Optional[jnp.ndarray], n: int
 ) -> jnp.ndarray:
     # [Fisher2013] Appendix A.1, Equation A.4
     m = hi.size // 2
@@ -496,9 +499,10 @@ def ss_weno_interpolation_matrix(
     )
 
     # [Fisher2013] Appendix A.1, Equation A.2
-    m, p = hb.shape
-    H = H.at[:m, :p].set(hb)  # noqa: N806
-    H = H.at[-m:, -p:].set(hb[::-1, ::-1])  # noqa: N806
+    if hb is not None:
+        m, p = hb.shape
+        H = H.at[:m, :p].set(hb)  # noqa: N806
+        H = H.at[-m:, -p:].set(hb[::-1, ::-1])  # noqa: N806
 
     return H
 
@@ -506,7 +510,7 @@ def ss_weno_interpolation_matrix(
 def ss_weno_circulant(q: jnp.ndarray, n: int) -> jnp.ndarray:
     m = q.size // 2
     return sum(
-        jnp.roll(q[i] * jnp.eye(n, n), i - m, axis=1)  # type: ignore
+        jnp.roll(q[i] * jnp.eye(n, n, dtype=q.dtype), i - m, axis=1)  # type: ignore
         for i in range(q.size)
     )
 

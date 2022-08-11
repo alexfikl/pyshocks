@@ -229,9 +229,29 @@ def _numerical_flux_burgers_esweno32(
 # {{{ SSWENO242
 
 
+@jax.jit
+def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
+    qfs = q * (jnp.outer(u, u) + uu + uu.T) / 3
+
+    # NOTE: u is numbered [1, N] and fluxes are number [0, N] ([Fisher2013] Fig. 1)
+    fss = jnp.zeros(u.size + 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
+
+    # FIXME: jax unrolls this to `u.size` statements, which is horrible!
+    for i in range(1, u.size):
+        assert 0 <= i < fss.size
+
+        # NOTE: computes the following sum
+        #   sum(k, i, N) sum(l, 1, i + 1) 2 q[l, k] f(u_l, u_k)
+        # where the python indexing is exclusive, not inclusive!
+        fss = fss.at[i].set(jnp.sum(qfs[:i, i:]))
+
+    return fss
+
+
 def make_ss_weno_242_matrices(
     bc: Boundary, n: int
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     import pyshocks.weno as w
 
     qi, hi = w.ss_weno_242_operator_coefficients()
@@ -244,23 +264,26 @@ def make_ss_weno_242_matrices(
         P = w.ss_weno_norm_matrix(p, n)  # noqa: N806
         Q = w.ss_weno_circulant(qi, n)  # noqa: N806
         H = w.ss_weno_circulant(hi, n)  # noqa: N806
+        Qs = w.ss_weno_derivative_matrix(qi, None, n)  # noqa: N806
     elif isinstance(bc, SSWENOBurgersBoundary):
         P = w.ss_weno_norm_matrix(p, n)  # noqa: N806
         Q = w.ss_weno_derivative_matrix(qi, qb, n)  # noqa: N806
         H = w.ss_weno_interpolation_matrix(hi, hb, n)  # noqa: N806
+        Qs = Q  # noqa: N806
     else:
         raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
 
-    return P, Q, H
+    return P, Q, H, Qs
 
 
 def prepare_ss_weno_242_scheme(
     scheme: "SSWENO242", grid: Grid, bc: Boundary
 ) -> "SSWENO242":
-    P, Q, H = make_ss_weno_242_matrices(bc, grid.x.size)  # noqa: N806
+    P, Q, H, Qs = make_ss_weno_242_matrices(bc, grid.x.size)  # noqa: N806
     object.__setattr__(scheme, "P", P)
     object.__setattr__(scheme, "Q", Q)
     object.__setattr__(scheme, "H", H)
+    object.__setattr__(scheme, "Qs", Qs)
 
     return scheme
 
@@ -287,6 +310,8 @@ class SSWENO242(SchemeBase):
     Q: ClassVar[jnp.ndarray]
     H: ClassVar[jnp.ndarray]
 
+    Qs: ClassVar[jnp.ndarray]
+
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.SSWENO242):
             raise TypeError("SSWENO242 scheme requires the SSWENO242 reconstruction")
@@ -312,22 +337,6 @@ def _predict_timestep_burgers_ssweno242(
     scheme: SSWENO242, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     return predict_timestep.dispatch(Scheme)(scheme, grid, t, u)
-
-
-@jax.jit
-def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
-    uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
-    qfs = q * (jnp.outer(u, u) + uu + uu.T) / 3
-
-    # NOTE: u is numbered [1, N] and fluxes are number [0, N] ([Fisher2013] Fig. 1)
-    fss = jnp.empty(u.size - 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
-
-    # FIXME: jax unrolls this to `u.size` statements, which is horrible!
-    for i in range(u.size - 1):
-        # sum(k, i, N) sum(l, 1, i + 1) 2 q[l, k] f(u_l, u_k)
-        fss = fss.at[i].set(jnp.sum(qfs[: i + 1, i:]))
-
-    return jnp.pad(fss, 1)  # type: ignore[no-untyped-call]
 
 
 @apply_operator.register(SSWENO242)
@@ -366,7 +375,7 @@ def _apply_operator_burgers_ssweno242(
     fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = two_point_entropy_flux(scheme.Q, u)
+    fs = two_point_entropy_flux(scheme.Qs, u)
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
