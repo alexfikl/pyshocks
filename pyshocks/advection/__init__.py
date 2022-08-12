@@ -19,6 +19,9 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+.. autoclass:: FiniteVolumeScheme
+.. autoclass:: FiniteDifferenceScheme
+
 .. autoclass:: Godunov
 .. autoclass:: ESWENO32
 
@@ -35,7 +38,15 @@ Schemes
 
 from typing import Any, Dict, Tuple, Type
 
-from pyshocks.advection.schemes import Scheme, Godunov, ESWENO32, SBPSAT, SBPSAT21
+from pyshocks.advection.schemes import (
+    Scheme,
+    FiniteVolumeScheme,
+    FiniteDifferenceScheme,
+    Godunov,
+    ESWENO32,
+    SBPSAT,
+    SBPSAT21,
+)
 
 # NOTE: just providing an alias for common usage
 Upwind = Godunov
@@ -76,6 +87,8 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 
 __all__ = (
     "Scheme",
+    "FiniteVolumeScheme",
+    "FiniteDifferenceScheme",
     "Godunov",
     "Upwind",
     "ESWENO32",

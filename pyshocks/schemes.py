@@ -14,15 +14,20 @@ Schemes
 .. autofunction:: apply_operator
 .. autofunction:: predict_timestep
 
+.. autoclass:: FiniteVolumeSchemeBase
+.. autoclass:: FiniteDifferenceSchemeBase
+
 Finite Volume Schemes
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: FiniteVolumeScheme
 .. autoclass:: ConservationLawScheme
 .. autoclass:: CombineConservationLawScheme
 
 .. autofunction:: flux
 .. autofunction:: numerical_flux
+
+Finite Difference Schemes
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^
@@ -80,18 +85,34 @@ class SchemeBase:
     .. attribute:: stencil_width
 
         The required stencil width for the scheme and reconstruction.
+
+    .. attribute:: rec
+
+        A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
+        to reconstruct high-order face-based values when needed by the numerical
+        scheme.
     """
+
+    rec: Optional[Reconstruction]
 
     @property
     def name(self) -> str:
+        if self.rec is not None:
+            return f"{type(self).__name__}_{self.rec.name}".lower()
         return type(self).__name__.lower()
 
     @property
     def order(self) -> int:
+        if self.rec is not None:
+            return self.rec.order
+
         raise NotImplementedError
 
     @property
     def stencil_width(self) -> int:
+        if self.rec is not None:
+            return self.rec.stencil_width
+
         raise NotImplementedError
 
 
@@ -146,6 +167,22 @@ def predict_timestep(
     raise NotImplementedError(type(scheme).__name__)
 
 
+@dataclass(frozen=True)
+class FiniteVolumeSchemeBase(SchemeBase):
+    """Describes a finite volume-type scheme for PDEs.
+
+    .. automethod:: __init__
+    """
+
+
+@dataclass(frozen=True)
+class FiniteDifferenceSchemeBase(SchemeBase):
+    """Describes a finite difference-type scheme for PDEs.
+
+    .. automethod:: __init__
+    """
+
+
 # }}}
 
 
@@ -153,7 +190,7 @@ def predict_timestep(
 
 
 @dataclass(frozen=True)
-class CombineScheme(SchemeBase):  # pylint: disable=W0223
+class CombineScheme(SchemeBase):
     r"""Implements a combined operator for multiple schemes.
 
     In this case, we consider an equation of the form
@@ -217,45 +254,11 @@ def _apply_operator_combine(
 # }}}
 
 
-# {{{ finite volume schemes
-
-
-@dataclass(frozen=True)
-class FiniteVolumeScheme(SchemeBase):
-    """Describes a finite volume type scheme for PDEs.
-
-    .. attribute:: rec
-
-        A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
-        to reconstruct high-order face-based values when needed by the numerical
-        scheme.
-
-    .. automethod:: __init__
-    """
-
-    rec: Reconstruction
-
-    @property
-    def name(self) -> str:
-        return f"{type(self).__name__}_{self.rec.name}".lower()
-
-    @property
-    def order(self) -> int:
-        return self.rec.order
-
-    @property
-    def stencil_width(self) -> int:
-        return self.rec.stencil_width
-
-
-# }}}
-
-
 # {{{ conservation law schemes
 
 
 @dataclass(frozen=True)
-class ConservationLawScheme(FiniteVolumeScheme):
+class ConservationLawScheme(FiniteVolumeSchemeBase):
     r"""Describes numerical schemes for conservation laws.
 
     We consider conservation laws of the form

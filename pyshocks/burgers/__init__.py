@@ -15,6 +15,8 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+.. autoclass:: FiniteVolumeScheme
+.. autoclass:: FiniteDifferenceScheme
 .. autoclass:: Godunov
 .. autoclass:: Rusanov
 .. autoclass:: LaxFriedrichs
@@ -41,6 +43,8 @@ import jax.numpy as jnp
 from pyshocks import Grid
 from pyshocks.burgers.schemes import (
     Scheme,
+    FiniteVolumeScheme,
+    FiniteDifferenceScheme,
     Godunov,
     Rusanov,
     LaxFriedrichs,
@@ -57,7 +61,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "lf": LaxFriedrichs,
     "eo": EngquistOsher,
     "esweno32": ESWENO32,
-    "ssweno242": SSWENO242,  # type: ignore[dict-item]
+    "ssweno242": SSWENO242,
 }
 
 
@@ -247,6 +251,8 @@ def ex_tophat(
 
 __all__ = (
     "Scheme",
+    "FiniteVolumeScheme",
+    "FiniteDifferenceScheme",
     "Godunov",
     "Rusanov",
     "LaxFriedrichs",

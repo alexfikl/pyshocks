@@ -34,7 +34,6 @@ def test_time_convergence(
         return jnp.array([jnp.exp(-t)])  # type: ignore[no-untyped-call]
 
     def solution(t: float) -> jnp.ndarray:
-        # pylint: disable=invalid-unary-operand-type
         return -source(t, jnp.array([0.0]))  # type: ignore[no-untyped-call]
 
     tfinal = 4.0

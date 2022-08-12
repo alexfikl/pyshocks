@@ -2,13 +2,18 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from functools import singledispatch
 from typing import ClassVar, Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, SchemeBase, FiniteVolumeScheme, Boundary
-from pyshocks import apply_operator, predict_timestep
+from pyshocks import (
+    Grid,
+    SchemeBase,
+    FiniteVolumeSchemeBase,
+    FiniteDifferenceSchemeBase,
+    Boundary,
+)
+from pyshocks import apply_operator, numerical_flux, predict_timestep
 
 
 # {{{ base
@@ -26,13 +31,12 @@ class SpatialVelocity:
 
 
 @dataclass(frozen=True)
-class Scheme(FiniteVolumeScheme):
-    """Base class for finite volume numerical schemes for the linear advection
-    equation.
+class Scheme(SchemeBase):
+    """Base class for numerical schemes for the linear advection equation.
 
     .. attribute:: velocity
 
-        Advection velocity at cell centers.
+        Advection velocity.
 
     .. automethod:: __init__
     """
@@ -41,13 +45,6 @@ class Scheme(FiniteVolumeScheme):
     # FIXME: we want this to be a function so that we can evaluate it at
     # (t, x) every time
     velocity: Optional[jnp.ndarray]
-
-
-@singledispatch
-def apply_derivative(
-    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    raise NotImplementedError(type(scheme).__name__)
 
 
 @predict_timestep.register(Scheme)
@@ -61,6 +58,24 @@ def _predict_timestep_advection(
     return grid.dx_min / amax
 
 
+@dataclass(frozen=True)
+class FiniteVolumeScheme(Scheme, FiniteVolumeSchemeBase):
+    """Base class for finite volume-based numerical schemes for the linear
+    advection equation.
+
+    .. automethod:: __init__
+    """
+
+
+@dataclass(frozen=True)
+class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+    """Base class for finite difference-based numerical schemes for the linear
+    advection equation.
+
+    .. automethod:: __init__
+    """
+
+
 @apply_operator.register(Scheme)
 def _apply_operator_advection(
     scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
@@ -70,18 +85,20 @@ def _apply_operator_advection(
     from pyshocks import apply_boundary
 
     u = apply_boundary(bc, grid, t, u)
-    du = apply_derivative(scheme, grid, t, u)
+    f = numerical_flux(scheme, grid, t, u)
 
-    return -scheme.velocity * (du[1:] - du[:-1]) / grid.dx
+    return -scheme.velocity * (f[1:] - f[:-1]) / grid.dx
 
 
 # }}}
 
 
-# {{{ upwind
+# {{{ godunov
 
 
 def upwind_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+    assert scheme.velocity is not None
+    assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
 
     from pyshocks.reconstruction import reconstruct
@@ -96,18 +113,17 @@ def upwind_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
 
 
 @dataclass(frozen=True)
-class Godunov(Scheme):
+class Godunov(FiniteVolumeScheme):
     """A Godunov (upwind) scheme for the advection equation.
 
     .. automethod:: __init__
     """
 
 
-@apply_derivative.register(Godunov)
-def _apply_derivative_advection_godunov(
+@numerical_flux.register(Godunov)
+def _numerical_flux_advection_godunov(
     scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    assert scheme.velocity is not None
     return upwind_flux(scheme, grid, u)
 
 
@@ -118,6 +134,8 @@ def _apply_derivative_advection_godunov(
 
 
 def esweno_lf_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+    assert scheme.velocity is not None
+    assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
 
     from pyshocks.reconstruction import reconstruct
@@ -132,7 +150,7 @@ def esweno_lf_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
 
 
 @dataclass(frozen=True)
-class ESWENO32(Scheme):
+class ESWENO32(FiniteVolumeScheme):
     """Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_.
 
     .. [Yamaleev2009] N. K. Yamaleev, M. H. Carpenter, *Third-Order Energy
@@ -142,7 +160,7 @@ class ESWENO32(Scheme):
     """
 
 
-@apply_derivative.register(ESWENO32)
+@numerical_flux.register(ESWENO32)
 def _apply_derivative_burgers_esweno32(
     scheme: ESWENO32, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
@@ -179,19 +197,9 @@ def _apply_derivative_burgers_esweno32(
 
 
 @dataclass(frozen=True)
-class SBPSAT(SchemeBase):  # pylint: disable=abstract-method
-    velocity: Optional[jnp.ndarray]
-
-    # FIXME: this should really be matrix free
+class SBPSAT(FiniteDifferenceScheme):
     Q: ClassVar[jnp.ndarray]
     H: ClassVar[jnp.ndarray]
-
-
-@predict_timestep.register(SBPSAT)
-def _predict_timestep_advection_sbp(
-    scheme: SBPSAT, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    return predict_timestep.dispatch(Scheme)(scheme, grid, t, u)
 
 
 @dataclass(frozen=True)
@@ -221,6 +229,7 @@ def _apply_operator_sbp_sat_21(
 
     assert u.shape == grid.x.shape
     assert isinstance(bc, SATBoundary)
+    assert scheme.velocity is not None
 
     from pyshocks import evaluate_boundary
 

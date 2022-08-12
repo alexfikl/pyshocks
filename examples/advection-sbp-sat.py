@@ -44,7 +44,7 @@ def main(
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
 
     velocity = jnp.ones_like(grid.x)  # type: ignore
-    scheme = advection.SBPSAT21(velocity=velocity)
+    scheme = advection.SBPSAT21(rec=None, velocity=velocity)
 
     boundary = make_sat_boundary(
         ga=lambda t: jnp.sin(2.0 * jnp.pi * (1 - t)), gb=lambda t: 0.0

@@ -10,6 +10,7 @@ import jax.numpy as jnp
 from pyshocks import (
     Grid,
     SchemeBase,
+    FiniteDifferenceSchemeBase,
     ConservationLawScheme,
     Boundary,
 )
@@ -27,18 +28,11 @@ from pyshocks import (
 
 
 @dataclass(frozen=True)
-class Scheme(ConservationLawScheme):  # pylint: disable=abstract-method
+class Scheme(SchemeBase):
     """Base class for numerical schemes for Burgers' equation.
 
     .. automethod:: __init__
     """
-
-
-@flux.register(Scheme)
-def _flux_burgers(
-    scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray
-) -> jnp.ndarray:
-    return u**2 / 2
 
 
 @predict_timestep.register(Scheme)
@@ -51,6 +45,29 @@ def _predict_timestep_burgers(
     return 0.5 * grid.dx_min / smax
 
 
+@dataclass(frozen=True)
+class FiniteVolumeScheme(Scheme, ConservationLawScheme):
+    """Base class for finite volume-based numerical schemes for Burgers' equation.
+
+    .. automethod:: __init__
+    """
+
+
+@flux.register(FiniteVolumeScheme)
+def _flux_burgers(
+    scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray
+) -> jnp.ndarray:
+    return u**2 / 2
+
+
+@dataclass(frozen=True)
+class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+    """Base class for finite difference-based numerical schemes for Burgers' equation.
+
+    .. automethod:: __init__
+    """
+
+
 # }}}
 
 
@@ -58,7 +75,7 @@ def _predict_timestep_burgers(
 
 
 @dataclass(frozen=True)
-class Godunov(Scheme):
+class Godunov(FiniteVolumeScheme):
     r"""Standard Godunov (upwind) scheme with the flux given by
     :func:`~pyshocks.scalar.scalar_flux_upwind`.
 
@@ -82,7 +99,7 @@ def _numerical_flux_burgers_godunov(
 
 
 @dataclass(frozen=True)
-class Rusanov(Scheme):
+class Rusanov(FiniteVolumeScheme):
     r"""Modified Rusanov scheme with the flux given by
     :func:`~pyshocks.scalar.scalar_flux_rusanov`.
 
@@ -145,7 +162,7 @@ def _numerical_flux_burgers_lax_friedrichs(
 
 
 @dataclass(frozen=True)
-class EngquistOsher(Scheme):
+class EngquistOsher(FiniteVolumeScheme):
     r"""Classic Engquist-Osher scheme with the flux
 
     .. math::
@@ -186,8 +203,13 @@ def _numerical_flux_burgers_engquist_osher(
 
 
 @dataclass(frozen=True)
-class ESWENO32(Scheme):
-    """Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_."""
+class ESWENO32(FiniteVolumeScheme):
+    r"""Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_.
+
+    While it is possible to use the :class:`~pyshocks.reconstruction.ESWENO32`
+    reconstruction with other schemes, this version also adds the required
+    diffusive parts to ensure energy stability.
+    """
 
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.ESWENO32):
@@ -347,7 +369,7 @@ def prepare_ss_weno_242_scheme(
 
 
 @dataclass(frozen=True)
-class SSWENO242(SchemeBase):
+class SSWENO242(FiniteDifferenceScheme):
     """Fourth-order Energy Stable WENO (ESWENO) scheme by [Fisher2013]_.
 
     .. [Fisher2013] T. C. Fisher, M. H. Carpenter, *High-Order Entropy Stable

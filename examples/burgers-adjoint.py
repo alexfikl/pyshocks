@@ -12,7 +12,7 @@ from pyshocks import (
     Grid,
     Boundary,
     SchemeBase,
-    FiniteVolumeScheme,
+    FiniteVolumeSchemeBase,
     timeme,
 )
 from pyshocks import burgers, reconstruction, limiters, get_logger
@@ -67,7 +67,7 @@ def make_finite_volume_simulation(
     theta: float,
     tfinal: float,
 ) -> Simulation:
-    assert isinstance(scheme, FiniteVolumeScheme)
+    assert isinstance(scheme, FiniteVolumeSchemeBase)
 
     from pyshocks import make_uniform_cell_grid, make_leggauss_quadrature
 
@@ -274,7 +274,7 @@ def main(
     if not outdir.exists():
         outdir.mkdir()
 
-    if isinstance(scheme, FiniteVolumeScheme):
+    if isinstance(scheme, FiniteVolumeSchemeBase):
         factory = make_finite_volume_simulation
     else:
         factory = make_finite_difference_simulation

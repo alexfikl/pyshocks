@@ -17,6 +17,9 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+.. autoclass:: FiniteVolumeScheme
+.. autoclass:: FiniteDifferenceScheme
+
 .. autoclass:: Godunov
 
 Helpers
@@ -37,7 +40,12 @@ from typing import Any, Dict, Optional, Tuple, Type
 
 from pyshocks.grid import Grid
 from pyshocks.tools import SpatialFunction
-from pyshocks.continuity.schemes import Scheme, Godunov
+from pyshocks.continuity.schemes import (
+    Scheme,
+    FiniteDifferenceScheme,
+    FiniteVolumeScheme,
+    Godunov,
+)
 
 import jax.numpy as jnp
 
@@ -231,6 +239,8 @@ def ic_tophat(
 
 __all__ = (
     "Scheme",
+    "FiniteVolumeScheme",
+    "FiniteDifferenceScheme",
     "Godunov",
     "velocity_const",
     "velocity_sign",

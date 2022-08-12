@@ -11,7 +11,7 @@ from pyshocks import (
     Grid,
     Boundary,
     SchemeBase,
-    FiniteVolumeScheme,
+    FiniteVolumeSchemeBase,
     VectorFunction,
     apply_operator,
     predict_timestep,
@@ -92,7 +92,7 @@ def main(
     """
     # {{{ setup
 
-    if isinstance(scheme, FiniteVolumeScheme):
+    if isinstance(scheme, FiniteVolumeSchemeBase):
         grid, boundary, solution = make_finite_volume(
             scheme.order, scheme.stencil_width, a=a, b=b, n=n
         )

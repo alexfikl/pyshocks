@@ -6,7 +6,7 @@ from typing import Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, ConservationLawScheme
+from pyshocks import Grid, SchemeBase, FiniteDifferenceSchemeBase, ConservationLawScheme
 from pyshocks import flux, numerical_flux, predict_timestep
 
 
@@ -14,12 +14,12 @@ from pyshocks import flux, numerical_flux, predict_timestep
 
 
 @dataclass(frozen=True)
-class Scheme(ConservationLawScheme):  # pylint: disable=abstract-method
+class Scheme(SchemeBase):
     """Base class for numerical schemes for the continuity equation.
 
     .. attribute:: velocity
 
-        Advection velocity at cell centers.
+        Advection velocity.
 
     .. automethod:: __init__
     """
@@ -47,6 +47,24 @@ def _predict_timestep_continuity(
     return grid.dx_min / amax
 
 
+@dataclass(frozen=True)
+class FiniteVolumeScheme(Scheme, ConservationLawScheme):
+    """Base class for finite volume-based numerical schemes for the continuity
+    equation.
+
+    .. automethod:: __init__
+    """
+
+
+@dataclass(frozen=True)
+class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+    """Base class for finite difference-based numerical schemes for the continuity
+    equation.
+
+    .. automethod:: __init__
+    """
+
+
 # }}}
 
 
@@ -54,7 +72,7 @@ def _predict_timestep_continuity(
 
 
 @dataclass(frozen=True)
-class Godunov(Scheme):
+class Godunov(FiniteVolumeScheme):
     """A Godunov (upwind) scheme for the continuity equation.
 
     The flux of the Godunov scheme is given by
@@ -69,16 +87,10 @@ def _numerical_flux_continuity_godunov(
     scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.velocity is not None
+    assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
 
     from pyshocks.reconstruction import reconstruct
-
-    # NOTE: the values are given at the cell boundaries as follows
-    #
-    #       i - 1             i           i + 1
-    #   --------------|--------------|--------------
-    #           u^R_{i - 1}      u^R_i
-    #                   u^L_i         u^L_{i + 1}
 
     ul, ur = reconstruct(scheme.rec, grid, u)
     al, ar = reconstruct(scheme.rec, grid, scheme.velocity)

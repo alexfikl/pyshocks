@@ -19,6 +19,8 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+.. autoclass:: FiniteVolumeScheme
+.. autoclass:: FiniteDifferenceScheme
 .. autoclass:: CenteredScheme
 
 .. autofunction:: scheme_ids
@@ -30,7 +32,12 @@ from typing import Any, Dict, Tuple, Type
 import jax.numpy as jnp
 
 from pyshocks import Grid
-from pyshocks.diffusion.schemes import Scheme, CenteredScheme
+from pyshocks.diffusion.schemes import (
+    Scheme,
+    FiniteVolumeScheme,
+    FiniteDifferenceScheme,
+    CenteredScheme,
+)
 
 
 # {{{ make_scheme_from_name
@@ -99,6 +106,8 @@ def ex_expansion(
 
 __all__ = (
     "Scheme",
+    "FiniteVolumeScheme",
+    "FiniteDifferenceScheme",
     "CenteredScheme",
     "ex_expansion",
     "scheme_ids",

@@ -80,6 +80,7 @@ def scalar_flux_upwind(
     """
     assert u.shape[0] == grid.x.size
     assert a.shape == u.shape
+    assert scheme.rec is not None
 
     ul, ur = reconstruct(scheme.rec, grid, u)
     al, ar = reconstruct(scheme.rec, grid, a)
@@ -134,6 +135,7 @@ def scalar_flux_rusanov(
     version.
     """
     assert u.shape[0] == grid.x.size
+    assert scheme.rec is not None
 
     # artificial viscosity
     if abs(alpha - 1.0) > 1.0e-8:
@@ -207,6 +209,7 @@ def scalar_flux_engquist_osher(
             - \frac{1}{2} \int_{u_L}^{u_R} |f'(u)| \,\mathrm{d}u.
     """
     assert u.shape[0] == grid.x.size
+    assert scheme.rec is not None
 
     ul, ur = reconstruct(scheme.rec, grid, u)
     fr = flux(scheme, t, grid.f, jnp.maximum(ur, omega))

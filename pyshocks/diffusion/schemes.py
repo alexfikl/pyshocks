@@ -6,7 +6,7 @@ from typing import Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, ConservationLawScheme
+from pyshocks import Grid, SchemeBase, FiniteDifferenceSchemeBase, ConservationLawScheme
 from pyshocks import numerical_flux, predict_timestep
 
 
@@ -14,7 +14,7 @@ from pyshocks import numerical_flux, predict_timestep
 
 
 @dataclass(frozen=True)
-class Scheme(ConservationLawScheme):  # pylint: disable=abstract-method
+class Scheme(SchemeBase):
     """
     .. attribute:: diffusivity
     """
@@ -32,6 +32,22 @@ def _predict_timestep_diffusion(
     return 0.5 * grid.dx_min**2 / dmax
 
 
+@dataclass(frozen=True)
+class FiniteVolumeScheme(Scheme, ConservationLawScheme):
+    """Base class for finite volume-based numerical schemes the heat equation.
+
+    .. automethod:: __init__
+    """
+
+
+@dataclass(frozen=True)
+class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+    """Base class for finite difference-based numerical schemes for the heat equation.
+
+    .. automethod:: __init__
+    """
+
+
 # }}}
 
 
@@ -39,14 +55,8 @@ def _predict_timestep_diffusion(
 
 
 @dataclass(frozen=True)
-class CenteredScheme(Scheme):
-    @property
-    def order(self) -> int:
-        return 2
-
-    @property
-    def stencil_width(self) -> int:
-        return 1
+class CenteredScheme(FiniteVolumeScheme):
+    pass
 
 
 @numerical_flux.register(CenteredScheme)
