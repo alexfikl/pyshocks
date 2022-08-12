@@ -114,7 +114,7 @@ def make_ss_weno_242_sbp_matrix(
     Bbar = Bbar.at[-1, -1].set(B[-1, -1])
 
     # get S matrix
-    S = sbp.make_sbp_21_second_derivative_s_matrix(n, dtype=dtype)
+    S = dx * sbp.make_sbp_21_second_derivative_s_matrix(n, dtype=dtype)
 
     # put it all together
     M = D.T @ P @ B @ D + R
@@ -138,6 +138,7 @@ def prepare_ss_weno_242_scheme(
     object.__setattr__(scheme, "P", P)
     object.__setattr__(scheme, "Qs", Qs)
 
+    # FIXME: replace with sbp.SBP42 operators
     DD = make_ss_weno_242_sbp_matrix(grid, bc, nu=scheme.nu)
 
     object.__setattr__(scheme, "DD", DD)

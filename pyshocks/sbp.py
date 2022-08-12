@@ -71,14 +71,14 @@ SBP 2-1
 .. autofunction:: make_sbp_21_first_derivative_q_matrix
 
 .. autofunction:: make_sbp_21_second_derivative_q_matrix
-.. autofunction::
+.. autofunction:: make_sbp_21_second_derivative_s_matrix
+.. autofunction:: make_sbp_21_second_derivative_d22_matrix
+.. autofunction:: make_sbp_21_second_derivative_c22_matrix
 
 SBP 4-2
 ~~~~~~~
 
 .. autoclass:: SBP42
-
-.. autofunction:: make_sbp_42_second_derivative_matrix
 """
 
 from dataclasses import dataclass
@@ -212,9 +212,6 @@ def make_sbp_banded_matrix(
 # {{{ SBP21
 
 
-# {{{ interface
-
-
 @dataclass(frozen=True)
 class SBP21(SBPOperator):
     """An SBP operator the is second-order accurate in the interior and
@@ -235,7 +232,7 @@ class SBP21(SBPOperator):
 @sbp_norm_matrix.register(SBP21)
 def _sbp_21_norm_matrix(op: SBP21, grid: UniformGrid) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
-    return grid.dx_min, make_sbp_21_norm_matrix(grid.x.size, dtype=grid.x.dtype)
+    return grid.dx_min * make_sbp_21_norm_matrix(grid.x.size, dtype=grid.x.dtype)
 
 
 @sbp_first_derivative_matrix.register(SBP21)
@@ -293,9 +290,6 @@ def _sbp_21_second_derivative_matrix(
     M = D.T @ P @ B @ D + R
 
     return invP @ (-M + Bbar @ S)
-
-
-# }}}
 
 
 def make_sbp_21_norm_matrix(
@@ -399,6 +393,39 @@ def make_sbp_21_second_derivative_c22_matrix(
 # {{{ SBP42
 
 
+@dataclass(frozen=True)
+class SBP42(SBPOperator):
+    """An SBP operator the is fourth-order accurate in the interior and
+    second-order accurate at the boundary.
+
+    For details, see Appendix A.2 in [Mattsson2012]_
+    """
+
+    @property
+    def order(self) -> int:
+        return 4
+
+    @property
+    def boundary_order(self) -> int:
+        return 2
+
+
+@sbp_norm_matrix.register(SBP42)
+def _sbp_42_norm_matrix(op: SBP42, grid: UniformGrid) -> jnp.ndarray:
+    assert isinstance(grid, UniformGrid)
+    return grid.dx_min * make_sbp_42_norm_matrix(grid.x.size, dtype=grid.x.dtype)
+
+
+@sbp_first_derivative_matrix.register(SBP42)
+def _sbp_42_first_derivative_matrix(op: SBP42, grid: UniformGrid) -> jnp.ndarray:
+    assert isinstance(grid, UniformGrid)
+
+    Q = make_sbp_42_first_derivative_q_matrix(grid.x.size, dtype=grid.x.dtype)
+    P = sbp_norm_matrix(op, grid)
+
+    return jnp.diag(1.0 / P) @ Q  # type: ignore[no-untyped-call]
+
+
 def make_sbp_42_norm_matrix(
     n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
 ) -> jnp.ndarray:
@@ -419,26 +446,45 @@ def make_sbp_42_norm_matrix(
     )
 
 
-def make_sbp_42_second_derivative_matrix(
+def make_sbp_42_first_derivative_q_matrix(
     n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
 ) -> jnp.ndarray:
-    """Construct the derivative :math:`M` operator for the 2-1 discretization.
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
 
-    :arg n: size of the matrix.
-    :returns: an array of shape ``(n, n)``.
-    """
+    # [Fisher2013] Appendix A, Equation A.1
+    # [Fisher2013] Appendix A, Equation A.2 boundary
+    return make_sbp_banded_matrix(
+        jnp.array(  # type: ignore[no-untyped-call]
+            [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype
+        ),
+        jnp.array(  # type: ignore[no-untyped-call]
+            [
+                [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
+                [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
+                [1 / 12, -59 / 96, 0.0, 59 / 96, -1 / 12, 0.0],
+                [1 / 32, 0.0, -59 / 96, 0.0, 2 / 3, -1 / 12],
+            ],
+            dtype=dtype,
+        ),
+        n,
+    )
+
+
+def make_sbp_42_second_derivative_s_matrix(
+    n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
+) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
-
-    m = (
-        jnp.eye(n, n, k=1, dtype=dtype)  # type: ignore[no-untyped-call]
-        - 2 * jnp.eye(n, n, k=0, dtype=dtype)  # type: ignore[no-untyped-call]
-        + jnp.eye(n, n, k=-1, dtype=dtype)  # type: ignore[no-untyped-call]
+    return make_sbp_banded_matrix(
+        jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
+        jnp.array(  # type: ignore[no-untyped-call]
+            [[-11 / 6, 3, -3 / 2, 1 / 3]], dtype=dtype
+        ),
+        n,
     )
-
-    return m
 
 
 # }}}
