@@ -209,8 +209,8 @@ class SBPSAT21(SBPSAT):
 
         if self.velocity is not None:
             (n,) = self.velocity.shape
-            object.__setattr__(self, "Q", sbp.get_sbp_21_first_derivative_matrix(n))
-            object.__setattr__(self, "H", sbp.get_sbp_21_norm_matrix(n))
+            object.__setattr__(self, "Q", sbp.make_sbp_21_first_derivative_q_matrix(n))
+            object.__setattr__(self, "H", sbp.make_sbp_21_norm_matrix(n))
 
     @property
     def order(self) -> int:

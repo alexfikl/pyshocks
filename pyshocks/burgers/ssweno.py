@@ -93,18 +93,18 @@ def make_ss_weno_242_sbp_matrix(
     from pyshocks import sbp
 
     # get metric
-    P = dx * sbp.get_sbp_21_norm_matrix(n, dtype=dtype)
+    P = dx * sbp.make_sbp_21_norm_matrix(n, dtype=dtype)
 
     invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
     P = jnp.diag(P)  # type: ignore[no-untyped-call]
 
     # get first-order derivative
-    Q = sbp.get_sbp_21_first_derivative_matrix(n, dtype=dtype)
+    Q = sbp.make_sbp_21_first_derivative_q_matrix(n, dtype=dtype)
     D = invP @ Q
 
     # get R matrix
-    D22 = sbp.get_sbp_21_second_derivative_d22_matrix(n, dtype=dtype)
-    C22 = sbp.get_sbp_21_second_derivative_c22_matrix(n, dtype=dtype)
+    D22 = sbp.make_sbp_21_second_derivative_d22_matrix(n, dtype=dtype)
+    C22 = sbp.make_sbp_21_second_derivative_c22_matrix(n, dtype=dtype)
     B = nu * jnp.eye(n)  # type: ignore[no-untyped-call]
     R = dx**3 / 4 * D22.T @ C22 @ B @ D22
 
@@ -114,7 +114,7 @@ def make_ss_weno_242_sbp_matrix(
     Bbar = Bbar.at[-1, -1].set(B[-1, -1])
 
     # get S matrix
-    S = sbp.get_sbp_21_second_derivative_s_matrix(n, dtype=dtype)
+    S = sbp.make_sbp_21_second_derivative_s_matrix(n, dtype=dtype)
 
     # put it all together
     M = D.T @ P @ B @ D + R
