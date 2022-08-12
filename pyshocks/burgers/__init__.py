@@ -50,9 +50,8 @@ from pyshocks.burgers.schemes import (
     LaxFriedrichs,
     EngquistOsher,
     ESWENO32,
-    SSWENO242,
 )
-
+from pyshocks.burgers.ssweno import SSWENO242
 
 _SCHEMES: Dict[str, Type[Scheme]] = {
     "default": LaxFriedrichs,

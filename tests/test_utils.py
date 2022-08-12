@@ -31,7 +31,7 @@ def test_ss_weno_burgers_matrices(bc_type: str) -> None:
         raise ValueError(f"unknown boundary type: '{bc_type}'")
 
     from pyshocks import EOCRecorder
-    from pyshocks.burgers.schemes import make_ss_weno_242_matrices
+    from pyshocks.burgers.ssweno import make_ss_weno_242_matrices
 
     eoc = EOCRecorder(name="error")
     order = 4
@@ -82,7 +82,7 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
         jnp.array([-0.5, 0, 0.5], dtype=grid.x.dtype), None, grid.x.size  # type: ignore
     )
 
-    from pyshocks.burgers.schemes import two_point_entropy_flux
+    from pyshocks.burgers.ssweno import two_point_entropy_flux
 
     # check constant
     u = jnp.full_like(grid.x, 1.0)  # type: ignore
@@ -208,7 +208,7 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
 
     # {{{ jax
 
-    from pyshocks.burgers.schemes import two_point_entropy_flux
+    from pyshocks.burgers.ssweno import two_point_entropy_flux
 
     with BlockTimer() as bt:
         fs_jax = two_point_entropy_flux(Q, u0)

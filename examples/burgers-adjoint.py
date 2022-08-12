@@ -112,7 +112,7 @@ def make_finite_difference_simulation(
     bc = PeriodicBoundary()
 
     if isinstance(scheme, burgers.SSWENO242):
-        from pyshocks.burgers.schemes import prepare_ss_weno_242_scheme
+        from pyshocks.burgers.ssweno import prepare_ss_weno_242_scheme
 
         scheme = prepare_ss_weno_242_scheme(scheme, grid, bc)
 
