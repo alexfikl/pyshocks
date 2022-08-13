@@ -22,6 +22,7 @@ Schemes
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: FiniteDifferenceScheme
 .. autoclass:: CenteredScheme
+.. autoclass:: SBPSAT
 
 .. autofunction:: scheme_ids
 .. autofunction:: make_scheme_from_name
@@ -37,6 +38,7 @@ from pyshocks.diffusion.schemes import (
     FiniteVolumeScheme,
     FiniteDifferenceScheme,
     CenteredScheme,
+    SBPSAT,
 )
 
 
@@ -45,6 +47,7 @@ from pyshocks.diffusion.schemes import (
 _SCHEMES: Dict[str, Type[Scheme]] = {
     "default": CenteredScheme,
     "centered": CenteredScheme,
+    "sbp": SBPSAT,
 }
 
 
@@ -109,6 +112,7 @@ __all__ = (
     "FiniteVolumeScheme",
     "FiniteDifferenceScheme",
     "CenteredScheme",
+    "SBPSAT",
     "ex_expansion",
     "scheme_ids",
     "make_scheme_from_name",

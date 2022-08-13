@@ -83,7 +83,7 @@ SBP 4-2
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Any, Optional
+from typing import Any, Dict, Optional, Tuple, Type
 
 import jax.numpy as jnp
 
@@ -277,8 +277,8 @@ def _sbp_21_second_derivative_matrix(
     P = sbp_norm_matrix(op, grid)
     D = sbp_first_derivative_matrix(op, grid)
 
-    P = jnp.diag(P)  # type: ignore[no-untyped-call]
     invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
+    P = jnp.diag(P)  # type: ignore[no-untyped-call]
 
     # get R matrix
     (B22,) = make_sbp_21_second_derivative_b_matrices(b, dtype=dtype)
@@ -431,7 +431,19 @@ def _sbp_42_first_derivative_matrix(op: SBP42, grid: UniformGrid) -> jnp.ndarray
 
 
 @sbp_second_derivative_matrix.register(SBP42)
-def _sbp_42_second_derivative_matrix(op: SBP42, grid: UniformGrid) -> jnp.ndarray:
+def _sbp_42_second_derivative_matrix(
+    op: SBP42, grid: UniformGrid, b: jnp.ndarray
+) -> jnp.ndarray:
+    from numbers import Number
+
+    if isinstance(b, jnp.ndarray):
+        pass
+    elif isinstance(b, Number):
+        b = jnp.full_like(grid.x, b)  # type: ignore[no-untyped-call]
+    else:
+        raise TypeError(f"unknown diffusivity coefficient: '{type(b).__name__}'")
+
+    assert b.shape == (grid.x.size,)
     assert isinstance(grid, UniformGrid)
 
     # NOTE: See [Mattsson2012] for details
@@ -443,13 +455,13 @@ def _sbp_42_second_derivative_matrix(op: SBP42, grid: UniformGrid) -> jnp.ndarra
     P = sbp_norm_matrix(op, grid)
     D = sbp_first_derivative_matrix(op, grid)
 
-    P = jnp.diag(P)  # type: ignore[no-untyped-call]
     invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
+    P = jnp.diag(P)  # type: ignore[no-untyped-call]
 
     # get R matrix
+    B34, B44 = make_sbp_42_second_derivative_b_matrices(b, dtype=dtype)
     D34, D44 = make_sbp_42_second_derivative_d_matrices(n, dtype=dtype)
     C34, C44 = make_sbp_42_second_derivative_c_matrices(n, dtype=dtype)
-    B34, B44 = make_sbp_42_second_derivative_b_matrices(n, dtype=dtype)
     R = dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
 
     # get Bbar matrix
@@ -618,6 +630,37 @@ def make_sbp_42_second_derivative_c_matrices(
     )
 
     return C34, C44
+
+
+# }}}
+
+
+# {{{ make_operator_from_name
+
+_OPERATORS: Dict[str, Type[SBPOperator]] = {
+    "sbp21": SBP21,
+    "sbp42": SBP42,
+}
+
+
+def operator_ids() -> Tuple[str, ...]:
+    return tuple(_OPERATORS.keys())
+
+
+def make_operator_from_name(name: str, **kwargs: Any) -> SBPOperator:
+    """
+    :arg name: name of the operator.
+    :arg kwargs: additional arguments to pass to the operator. Any arguments
+        that are not in the operator's fields are ignored.
+    """
+
+    cls = _OPERATORS.get(name)
+    if cls is None:
+        raise ValueError(f"scheme '{name}' not found; try one of {operator_ids()}")
+
+    from dataclasses import fields
+
+    return cls(**{f.name: kwargs[f.name] for f in fields(cls) if f.name in kwargs})
 
 
 # }}}

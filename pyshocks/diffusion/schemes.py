@@ -2,12 +2,20 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import ClassVar, Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, SchemeBase, FiniteDifferenceSchemeBase, ConservationLawScheme
-from pyshocks import numerical_flux, predict_timestep
+from pyshocks import (
+    Grid,
+    UniformGrid,
+    Boundary,
+    SchemeBase,
+    FiniteDifferenceSchemeBase,
+    ConservationLawScheme,
+)
+from pyshocks import apply_operator, numerical_flux, predict_timestep, evaluate_boundary
+from pyshocks import sbp
 
 
 # {{{ base
@@ -51,7 +59,7 @@ class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
 # }}}
 
 
-# {{{ polynomial
+# {{{ centered
 
 
 @dataclass(frozen=True)
@@ -72,6 +80,66 @@ def _numerical_flux_diffusion_centered_scheme(
     fnum = -davg * (u[1:] - u[:-1]) / grid.df
 
     return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+
+
+# }}}
+
+
+# {{{ SBP-SAT
+
+
+def prepare_sbp_for_grid(scheme: "SBPSAT", grid: UniformGrid) -> "SBPSAT":
+    assert isinstance(grid, UniformGrid)
+    assert scheme.diffusivity is not None
+
+    P = sbp.sbp_norm_matrix(scheme.op, grid)
+    D2 = sbp.sbp_second_derivative_matrix(scheme.op, grid, scheme.diffusivity)
+
+    # FIXME: make these into sparse matrices
+    object.__setattr__(scheme, "P", P)
+    object.__setattr__(scheme, "D2", D2)
+
+    return scheme
+
+
+@dataclass(frozen=True)
+class SBPSAT(FiniteDifferenceScheme):
+    """
+    .. attribute:: op
+
+        A :class:`~pyshocks.sbp.SBP` operator that is used to construct the
+        required second-order derivative.
+    """
+
+    op: sbp.SBPOperator
+
+    P: ClassVar[jnp.ndarray]
+    D2: ClassVar[jnp.ndarray]
+
+    @property
+    def name(self) -> str:
+        return f"{type(self).__name__}_{type(self.op).__name__}".lower()
+
+    @property
+    def order(self) -> int:
+        return self.op.boundary_order
+
+    @property
+    def stencil_width(self) -> int:
+        return 0
+
+
+@apply_operator.register(SBPSAT)
+def _apply_operator_diffusion_sbp(
+    scheme: SBPSAT, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.scalar import SATBoundary
+
+    assert scheme.diffusivity is not None
+    assert isinstance(bc, SATBoundary)
+
+    gb = evaluate_boundary(bc, grid, t, u)
+    return scheme.D2 @ u - gb / scheme.P
 
 
 # }}}
