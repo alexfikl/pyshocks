@@ -178,6 +178,9 @@ def evolve(
 
 @dataclass(frozen=True)
 class BurgersTestCase(FiniteVolumeTestCase):
+    def __str__(self) -> str:
+        return f"{self.scheme_name}_constant"
+
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_dirichlet_boundary
 
@@ -213,7 +216,7 @@ def test_burgers_convergence(
     from pyshocks import EOCRecorder
     from pyshocks.timestepping import predict_timestep_from_resolutions
 
-    eoc = EOCRecorder(name=case.scheme_name)
+    eoc = EOCRecorder(name=str(case))
     dt = predict_timestep_from_resolutions(a, b, resolutions, umax=10.0)
 
     for n in resolutions:
@@ -236,6 +239,9 @@ def test_burgers_convergence(
 class AdvectionTestCase(FiniteVolumeTestCase):
     rec_name: str
     a: float = 1.0
+
+    def __str__(self) -> str:
+        return f"{self.scheme_name}_{self.rec_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import PeriodicBoundary
@@ -268,6 +274,9 @@ class AdvectionTestCase(FiniteVolumeTestCase):
 class SATAdvectionTestCase(FiniteDifferenceTestCase):
     sbp_name: str
     a: float = 1.0
+
+    def __str__(self) -> str:
+        return f"{self.scheme_name}_{self.sbp_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_sat_boundary
@@ -317,7 +326,7 @@ def test_advection_convergence(
 
     from pyshocks import EOCRecorder
 
-    eoc = EOCRecorder(name=f"{case.scheme_name}_{case.rec_name}")
+    eoc = EOCRecorder(name=str(case))
 
     for n in resolutions:
         # NOTE: SSPRK33 is order dt^3, so this makes it dt^3 ~ dx^5
@@ -341,6 +350,9 @@ def test_advection_convergence(
 @dataclass(frozen=True)
 class DiffusionTestCase(FiniteVolumeTestCase):
     d: float = 1.0
+
+    def __str__(self) -> str:
+        return f"{self.scheme_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_dirichlet_boundary
@@ -368,6 +380,9 @@ class DiffusionTestCase(FiniteVolumeTestCase):
 class SATDiffusionTestCase(FiniteDifferenceTestCase):
     sbp_name: str
     d: float = 1.0
+
+    def __str__(self) -> str:
+        return f"{self.scheme_name}_{self.sbp_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_sat_boundary
@@ -411,7 +426,7 @@ def test_diffusion_convergence(
     from pyshocks.timestepping import predict_timestep_from_resolutions
     from pyshocks import EOCRecorder
 
-    eoc = EOCRecorder(name=case.scheme_name)
+    eoc = EOCRecorder(name=str(case))
     dt = 0.5 * predict_timestep_from_resolutions(a, b, resolutions, umax=1.0, p=2)
 
     for n in resolutions:
