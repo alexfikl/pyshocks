@@ -162,7 +162,7 @@ def make_sbp_boundary_matrix(
     return b
 
 
-def make_sbp_norm_matrix(pb: jnp.ndarray, n: int) -> jnp.ndarray:
+def make_sbp_norm_matrix(n: int, pb: jnp.ndarray) -> jnp.ndarray:
     """Construct the diagonal :math:`P` operator for an SBP discretization.
 
     :arg pb: boundary stencil.
@@ -208,7 +208,7 @@ def make_sbp_banded_matrix(
 
     if qb_r is not None:
         n, m = qb_r.shape
-        q = q.at[-n:, -m:].set(-qb_r[::-1, ::-1])
+        q = q.at[-n:, -m:].set(qb_r)
 
     return q
 
@@ -313,7 +313,7 @@ def make_sbp_21_norm_matrix(
         dtype = jnp.dtype(jnp.float64)
 
     return make_sbp_norm_matrix(
-        jnp.array([0.5], dtype=dtype), n  # type: ignore[no-untyped-call]
+        n, jnp.array([0.5], dtype=dtype)  # type: ignore[no-untyped-call]
     )
 
 
@@ -492,10 +492,10 @@ def make_sbp_42_norm_matrix(
 
     # [Mattsson2012] Appendix A.2
     return make_sbp_norm_matrix(
+        n,
         jnp.array(  # type: ignore[no-untyped-call]
             [17 / 48, 59 / 48, 43 / 48, 49 / 48], dtype=dtype
         ),
-        n,
     )
 
 
@@ -533,7 +533,7 @@ def make_sbp_42_second_derivative_s_matrix(
     # [Mattsson2012] Appendix A.2
     return make_sbp_banded_matrix(
         n,
-        jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
+        jnp.array([0], dtype=dtype),  # type: ignore[no-untyped-call]
         jnp.array(  # type: ignore[no-untyped-call]
             [[-11 / 6, 3, -3 / 2, 1 / 3]], dtype=dtype
         ),
@@ -552,6 +552,7 @@ def make_sbp_42_second_derivative_b_matrices(
     B34 = B34.at[0].set(b[0])
     B34 = B34.at[-1].set(b[-1])
 
+    B34 = jnp.diag(B34)  # type: ignore[no-untyped-call]
     B44 = jnp.diag(b)  # type: ignore[no-untyped-call]
 
     return B34, B44
@@ -572,7 +573,7 @@ def make_sbp_42_second_derivative_d_matrices(
                 [-1, 3, -3, 1, 0, 0],
                 [-1, 3, -3, 1, 0, 0],
                 [
-                    -185893 / 185893,
+                    -185893 / 301051,
                     79000249461 / 54642863857,
                     -33235054191 / 54642863857,
                     -36887526683 / 54642863857,
@@ -584,17 +585,19 @@ def make_sbp_42_second_derivative_d_matrices(
         ),
     )
 
+    d44 = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            [-1, -4, 6, -4, 1],
+            [-1, -4, 6, -4, 1],
+            [-1, -4, 6, -4, 1],
+        ],
+        dtype=dtype,
+    )
     D44 = make_sbp_banded_matrix(
         n,
         jnp.array([1, -4, 6, -4, 1], dtype=dtype),  # type: ignore[no-untyped-call]
-        jnp.array(  # type: ignore[no-untyped-call]
-            [
-                [-1, -4, 6, -4, 1],
-                [-1, -4, 6, -4, 1],
-                [-1, -4, 6, -4, 1],
-            ],
-            dtype=dtype,
-        ),
+        d44,
+        d44,
     )
 
     return (D34, D44)
@@ -620,13 +623,12 @@ def make_sbp_42_second_derivative_c_matrices(
         ),
     )
 
+    c44 = jnp.array(  # type: ignore[no-untyped-call]
+        [[0, 0, 1644330 / 301051, 156114 / 181507, 1]],
+        dtype=dtype,
+    )
     C44 = make_sbp_banded_matrix(
-        n,
-        jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
-        jnp.array(  # type: ignore[no-untyped-call]
-            [[0, 0, 1644330 / 301051, 156114 / 181507, 1]],
-            dtype=dtype,
-        ),
+        n, jnp.array([1], dtype=dtype), c44, c44[::-1]  # type: ignore[no-untyped-call]
     )
 
     return C34, C44
