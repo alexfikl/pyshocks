@@ -34,6 +34,7 @@ Data
 .. autofunction:: velocity_sign
 .. autofunction:: ex_constant_velocity_field
 .. autofunction:: ic_sine
+.. autofunction:: ic_sine_sine
 """
 
 from typing import Any, Dict, Optional, Tuple, Type
