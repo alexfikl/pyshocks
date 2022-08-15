@@ -7,6 +7,8 @@
 Schemes
 ^^^^^^^
 
+.. class:: SchemeT
+
 .. autoclass:: SchemeBase
     :no-show-inheritance:
 .. autoclass:: CombineScheme
@@ -45,7 +47,7 @@ Boundary Conditions
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TypeVar
 
 import jax.numpy as jnp
 
@@ -117,8 +119,11 @@ class SchemeBase:
         raise NotImplementedError
 
 
+SchemeT = TypeVar("SchemeT", bound=SchemeBase)
+
+
 @singledispatch
-def bind(scheme: SchemeBase, grid: Grid, bc: "Boundary") -> SchemeBase:
+def bind(scheme: SchemeT, grid: Grid, bc: "Boundary") -> SchemeT:
     """Binds the scheme to the given grid and boundary conditions.
 
     This method is mean to allow initialization of a numerical scheme based on

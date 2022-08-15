@@ -2,12 +2,21 @@
 # SPDX-License-Identifier: MIT
 
 """
+Weighted Essentially Non-Oscillatory (WENO) Reconstruction
+----------------------------------------------------------
+
 .. autofunction:: weno_smoothness
 .. autofunction:: weno_reconstruct
+
+WENO-JS
+^^^^^^^
 
 .. autofunction:: weno_js_32_coefficients
 .. autofunction:: weno_js_53_coefficients
 .. autofunction:: weno_js_weights
+
+ES-WENO
+^^^^^^^
 
 .. autofunction:: es_weno_weights
 .. autofunction:: es_weno_parameters
@@ -87,7 +96,7 @@ def weno_js_32_coefficients(
 
         \hat{u}_{i, m} = \sum u_{m, j} c_{i, j}.
 
-    Finally, the weights are given by::
+    Finally, the weights are given by
 
     .. math::
 

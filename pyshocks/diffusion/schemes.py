@@ -122,7 +122,9 @@ class SBPSAT(FiniteDifferenceScheme):
 
 
 @bind.register(SBPSAT)
-def _bind_diffusion_sbp(scheme: SBPSAT, grid: UniformGrid, bc: Boundary) -> "SBPSAT":
+def _bind_diffusion_sbp(  # type: ignore[misc]
+    scheme: SBPSAT, grid: UniformGrid, bc: Boundary
+) -> SBPSAT:
     from pyshocks.scalar import SATBoundary
 
     assert isinstance(grid, UniformGrid)
