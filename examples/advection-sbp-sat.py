@@ -2,29 +2,36 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
+from functools import partial
 
 import jax
 import jax.numpy as jnp
 
 from pyshocks import (
     make_uniform_point_grid,
+    bind,
     apply_operator,
     predict_timestep,
 )
-from pyshocks import advection, get_logger
+from pyshocks import advection, sbp, get_logger
+from pyshocks.scalar import make_sat_boundary
 
-logger = get_logger("advection-sbp")
+logger = get_logger("advection-sbp-sat")
+
+
+def sine_wave(t: float, x: jnp.ndarray, *, k: int = 1) -> jnp.ndarray:
+    return jnp.sin(2.0 * jnp.pi * k * (t + 1) * x)
 
 
 def main(
+    sbp_op_name: str,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
     b: float = +1.0,
-    n: int = 256,
-    tfinal: float = 1.0,
+    n: int = 512,
+    tfinal: float = 3.0,
     theta: float = 1.0,
-    example_name: str = "sign",
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
@@ -39,19 +46,21 @@ def main(
     """
     # {{{ setup
 
-    from pyshocks.scalar import make_sat_boundary
-
+    # set up grid
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
 
-    velocity = jnp.ones_like(grid.x)  # type: ignore
-    scheme = advection.SBPSAT21(rec=None, velocity=velocity)
+    # set up user data
+    velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
+    func = partial(sine_wave, k=1)
+    u0 = func(0.0, grid.x)
 
-    boundary = make_sat_boundary(
-        ga=lambda t: jnp.sin(2.0 * jnp.pi * (1 - t)), gb=lambda t: 0.0
-    )
+    # set up boundary conditions
+    boundary = make_sat_boundary(ga=lambda t: func(t, grid.a), gb=lambda t: 0.0)
 
-    u0 = jnp.zeros_like(grid.x)  # type: ignore
-    u0 = jnp.sin(2.0 * jnp.pi * grid.x)
+    # set up scheme
+    op = sbp.make_operator_from_name(sbp_op_name)
+    scheme = advection.SBPSAT(rec=None, op=op, velocity=velocity)
+    scheme = bind(scheme, grid, boundary)
 
     # }}}
 
@@ -101,7 +110,8 @@ def main(
     for event in timestepping.step(method, u0, tfinal=tfinal):
         if verbose:
             umax = jnp.max(jnp.abs(event.u[s]))
-            logger.info("%s umax %.5e", event, umax)
+            usqr = jnp.sqrt(event.u[s] @ (scheme.P * event.u[s]))
+            logger.info("%s umax %.5e usqr %.5e", event, umax, usqr)
 
         if interactive:
             ln1.set_ydata(event.u[s])
@@ -124,7 +134,7 @@ def main(
         ax.set_ylabel("$u$")
         ax.grid(True)
 
-        fig.savefig(outdir / f"advection_{scheme.name}_{example_name}_{n:05d}")
+        fig.savefig(outdir / f"advection_{scheme.name}_{n:05d}")
         plt.close(fig)
 
     # }}}
@@ -134,6 +144,13 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-s",
+        "--sbp",
+        default="sbp21",
+        type=str.lower,
+        choices=sbp.operator_ids(),
+    )
     parser.add_argument("-n", "--numcells", type=int, default=256)
     parser.add_argument("--interactive", action="store_true")
     parser.add_argument(
@@ -146,6 +163,7 @@ if __name__ == "__main__":
     set_recommended_matplotlib()
 
     main(
+        sbp_op_name=args.sbp,
         n=args.numcells,
         outdir=args.outdir,
         interactive=args.interactive,

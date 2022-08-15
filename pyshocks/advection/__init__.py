@@ -26,7 +26,6 @@ Schemes
 .. autoclass:: ESWENO32
 
 .. autoclass:: SBPSAT
-.. autoclass:: SBPSAT21
 
 .. class:: Upwind
 
@@ -45,7 +44,6 @@ from pyshocks.advection.schemes import (
     Godunov,
     ESWENO32,
     SBPSAT,
-    SBPSAT21,
 )
 
 # NOTE: just providing an alias for common usage
@@ -56,6 +54,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "godunov": Godunov,
     "upwind": Godunov,
     "esweno32": ESWENO32,
+    "sbp": SBPSAT,
 }
 
 
@@ -93,7 +92,6 @@ __all__ = (
     "Upwind",
     "ESWENO32",
     "SBPSAT",
-    "SBPSAT21",
     "scheme_ids",
     "make_scheme_from_name",
 )

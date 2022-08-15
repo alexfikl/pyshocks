@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import jax.numpy as jnp
 
@@ -33,7 +33,7 @@ class Scheme(SchemeBase):
     .. attribute:: diffusivity
     """
 
-    diffusivity: Optional[jnp.ndarray]
+    diffusivity: jnp.ndarray
 
 
 @predict_timestep.register(Scheme)

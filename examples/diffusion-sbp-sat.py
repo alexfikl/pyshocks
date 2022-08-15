@@ -16,7 +16,7 @@ from pyshocks import (
 from pyshocks import diffusion, sbp, get_logger
 from pyshocks.scalar import make_sat_boundary
 
-logger = get_logger("advection-sbp")
+logger = get_logger("diffusion-sbp-sat")
 
 
 def main(

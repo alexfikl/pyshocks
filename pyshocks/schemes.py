@@ -23,6 +23,10 @@ Schemes
 Finite Volume Schemes
 ~~~~~~~~~~~~~~~~~~~~~
 
+Finite volume schemes work with the integral (weak) form of a PDE. They use
+cell-averaged values (usually located at cell centers) as the main
+unknowns.
+
 .. autoclass:: ConservationLawScheme
 .. autoclass:: CombineConservationLawScheme
 
@@ -31,6 +35,9 @@ Finite Volume Schemes
 
 Finite Difference Schemes
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Finite difference schemes work with the differential (strong) form of a PDE.
+They use point values (usually located at cell faces) as the main unknowns.
 
 Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^

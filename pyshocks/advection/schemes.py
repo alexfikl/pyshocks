@@ -2,18 +2,26 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import jax.numpy as jnp
 
 from pyshocks import (
     Grid,
+    UniformGrid,
     SchemeBase,
     FiniteVolumeSchemeBase,
     FiniteDifferenceSchemeBase,
     Boundary,
 )
-from pyshocks import apply_operator, numerical_flux, predict_timestep
+from pyshocks import (
+    bind,
+    apply_operator,
+    numerical_flux,
+    predict_timestep,
+    evaluate_boundary,
+)
+from pyshocks import sbp
 
 
 # {{{ base
@@ -41,10 +49,7 @@ class Scheme(SchemeBase):
     .. automethod:: __init__
     """
 
-    # NOTE: this is Optional just for mypy, but should never be `None` in practice
-    # FIXME: we want this to be a function so that we can evaluate it at
-    # (t, x) every time
-    velocity: Optional[jnp.ndarray]
+    velocity: jnp.ndarray
 
 
 @predict_timestep.register(Scheme)
@@ -56,6 +61,20 @@ def _predict_timestep_advection(
     # NOTE: keep in sync with pyshocks.continuity.schemes.predict_timestep
     amax = jnp.max(jnp.abs(scheme.velocity[grid.i_]))
     return grid.dx_min / amax
+
+
+@apply_operator.register(Scheme)
+def _apply_operator_advection(
+    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert scheme.velocity is not None
+
+    from pyshocks import apply_boundary
+
+    u = apply_boundary(bc, grid, t, u)
+    f = numerical_flux(scheme, grid, t, u)
+
+    return -scheme.velocity * (f[1:] - f[:-1]) / grid.dx
 
 
 @dataclass(frozen=True)
@@ -74,20 +93,6 @@ class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
 
     .. automethod:: __init__
     """
-
-
-@apply_operator.register(Scheme)
-def _apply_operator_advection(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    assert scheme.velocity is not None
-
-    from pyshocks import apply_boundary
-
-    u = apply_boundary(bc, grid, t, u)
-    f = numerical_flux(scheme, grid, t, u)
-
-    return -scheme.velocity * (f[1:] - f[:-1]) / grid.dx
 
 
 # }}}
@@ -198,50 +203,59 @@ def _apply_derivative_burgers_esweno32(
 
 @dataclass(frozen=True)
 class SBPSAT(FiniteDifferenceScheme):
-    Q: ClassVar[jnp.ndarray]
-    H: ClassVar[jnp.ndarray]
+    op: sbp.SBPOperator
 
+    P: ClassVar[jnp.ndarray]
+    D1: ClassVar[jnp.ndarray]
 
-@dataclass(frozen=True)
-class SBPSAT21(SBPSAT):
-    def __post_init__(self) -> None:
-        from pyshocks import sbp
-
-        if self.velocity is not None:
-            (n,) = self.velocity.shape
-            object.__setattr__(self, "Q", sbp.make_sbp_21_first_derivative_q_matrix(n))
-            object.__setattr__(self, "H", sbp.make_sbp_21_norm_matrix(n))
+    @property
+    def name(self) -> str:
+        return f"{type(self).__name__}_{type(self.op).__name__}".lower()
 
     @property
     def order(self) -> int:
-        return 1
+        return self.op.boundary_order
 
     @property
     def stencil_width(self) -> int:
-        return 1
+        return 0
 
 
-@apply_operator.register(SBPSAT21)
-def _apply_operator_sbp_sat_21(
-    scheme: SBPSAT21, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+@bind.register(SBPSAT)
+def _bind_advection_sbp(  # type: ignore[misc]
+    scheme: SBPSAT, grid: UniformGrid, bc: Boundary
+) -> SBPSAT:
     from pyshocks.scalar import SATBoundary
 
-    assert u.shape == grid.x.shape
+    assert isinstance(grid, UniformGrid)
     assert isinstance(bc, SATBoundary)
     assert scheme.velocity is not None
 
-    from pyshocks import evaluate_boundary
+    P = sbp.sbp_norm_matrix(scheme.op, grid)
+    D1 = sbp.sbp_first_derivative_matrix(scheme.op, grid)
 
-    assert bc.left is not None and bc.right is not None
-    ua = evaluate_boundary(bc.left, grid, t, u)
-    ub = evaluate_boundary(bc.right, grid, t, u)
+    # FIXME: make these into sparse matrices
+    object.__setattr__(scheme, "P", P)
+    object.__setattr__(scheme, "D1", D1)
 
-    ap = jnp.maximum(+jnp.sign(scheme.velocity), 0.0)
-    am = jnp.maximum(-jnp.sign(scheme.velocity), 0.0)
+    return scheme
 
-    hinv = jnp.diag(1 / (scheme.H * grid.dx))  # type: ignore[no-untyped-call]
-    return scheme.velocity * (hinv @ (-scheme.Q @ u + am * ub - ap * ua))
+
+@apply_operator.register(SBPSAT)
+def _apply_operator_sbp_sat_21(
+    scheme: SBPSAT, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.scalar import SATBoundary
+
+    assert isinstance(bc, SATBoundary)
+
+    assert bc.left is not None
+    ga = (scheme.velocity[0] > 0) * evaluate_boundary(bc.left, grid, t, u)
+
+    assert bc.right is not None
+    gb = (scheme.velocity[-1] < 0) * evaluate_boundary(bc.right, grid, t, u)
+
+    return -scheme.velocity * (scheme.D1 @ u) - (ga + gb) / scheme.P
 
 
 # }}}
