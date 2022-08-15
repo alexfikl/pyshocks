@@ -14,7 +14,13 @@ from pyshocks import (
     FiniteDifferenceSchemeBase,
     ConservationLawScheme,
 )
-from pyshocks import apply_operator, numerical_flux, predict_timestep, evaluate_boundary
+from pyshocks import (
+    bind,
+    apply_operator,
+    numerical_flux,
+    predict_timestep,
+    evaluate_boundary,
+)
 from pyshocks import sbp
 
 
@@ -88,20 +94,6 @@ def _numerical_flux_diffusion_centered_scheme(
 # {{{ SBP-SAT
 
 
-def prepare_sbp_for_grid(scheme: "SBPSAT", grid: UniformGrid) -> "SBPSAT":
-    assert isinstance(grid, UniformGrid)
-    assert scheme.diffusivity is not None
-
-    P = sbp.sbp_norm_matrix(scheme.op, grid)
-    D2 = sbp.sbp_second_derivative_matrix(scheme.op, grid, scheme.diffusivity)
-
-    # FIXME: make these into sparse matrices
-    object.__setattr__(scheme, "P", P)
-    object.__setattr__(scheme, "D2", D2)
-
-    return scheme
-
-
 @dataclass(frozen=True)
 class SBPSAT(FiniteDifferenceScheme):
     """
@@ -129,15 +121,28 @@ class SBPSAT(FiniteDifferenceScheme):
         return 0
 
 
+@bind.register(SBPSAT)
+def _bind_diffusion_sbp(scheme: SBPSAT, grid: UniformGrid, bc: Boundary) -> "SBPSAT":
+    from pyshocks.scalar import SATBoundary
+
+    assert isinstance(grid, UniformGrid)
+    assert isinstance(bc, SATBoundary)
+    assert scheme.diffusivity is not None
+
+    P = sbp.sbp_norm_matrix(scheme.op, grid)
+    D2 = sbp.sbp_second_derivative_matrix(scheme.op, grid, scheme.diffusivity)
+
+    # FIXME: make these into sparse matrices
+    object.__setattr__(scheme, "P", P)
+    object.__setattr__(scheme, "D2", D2)
+
+    return scheme
+
+
 @apply_operator.register(SBPSAT)
 def _apply_operator_diffusion_sbp(
     scheme: SBPSAT, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    from pyshocks.scalar import SATBoundary
-
-    assert scheme.diffusivity is not None
-    assert isinstance(bc, SATBoundary)
-
     gb = evaluate_boundary(bc, grid, t, u)
     return scheme.D2 @ u - gb / scheme.P
 

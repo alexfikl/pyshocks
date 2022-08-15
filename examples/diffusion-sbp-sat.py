@@ -9,10 +9,12 @@ import jax.numpy as jnp
 
 from pyshocks import (
     make_uniform_point_grid,
+    bind,
     apply_operator,
     predict_timestep,
 )
 from pyshocks import diffusion, sbp, get_logger
+from pyshocks.scalar import make_sat_boundary
 
 logger = get_logger("advection-sbp")
 
@@ -40,26 +42,23 @@ def main(
     """
     # {{{ setup
 
-    from pyshocks.scalar import make_sat_boundary
-
+    # set up grid
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
 
-    from pyshocks.diffusion.schemes import prepare_sbp_for_grid
-
+    # set up user data
     diffusivity = jnp.ones_like(grid.x)  # type: ignore
-    op = sbp.make_operator_from_name(sbp_op_name)
-
-    scheme = diffusion.SBPSAT(rec=None, op=op, diffusivity=diffusivity)
-    scheme = prepare_sbp_for_grid(scheme, grid)
-
-    from pyshocks.diffusion import ex_expansion
-
-    func = partial(ex_expansion, grid, diffusivity=diffusivity[0])
+    func = partial(diffusion.ex_expansion, grid, diffusivity=diffusivity[0])
     u0 = func(0.0, grid.x)
 
+    # set up boundary conditions
     boundary = make_sat_boundary(
         ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
     )
+
+    # set up scheme
+    op = sbp.make_operator_from_name(sbp_op_name)
+    scheme = diffusion.SBPSAT(rec=None, op=op, diffusivity=diffusivity)
+    scheme = bind(scheme, grid, boundary)
 
     # }}}
 

@@ -11,6 +11,7 @@ Schemes
     :no-show-inheritance:
 .. autoclass:: CombineScheme
 
+.. autofunction:: bind
 .. autofunction:: apply_operator
 .. autofunction:: predict_timestep
 
@@ -114,6 +115,24 @@ class SchemeBase:
             return self.rec.stencil_width
 
         raise NotImplementedError
+
+
+@singledispatch
+def bind(scheme: SchemeBase, grid: Grid, bc: "Boundary") -> SchemeBase:
+    """Binds the scheme to the given grid and boundary conditions.
+
+    This method is mean to allow initialization of a numerical scheme based on
+    the grid, e.g. for caching data that is reused at every call to
+    :func:`apply_operator`. In general, caching cannot be done on-demand as
+    :func:`jax.jit` does not allow leaking values.
+
+    :returns: a new :class:`SchemeBase` with the same parameters. If no changes
+        are required, the same scheme is returned.
+    """
+    if isinstance(scheme, SchemeBase):
+        return scheme
+
+    raise NotImplementedError(type(scheme).__name__)
 
 
 @singledispatch
