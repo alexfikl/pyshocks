@@ -2,8 +2,7 @@ PYTHON?=python
 
 all: flake8 pylint
 
-test:
-	$(PYTHON) -m pytest -rswx -v -s --durations=25
+# {{{ linting
 
 black:
 	$(PYTHON) -m black --safe --target-version py38 pyshocks tests examples
@@ -29,9 +28,19 @@ reuse:
 	@reuse lint
 	@echo -e "\e[1;32mREUSE compliant!\e[0m"
 
+# }}}
+
+# {{{ testing
+
 pip-install:
 	$(PYTHON) -m pip install --upgrade pip numpy
 	$(PYTHON) -m pip install -e '.[dev,pyweno]'
+
+docs:
+	(cd docs; rm -rf _build; make html SPHINXOPTS="-W --keep-going -n")
+
+test:
+	$(PYTHON) -m pytest -rswx -v -s --durations=25
 
 run-examples:
 	@for ex in $$(find examples -name "*.py"); do \
@@ -39,6 +48,11 @@ run-examples:
 		$(PYTHON) "$${ex}"; \
 		sleep 1; \
 	done
+
+# }}}
+
+view:
+	xdg-open docs/_build/html/index.html
 
 ctags:
 	ctags --recurse=yes \
@@ -48,7 +62,4 @@ ctags:
 		--python-kinds=-i \
 		--language-force=python
 
-clean:
-	find . -name "*.png" -exec rm -rf {} +
-
-.PHONY: all black flake8 pylint clean ctags pip-install
+.PHONY: all docs view black flake8 pylint clean ctags pip-install

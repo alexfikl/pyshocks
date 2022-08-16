@@ -16,6 +16,7 @@ from pyshocks.grid import (
     rnorm,
 )
 from pyshocks.schemes import (
+    SchemeT,
     SchemeBase,
     FiniteVolumeSchemeBase,
     FiniteDifferenceSchemeBase,
@@ -74,6 +75,7 @@ __all__ = (
     "UniformGrid",
     "make_uniform_cell_grid",
     "make_uniform_point_grid",
+    "SchemeT",
     "SchemeBase",
     "CombineScheme",
     "FiniteVolumeSchemeBase",
