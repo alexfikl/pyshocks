@@ -201,9 +201,9 @@ def _numerical_flux_burgers_engquist_osher(
 class ESWENO32(FiniteVolumeScheme):
     r"""Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_.
 
-    While it is possible to use the :class:`~pyshocks.reconstruction.ESWENO32`
-    reconstruction with other schemes, this version also adds the required
-    diffusive parts to ensure energy stability.
+    This scheme requires the :class:`~pyshocks.reconstruction.ESWENO32`
+    reconstruction. It adds a diffusive flux to ensure the energy stability
+    of the method, as described in [Yamaleev2009]_.
     """
 
     def __post_init__(self) -> None:

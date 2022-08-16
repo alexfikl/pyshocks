@@ -15,6 +15,123 @@ logger = get_logger("test_utils")
 set_recommended_matplotlib()
 
 
+# {{{ test_sbp_matrices
+
+
+@pytest.mark.parametrize("order", ["21", "42"])
+def test_sbp_matrices(order: int, visualize: bool = False) -> None:
+    from pyshocks import sbp
+
+    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=128, nghosts=0)
+    n = grid.x.size
+    dtype = grid.x.dtype
+    dx = grid.dx_min
+
+    # {{{ P
+
+    P = getattr(sbp, f"make_sbp_{order}_norm_matrix")(n, dtype=dtype)
+    assert P.shape == (n,)
+    assert P.dtype == dtype
+
+    # }}}
+
+    # {{{ Q
+
+    B = sbp.make_sbp_boundary_matrix(n, dtype=dtype)
+    assert B.shape == (n, n)
+    assert B.dtype == dtype
+
+    Q = getattr(sbp, f"make_sbp_{order}_first_derivative_q_matrix")(n, dtype=dtype)
+    assert Q.shape == (n, n)
+    assert Q.dtype == dtype
+    assert jnp.linalg.norm(Q.T + Q - B) < 1.0e-15
+
+    # }}}
+
+    # {{{ R
+
+    b = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
+    R = getattr(sbp, f"make_sbp_{order}_second_derivative_r_matrix")(b, dx, dtype=dtype)
+    assert R.shape == (n, n)
+    assert R.dtype == dtype
+    assert jnp.linalg.norm(R - R.T) < 1.0e-8
+
+    s, _ = jnp.linalg.eig(R)  # type: ignore[no-untyped-call]
+    if visualize:
+        import matplotlib.pyplot as mp
+
+        fig = mp.figure()
+        ax = fig.gca()
+
+        ax.plot(jnp.real(s), jnp.imag(s), "o")
+        ax.set_xlabel(r"$\lambda_r$")
+        ax.set_ylabel(r"$\lambda_i$")
+
+        fig.savefig(f"test_sbp_matrices_rb_{order}_eigs")
+        fig.clf()
+
+    assert jnp.all(jnp.real(s)) > 0.0
+
+    # }}}
+
+    # {{{ P dx
+
+    op = getattr(sbp, f"SBP{order}")()
+    P = sbp.sbp_norm_matrix(op, grid)
+    assert P.shape == (n,)
+
+    # }}}
+
+    # {{{ D1
+
+    D1 = sbp.sbp_first_derivative_matrix(op, grid)
+    assert D1.shape == (n, n)
+    assert D1.dtype == dtype
+    assert jnp.linalg.norm(jnp.sum(D1, axis=1)) < 1.0e-13
+
+    s, _ = jnp.linalg.eig(D1)  # type: ignore[no-untyped-call]
+    if visualize:
+        ax = fig.gca()
+
+        ax.plot(jnp.real(s), jnp.imag(s), "o")
+        ax.set_xlabel(r"$\lambda_r$")
+        ax.set_ylabel(r"$\lambda_i$")
+
+        fig.savefig(f"test_sbp_matrices_d1_{order}_eigs")
+        fig.clf()
+
+    assert jnp.linalg.norm(jnp.real(s)) < 1.0
+    assert jnp.linalg.norm(jnp.imag(s)) > 1.0
+
+    # }}}
+
+    # {{{ D2
+
+    D2 = sbp.sbp_second_derivative_matrix(op, grid, 1.0)
+    assert D2.shape == (n, n)
+    assert D2.dtype == dtype
+
+    s, _ = jnp.linalg.eig(D2)  # type: ignore[no-untyped-call]
+    if visualize:
+        ax = fig.gca()
+        ax.plot(jnp.real(s), jnp.imag(s), "o")
+        ax.set_xlabel(r"$\lambda_r$")
+        ax.set_ylabel(r"$\lambda_i$")
+
+        fig.savefig(f"test_sbp_matrices_d2_{order}_eigs")
+        fig.clf()
+
+    # assert jnp.all(jnp.real(s) < 0.0)
+
+    # }}}
+
+    if visualize:
+        mp.close(fig)
+
+
+# }}}
+
+
 # {{{ test_ss_weno_burgers_matrices
 
 

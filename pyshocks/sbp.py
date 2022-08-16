@@ -291,22 +291,19 @@ def _sbp_21_second_derivative_matrix(
     invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
     P = jnp.diag(P)  # type: ignore[no-untyped-call]
 
-    # get R matrix
-    (B22,) = make_sbp_21_second_derivative_b_matrices(b, dtype=dtype)
-    (D22,) = make_sbp_21_second_derivative_d_matrices(n, dtype=dtype)
-    (C22,) = make_sbp_21_second_derivative_c_matrices(n, dtype=dtype)
-    R = dx**3 / 4 * D22.T @ C22 @ B22 @ D22
+    # get R matrix ([Mattsson2012] Equation 8)
+    R = make_sbp_21_second_derivative_r_matrix(b, dx, dtype=dtype)
 
-    # get Bbar matrix
-    B = B22
-    Bbar = jnp.zeros_like(B)  # type: ignore[no-untyped-call]
-    Bbar = Bbar.at[0, 0].set(-B[0, 0])
-    Bbar = Bbar.at[-1, -1].set(B[-1, -1])
+    # get Bbar matrix ([Mattsson2012] Definition 2.3)
+    Bbar = jnp.zeros((n, n), dtype=dtype)  # type: ignore[no-untyped-call]
+    Bbar = Bbar.at[0, 0].set(-b[0])
+    Bbar = Bbar.at[-1, -1].set(b[-1])
 
     # get S matrix
-    S = make_sbp_21_second_derivative_s_matrix(n, dtype=dtype)
+    S = make_sbp_21_second_derivative_s_matrix(n, dx, dtype=dtype)
 
-    # put it all together
+    # put it all together ([Mattsson2012] Definition 2.4)
+    B = jnp.diag(b)  # type: ignore[no-untyped-call]
     M = D.T @ P @ B @ D + R
 
     return invP @ (-M + Bbar @ S)
@@ -346,8 +343,22 @@ def make_sbp_21_first_derivative_q_matrix(
     )
 
 
+def make_sbp_21_second_derivative_r_matrix(
+    b: jnp.ndarray, dx: float, *, dtype: Optional["jnp.dtype[Any]"] = None
+) -> jnp.ndarray:
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
+    n = b.size
+    (B22,) = make_sbp_21_second_derivative_b_matrices(b, dtype=dtype)
+    (D22,) = make_sbp_21_second_derivative_d_matrices(n, dtype=dtype)
+    (C22,) = make_sbp_21_second_derivative_c_matrices(n, dtype=dtype)
+
+    return dx**3 / 4 * D22.T @ C22 @ B22 @ D22
+
+
 def make_sbp_21_second_derivative_s_matrix(
-    n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
+    n: int, dx: float, *, dtype: Optional["jnp.dtype[Any]"] = None
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
@@ -396,7 +407,12 @@ def make_sbp_21_second_derivative_d_matrices(
     D22 = make_sbp_banded_matrix(
         n,
         jnp.array([1, -2, 1], dtype=dtype),  # type: ignore[no-untyped-call]
-        jnp.array([[1, -2, 1]], dtype=dtype),  # type: ignore[no-untyped-call]
+        jnp.array(  # type: ignore[no-untyped-call]
+            [[1, -2, 1], [1, -2, 1]], dtype=dtype
+        ),
+        jnp.array(  # type: ignore[no-untyped-call]
+            [[1, -2, 1], [1, -2, 1]], dtype=dtype
+        ),
     )
 
     return (D22,)
@@ -469,22 +485,19 @@ def _sbp_42_second_derivative_matrix(
     invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
     P = jnp.diag(P)  # type: ignore[no-untyped-call]
 
-    # get R matrix
-    B34, B44 = make_sbp_42_second_derivative_b_matrices(b, dtype=dtype)
-    D34, D44 = make_sbp_42_second_derivative_d_matrices(n, dtype=dtype)
-    C34, C44 = make_sbp_42_second_derivative_c_matrices(n, dtype=dtype)
-    R = dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
+    # get R matrix ([Mattsson2012] Equation 8)
+    R = make_sbp_42_second_derivative_r_matrix(b, dx, dtype=dtype)
 
-    # get Bbar matrix
-    B = B44
-    Bbar = jnp.zeros_like(B)  # type: ignore[no-untyped-call]
-    Bbar = Bbar.at[0, 0].set(-B[0, 0])
-    Bbar = Bbar.at[-1, -1].set(B[-1, -1])
+    # get Bbar matrix ([Mattsson2012] Definition 2.3)
+    Bbar = jnp.zeros((n, n), dtype=dtype)  # type: ignore[no-untyped-call]
+    Bbar = Bbar.at[0, 0].set(-b[0])
+    Bbar = Bbar.at[-1, -1].set(b[-1])
 
     # get S matrix
-    S = make_sbp_42_second_derivative_s_matrix(n, dtype=dtype)
+    S = make_sbp_42_second_derivative_s_matrix(n, dx, dtype=dtype)
 
-    # put it all together
+    # put it all together ([Mattsson2012] Definition 2.4)
+    B = jnp.diag(b)  # type: ignore[no-untyped-call]
     M = D.T @ P @ B @ D + R
 
     return invP @ (-M + Bbar @ S)
@@ -535,8 +548,24 @@ def make_sbp_42_first_derivative_q_matrix(
     )
 
 
+def make_sbp_42_second_derivative_r_matrix(
+    b: jnp.ndarray, dx: float, *, dtype: Optional["jnp.dtype[Any]"] = None
+) -> jnp.ndarray:
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
+    n = b.size
+    B34, B44 = make_sbp_42_second_derivative_b_matrices(b, dtype=dtype)
+    D34, D44 = make_sbp_42_second_derivative_d_matrices(n, dtype=dtype)
+    C34, C44 = make_sbp_42_second_derivative_c_matrices(n, dtype=dtype)
+
+    return (
+        dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
+    )
+
+
 def make_sbp_42_second_derivative_s_matrix(
-    n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
+    n: int, dx: float, *, dtype: Optional["jnp.dtype[Any]"] = None
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
@@ -580,7 +609,7 @@ def make_sbp_42_second_derivative_c_matrices(
         n,
         jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
         jnp.array(  # type: ignore[no-untyped-call]
-            [[0, 0, 163928591571 / 53268010936, 189284 / 185893, 1]],
+            [[0, 0, 163928591571 / 53268010936, 189284 / 185893, 1, 0]],
             dtype=dtype,
         ),
         jnp.array(  # type: ignore[no-untyped-call]
@@ -615,8 +644,8 @@ def make_sbp_42_second_derivative_d_matrices(
                 [-1, 3, -3, 1, 0, 0],
                 [-1, 3, -3, 1, 0, 0],
                 [
-                    -185893 / 301051,
-                    79000249461 / 54642863857,
+                    -185_893 / 301_051,
+                    79_000_249_461 / 54642863857,
                     -33235054191 / 54642863857,
                     -36887526683 / 54642863857,
                     26183621850 / 54642863857,
@@ -629,9 +658,9 @@ def make_sbp_42_second_derivative_d_matrices(
 
     d44 = jnp.array(  # type: ignore[no-untyped-call]
         [
-            [-1, -4, 6, -4, 1],
-            [-1, -4, 6, -4, 1],
-            [-1, -4, 6, -4, 1],
+            [1, -4, 6, -4, 1],
+            [1, -4, 6, -4, 1],
+            [1, -4, 6, -4, 1],
         ],
         dtype=dtype,
     )
