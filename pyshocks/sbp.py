@@ -683,11 +683,35 @@ def make_sbp_42_second_derivative_d_matrices(
 # }}}
 
 
+# {{{ SBP63
+
+
+@dataclass(frozen=True)
+class SBP64(SBPOperator):
+    """An SBP operator the is sixth-order accurate in the interior and
+    fourth-order accurate at the boundary.
+
+    For details, see Appendix A.1 in [Mattsson2012]_
+    """
+
+    @property
+    def order(self) -> int:
+        return 6
+
+    @property
+    def boundary_order(self) -> int:
+        return 4
+
+
+# }}}
+
+
 # {{{ make_operator_from_name
 
 _OPERATORS: Dict[str, Type[SBPOperator]] = {
     "sbp21": SBP21,
     "sbp42": SBP42,
+    "sbp64": SBP64,
 }
 
 
