@@ -250,10 +250,12 @@ def _apply_operator_sbp_sat_21(
     assert isinstance(bc, SATBoundary)
 
     assert bc.left is not None
-    ga = (scheme.velocity[0] > 0) * evaluate_boundary(bc.left, grid, t, u)
+    ga = evaluate_boundary(bc.left, grid, t, u)
+    ga = (scheme.velocity[0] > 0) * ga
 
     assert bc.right is not None
-    gb = (scheme.velocity[-1] < 0) * evaluate_boundary(bc.right, grid, t, u)
+    gb = evaluate_boundary(bc.right, grid, t, u)
+    gb = (scheme.velocity[-1] < 0) * gb
 
     return -scheme.velocity * (scheme.D1 @ u) - (ga + gb) / scheme.P
 
