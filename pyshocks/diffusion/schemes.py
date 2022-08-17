@@ -145,6 +145,8 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 def _apply_operator_diffusion_sbp(
     scheme: SBPSAT, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
+    # FIXME: these are not energy stable boundary conditions for the diffusion
+    # equation, see [Mattsson2004] Equation 16 for details
     gb = evaluate_boundary(bc, grid, t, u)
     return scheme.D2 @ u - gb / scheme.P
 
