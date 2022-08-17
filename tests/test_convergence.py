@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass
 from functools import partial
-from typing import List, Tuple
+from typing import List, Union
 
 from pyshocks import (
     SchemeBase,
@@ -31,6 +31,16 @@ set_recommended_matplotlib()
 
 
 @dataclass(frozen=True)
+class Result:
+    h_max: float
+    error: float
+
+    t: jnp.ndarray
+    energy: jnp.ndarray
+    tvd: jnp.ndarray
+
+
+@dataclass(frozen=True)
 class ConvergenceTestCase:
     scheme_name: str
 
@@ -45,6 +55,18 @@ class ConvergenceTestCase:
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
         raise NotImplementedError
+
+    def norm(
+        self,
+        scheme: SchemeBase,
+        grid: Grid,
+        u: jnp.ndarray,
+        *,
+        p: Union[int, float, str] = 1,
+    ) -> jnp.ndarray:
+        from pyshocks import norm
+
+        return norm(grid, u, p=p, weighted=True)
 
 
 @dataclass(frozen=True)
@@ -81,7 +103,7 @@ def evolve(
     b: float = 1.0,
     tfinal: float = 0.5,
     visualize: bool = False,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+) -> Result:
     if visualize:
         try:
             import matplotlib.pyplot as mp
@@ -104,10 +126,6 @@ def evolve(
 
     # {{{ time stepping
 
-    if visualize:
-        equation_name = scheme.__module__.split(".")[-2]
-        s = grid.i_
-
     from pyshocks import apply_operator
 
     @jax.jit
@@ -124,18 +142,34 @@ def evolve(
         checkpoint=None,
     )
 
+    t = [-1.0] * (maxit + 1)
+    energy = [-1.0] * (maxit + 1)
+    tvd = [-1.0] * (maxit + 1)
+
     u = u0
     for event in ts.step(stepper, u0, maxit=maxit):
         u = event.u
 
+        if visualize:
+            m = event.iteration
+            t[m] = event.t
+            energy[m] = case.norm(scheme, grid, event.u, p=2) ** 2
+            tvd[m] = case.norm(scheme, grid, event.u, p="tvd")
+
     # exact solution
     uhat = case.evaluate(grid, tfinal, grid.x)
+
+    t = jnp.array(t, dtype=u0.dtype)  # type: ignore[no-untyped-call]
+    energy = jnp.array(energy, dtype=u0.dtype)  # type: ignore[no-untyped-call]
+    tvd = jnp.array(tvd, dtype=u0.dtype)  # type: ignore[no-untyped-call]
 
     # }}}
 
     # {{{ plot
 
     if visualize:
+        s = grid.i_
+
         fig = mp.figure()
         ax = fig.gca()
 
@@ -145,7 +179,7 @@ def evolve(
         ax.set_xlabel("$x$")
         ax.legend()
 
-        filename = f"convergence_{equation_name}_{scheme.name}_{n:04}_solution"
+        filename = f"convergence_{case}_{n:04}_solution"
         fig.savefig(filename)
         fig.clf()
 
@@ -154,7 +188,7 @@ def evolve(
         ax.set_xlabel("$x$")
         ax.set_ylabel(r"$|u - \hat{u}|$")
 
-        filename = f"convergence_{equation_name}_{scheme.name}_{n:04}_error"
+        filename = f"convergence_{case}_{n:04}_error"
         fig.savefig(filename)
         fig.clf()
 
@@ -162,12 +196,10 @@ def evolve(
 
     # }}}
 
-    from pyshocks import rnorm
-
     h_max = jnp.max(jnp.diff(grid.f))
-    error = rnorm(grid, u, uhat, p=1)
+    error = case.norm(scheme, grid, u - uhat) / case.norm(scheme, grid, uhat)
 
-    return h_max, error
+    return Result(h_max=h_max, error=error, t=t, energy=energy, tvd=tvd)
 
 
 # }}}
@@ -179,7 +211,7 @@ def evolve(
 @dataclass(frozen=True)
 class BurgersTestCase(FiniteVolumeTestCase):
     def __str__(self) -> str:
-        return f"{self.scheme_name}_constant"
+        return f"burgers_{self.scheme_name}_constant"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_dirichlet_boundary
@@ -212,6 +244,7 @@ def test_burgers_convergence(
     a: float = -1.0,
     b: float = 1.0,
     tfinal: float = 1.0,
+    visualize: bool = False,
 ) -> None:
     from pyshocks import EOCRecorder
     from pyshocks.timestepping import predict_timestep_from_resolutions
@@ -219,11 +252,33 @@ def test_burgers_convergence(
     eoc = EOCRecorder(name=str(case))
     dt = predict_timestep_from_resolutions(a, b, resolutions, umax=10.0)
 
-    for n in resolutions:
-        h_max, error = evolve(case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal)
+    if visualize:
+        import matplotlib.pyplot as mp
 
-        eoc.add_data_point(h_max, error)
-        logger.info("n %3d h_max %.3e error %.6e", n, h_max, error)
+        fig0, fig1 = mp.figure(), mp.figure()
+        ax0, ax1 = fig0.gca(), fig1.gca()
+
+        ax0.set_xlabel("$t$")
+        ax0.set_ylabel(r"$\|u\|_P^2$")
+
+        ax1.set_xlabel("$t$")
+        ax1.set_ylabel("TV(u)")
+
+    for n in resolutions:
+        r = evolve(
+            case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal, visualize=visualize
+        )
+
+        eoc.add_data_point(r.h_max, r.error)
+        logger.info("n %3d h_max %.3e error %.6e", n, r.h_max, r.error)
+
+        if visualize:
+            ax0.plot(r.t, r.energy)
+            ax1.plot(r.t, r.tvd)
+
+    if visualize:
+        fig0.savefig(f"convergence_{case}_energy")
+        fig1.savefig(f"convergence_{case}_tvd")
 
     logger.info("\n%s", eoc)
     assert eoc.estimated_order >= order - 0.1
@@ -241,7 +296,7 @@ class AdvectionTestCase(FiniteVolumeTestCase):
     a: float = 1.0
 
     def __str__(self) -> str:
-        return f"{self.scheme_name}_{self.rec_name}"
+        return f"advection_{self.scheme_name}_{self.rec_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import PeriodicBoundary
@@ -276,7 +331,7 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
     a: float = 1.0
 
     def __str__(self) -> str:
-        return f"{self.scheme_name}_{self.sbp_name}"
+        return f"advection_{self.scheme_name}_{self.sbp_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_sat_boundary
@@ -300,6 +355,24 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
         u0 = partial(continuity.ic_sine_sine, grid)
         return continuity.ex_constant_velocity_field(t, x, a=self.a, u0=u0)
 
+    def norm(
+        self,
+        scheme: SchemeBase,
+        grid: Grid,
+        u: jnp.ndarray,
+        *,
+        p: Union[int, float, str] = 1,
+    ) -> jnp.ndarray:
+        from pyshocks import norm
+
+        assert isinstance(scheme, advection.SBPSAT)
+
+        if p == 1:
+            return jnp.sum(scheme.P * jnp.abs(u))
+        if p == 2:
+            return jnp.sqrt(u @ (scheme.P * u))
+        return norm(grid, u, p=p)
+
 
 @pytest.mark.parametrize(
     ("case", "order", "resolutions"),
@@ -322,20 +395,42 @@ def test_advection_convergence(
     a: float = -1.0,
     b: float = +1.0,
     tfinal: float = 1.0,
+    visualize: bool = False,
 ) -> None:
-
     from pyshocks import EOCRecorder
 
     eoc = EOCRecorder(name=str(case))
+
+    if visualize:
+        import matplotlib.pyplot as mp
+
+        fig0, fig1 = mp.figure(), mp.figure()
+        ax0, ax1 = fig0.gca(), fig1.gca()
+
+        ax0.set_xlabel("$t$")
+        ax0.set_ylabel(r"$\|u\|_P^2$")
+
+        ax1.set_xlabel("$t$")
+        ax1.set_ylabel("TV(u)")
 
     for n in resolutions:
         # NOTE: SSPRK33 is order dt^3, so this makes it dt^3 ~ dx^5
         dt = 8.0 * ((b - a) / n) ** (5.0 / 3.0)
 
-        h_max, error = evolve(case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal)
+        r = evolve(
+            case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal, visualize=visualize
+        )
 
-        eoc.add_data_point(h_max, error)
-        logger.info("n %3d h_max %.3e error %.6e", n, h_max, error)
+        eoc.add_data_point(r.h_max, r.error)
+        logger.info("n %3d h_max %.3e error %.6e", n, r.h_max, r.error)
+
+        if visualize:
+            ax0.plot(r.t, r.energy)
+            ax1.plot(r.t, r.tvd)
+
+    if visualize:
+        fig0.savefig(f"convergence_{case}_energy")
+        fig1.savefig(f"convergence_{case}_tvd")
 
     logger.info("\n%s", eoc)
     assert eoc.estimated_order >= order - 0.5
@@ -352,7 +447,7 @@ class DiffusionTestCase(FiniteVolumeTestCase):
     d: float = 1.0
 
     def __str__(self) -> str:
-        return f"{self.scheme_name}"
+        return f"diffusion_{self.scheme_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_dirichlet_boundary
@@ -382,7 +477,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
     d: float = 1.0
 
     def __str__(self) -> str:
-        return f"{self.scheme_name}_{self.sbp_name}"
+        return f"diffusion_{self.scheme_name}_{self.sbp_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
         from pyshocks.scalar import make_sat_boundary
@@ -405,6 +500,24 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
         return diffusion.ex_expansion(grid, t, x)
 
+    def norm(
+        self,
+        scheme: SchemeBase,
+        grid: Grid,
+        u: jnp.ndarray,
+        *,
+        p: Union[int, float, str] = 1,
+    ) -> jnp.ndarray:
+        from pyshocks import norm
+
+        assert isinstance(scheme, diffusion.SBPSAT)
+
+        if p == 1:
+            return jnp.sum(scheme.P * jnp.abs(u))
+        if p == 2:
+            return jnp.sqrt(u @ (scheme.P * u))
+        return norm(grid, u, p=p)
+
 
 @pytest.mark.parametrize(
     ("case", "order", "resolutions"),
@@ -422,18 +535,41 @@ def test_diffusion_convergence(
     b: float = 1.0,
     tfinal: float = 1.0,
     diffusivity: float = 1.0,
+    visualize: bool = False,
 ) -> None:
     from pyshocks.timestepping import predict_timestep_from_resolutions
     from pyshocks import EOCRecorder
 
     eoc = EOCRecorder(name=str(case))
-    dt = 0.5 * predict_timestep_from_resolutions(a, b, resolutions, umax=1.0, p=2)
+    dt = 0.25 * predict_timestep_from_resolutions(a, b, resolutions, umax=1.0, p=2)
+
+    if visualize:
+        import matplotlib.pyplot as mp
+
+        fig0, fig1 = mp.figure(), mp.figure()
+        ax0, ax1 = fig0.gca(), fig1.gca()
+
+        ax0.set_xlabel("$t$")
+        ax0.set_ylabel(r"$\|u\|_P^2$")
+
+        ax1.set_xlabel("$t$")
+        ax1.set_ylabel("TV(u)")
 
     for n in resolutions:
-        h_max, error = evolve(case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal)
+        r = evolve(
+            case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal, visualize=visualize
+        )
 
-        eoc.add_data_point(h_max, error)
-        logger.info("n %3d h_max %.3e error %.6e", n, h_max, error)
+        eoc.add_data_point(r.h_max, r.error)
+        logger.info("n %3d h_max %.3e error %.6e", n, r.h_max, r.error)
+
+        if visualize:
+            ax0.plot(r.t, r.energy)
+            ax1.plot(r.t, r.tvd)
+
+    if visualize:
+        fig0.savefig(f"convergence_{case}_energy")
+        fig1.savefig(f"convergence_{case}_tvd")
 
     logger.info("\n%s", eoc)
     assert eoc.estimated_order >= order - 0.1

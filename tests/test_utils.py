@@ -22,7 +22,8 @@ set_recommended_matplotlib()
 def test_sbp_matrices(order: int, visualize: bool = False) -> None:
     from pyshocks import sbp
 
-    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=128, nghosts=0)
+    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
+
     n = grid.x.size
     dtype = grid.x.dtype
     dx = grid.dx_min
@@ -54,7 +55,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
     R = getattr(sbp, f"make_sbp_{order}_second_derivative_r_matrix")(b, dx, dtype=dtype)
     assert R.shape == (n, n)
     assert R.dtype == dtype
-    assert jnp.linalg.norm(R - R.T) < 1.0e-8
+    assert jnp.linalg.norm(R - R.T) < 1.0e-6
 
     s, _ = jnp.linalg.eig(R)  # type: ignore[no-untyped-call]
     if visualize:
@@ -80,15 +81,48 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
     P = sbp.sbp_norm_matrix(op, grid)
     assert P.shape == (n,)
 
+    def dotp(x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
+        return x @ (P * y)
+
     # }}}
 
     # {{{ D1
 
+    logger.info("D1")
+
     D1 = sbp.sbp_first_derivative_matrix(op, grid)
     assert D1.shape == (n, n)
     assert D1.dtype == dtype
-    assert jnp.linalg.norm(jnp.sum(D1, axis=1)) < 1.0e-13
 
+    # check SBP property
+    v = jnp.cos(2.0 * jnp.pi * grid.x)
+    error = abs(dotp(v, D1 @ v) + dotp(D1 @ v, v) - v @ (B @ v))
+
+    logger.info("sbp error: %.12e", error)
+    assert error < 5.0e-14
+
+    # check order conditions
+    for i in range(op.order + 2):
+        dx_ref = i * grid.x ** max(0, i - 1)
+        dx_app = D1 @ (grid.x**i)
+
+        error_b = jnp.linalg.norm(dx_ref - dx_app)
+        error_i = jnp.linalg.norm(dx_ref[4:-4] - dx_app[4:-4])
+        logger.info(
+            "error %2d / %2d: %.12e %.12e", i, op.boundary_order, error_b, error_i
+        )
+
+        if i <= op.boundary_order:
+            assert error_b < 1.0e-13
+        else:
+            assert error_b > 1.0e-8
+
+        if i <= op.order:
+            assert error_i < 1.0e-13
+        else:
+            assert error_i > 1.0e-8
+
+    # check eigenvalues: should all be imaginary
     s, _ = jnp.linalg.eig(D1)  # type: ignore[no-untyped-call]
     if visualize:
         ax = fig.gca()
@@ -107,10 +141,24 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
 
     # {{{ D2
 
+    logger.info("D2")
+
     D2 = sbp.sbp_second_derivative_matrix(op, grid, 1.0)
     assert D2.shape == (n, n)
     assert D2.dtype == dtype
 
+    # check SBP property [Mattsson2004] Equation 10
+    S = getattr(sbp, f"make_sbp_{order}_second_derivative_s_matrix")(n, dx, dtype=dtype)
+    BS = B @ S
+    error = abs(
+        dotp(v, D2 @ v) + dotp(D2 @ v, v) + 2 * dotp(D1 @ v, D1 @ v) - 2 * v @ (BS @ v)
+    )
+
+    logger.info("sbp error: %.12e", error)
+    # FIXME: why is this so large?
+    assert error < 1.0e-6
+
+    # check eigenvalues: should all be negative
     s, _ = jnp.linalg.eig(D2)  # type: ignore[no-untyped-call]
     if visualize:
         ax = fig.gca()
@@ -121,7 +169,8 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
         fig.savefig(f"test_sbp_matrices_d2_{order}_eigs")
         fig.clf()
 
-    # assert jnp.all(jnp.real(s) < 0.0)
+    logger.info("max(eig): %.12e", jnp.max(jnp.real(s)))
+    assert jnp.all(jnp.real(s) < 5.0e-13)
 
     # }}}
 
