@@ -364,10 +364,13 @@ def make_sbp_21_second_derivative_s_matrix(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    return make_sbp_banded_matrix(
-        n,
-        jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
-        jnp.array([[-3 / 2, 2, -1 / 2]], dtype=dtype),  # type: ignore[no-untyped-call]
+    return (
+        make_sbp_banded_matrix(
+            n,
+            jnp.array([1], dtype=dtype),  # type: ignore[no-untyped-call]
+            jnp.array([[3 / 2, -2, 1 / 2]], dtype=dtype),  # type: ignore
+        )
+        / dx
     )
 
 
@@ -571,12 +574,15 @@ def make_sbp_42_second_derivative_s_matrix(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
-    return make_sbp_banded_matrix(
-        n,
-        jnp.array([0], dtype=dtype),  # type: ignore[no-untyped-call]
-        jnp.array(  # type: ignore[no-untyped-call]
-            [[-11 / 6, 3, -3 / 2, 1 / 3]], dtype=dtype
-        ),
+    return (
+        make_sbp_banded_matrix(
+            n,
+            jnp.array([0], dtype=dtype),  # type: ignore[no-untyped-call]
+            jnp.array(  # type: ignore[no-untyped-call]
+                [[11 / 6, -3, 3 / 2, -1 / 3]], dtype=dtype
+            ),
+        )
+        / dx
     )
 
 
