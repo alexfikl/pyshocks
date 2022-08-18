@@ -483,9 +483,9 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         return f"diffusion_{self.scheme_name}_{self.sbp_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
-        from pyshocks.scalar import make_sat_boundary
+        from pyshocks.scalar import make_diffusion_sat_boundary
 
-        return make_sat_boundary(
+        return make_diffusion_sat_boundary(
             ga=partial(self.evaluate, grid, x=grid.a),
             gb=partial(self.evaluate, grid, x=grid.b),
         )

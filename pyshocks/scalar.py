@@ -30,7 +30,7 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import ClassVar, Optional
 
 import jax.numpy as jnp
 
@@ -388,8 +388,8 @@ def make_sat_boundary(
     if gb is None:
         gb = ga
 
-    ba = OneSidedSATBoundary(side=-1, g=ga)
-    bb = OneSidedSATBoundary(side=+1, g=gb)
+    ba = OneSidedSATBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedSATBoundary(side=+1, g=gb, tau=1.0)
     return SATBoundary(left=ba, right=bb)
 
 
@@ -413,7 +413,7 @@ class OneSidedSATBoundary(OneSidedBoundary):
     """
 
     g: TemporalFunction
-    tau: float = 1.0
+    tau: float
 
     def __post_init__(self) -> None:
         assert self.tau >= 0.5
@@ -441,7 +441,50 @@ def _evaluate_boundary_sat(
 # }}}
 
 
-# {{{ SSWENO
+# {{{ Diffusion SAT boundary conditions
+
+
+def make_diffusion_sat_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> TwoSidedBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = OneSidedDiffusionSATBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedDiffusionSATBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=ba, right=bb)
+
+
+@dataclass(frozen=True)
+class OneSidedDiffusionSATBoundary(OneSidedSATBoundary):
+    """Implements the SAT boundary condition for the diffusion equation.
+
+    The boundary condition is described in [Mattsson2004]_ Equation 16. Note
+    that :class:`OneSidedSATBoundary` can also be used, but is only
+    energy stable if the derivative at the boundary vanishes.
+    """
+
+    S: ClassVar[jnp.ndarray]
+
+
+@evaluate_boundary.register(OneSidedDiffusionSATBoundary)
+def _evaluate_boundary_diffusion_sat(
+    bc: OneSidedDiffusionSATBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert grid.nghosts == 0
+    assert grid.x.shape == u.shape
+
+    i = grid.b_[bc.side]
+    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
+
+    Su = bc.S[i, :] @ u
+    return bc.tau * ((u[i] + Su) - bc.g(t)) * e_i
+
+
+# }}}
+
+
+# {{{ Burgers SAT boundary conditions
 
 
 def make_ss_weno_boundary(
@@ -450,8 +493,8 @@ def make_ss_weno_boundary(
     if gb is None:
         gb = ga
 
-    ba = OneSidedSSWENOBurgersBoundary(side=-1, g=ga)
-    bb = OneSidedSSWENOBurgersBoundary(side=+1, g=gb)
+    ba = OneSidedSSWENOBurgersBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedSSWENOBurgersBoundary(side=+1, g=gb, tau=1.0)
     return SSWENOBurgersBoundary(left=ba, right=bb)
 
 

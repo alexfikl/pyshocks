@@ -126,6 +126,26 @@ class SBPOperator:
 
 
 @singledispatch
+def sbp_matrix_from_name(op: SBPOperator, grid: UniformGrid, name: str) -> jnp.ndarray:
+    ids = f"{op.order}{op.boundary_order}"
+    n = grid.x.size
+    dtype = grid.x.dtype
+    dx = grid.dx_min
+
+    if name == "P":
+        func = globals()[f"make_sbp_{ids}_norm_matrix"]
+        return func(n, dtype=dtype)
+    if name == "Q":
+        func = globals()[f"make_sbp_{ids}_first_derivative_q_matrix"]
+        return func(n, dtype=dtype)
+    if name == "S":
+        func = globals()[f"make_sbp_{ids}_second_derivative_s_matrix"]
+        return func(n, dx, dtype=dtype)
+
+    raise ValueError(f"unknown SBP matrix name: '{name}'")
+
+
+@singledispatch
 def sbp_norm_matrix(op: SBPOperator, grid: UniformGrid) -> jnp.ndarray:
     """Construct the :math:`P` operator for and SBP approximation."""
     raise NotImplementedError(type(op).__name__)
