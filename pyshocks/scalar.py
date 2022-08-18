@@ -2,8 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 """
-Scalar Conservation Law Fluxes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Scalar Conservation Laws
+------------------------
+
+Fluxes
+^^^^^^
 
 These fluxes are based on the seminal work of [LeVeque2002]_.
 

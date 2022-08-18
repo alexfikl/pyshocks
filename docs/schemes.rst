@@ -5,8 +5,6 @@ Spatial Discretization
 
 .. automodule:: pyshocks.grid
 
-.. automodule:: pyshocks.scalar
-
 .. automodule:: pyshocks.limiters
 
 .. automodule:: pyshocks.reconstruction
@@ -14,3 +12,5 @@ Spatial Discretization
 .. automodule:: pyshocks.weno
 
 .. automodule:: pyshocks.sbp
+
+.. automodule:: pyshocks.scalar
