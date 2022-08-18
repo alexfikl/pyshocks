@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: MIT
 
 """
-Scalar Equation Helpers
-^^^^^^^^^^^^^^^^^^^^^^^
+Scalar Conservation Law Fluxes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These fluxes are based on the seminal work of [LeVeque2002]_.
 
@@ -15,17 +15,28 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autofunction:: scalar_flux_lax_friedrichs
 .. autofunction:: scalar_flux_engquist_osher
 
+Ghost Boundary Conditions
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. autoclass:: DirichletBoundary
 .. autoclass:: NeumannBoundary
 .. autoclass:: PeriodicBoundary
-.. autoclass:: OneSidedSATBoundary
-.. autoclass:: SATBoundary
-.. autoclass:: OneSidedSSWENOBurgersBoundary
-.. autoclass:: SSWENOBurgersBoundary
 
 .. autofunction:: make_dirichlet_boundary
 .. autofunction:: make_neumann_boundary
+
+Simultaneous-Approximation-Term (SAT) Boundary Conditions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: OneSidedSATBoundary
+.. autoclass:: OneSidedDiffusionSATBoundary
+.. autoclass:: SATBoundary
+
+.. autoclass:: OneSidedSSWENOBurgersBoundary
+.. autoclass:: SSWENOBurgersBoundary
+
 .. autofunction:: make_sat_boundary
+.. autofunction:: make_diffusion_sat_boundary
 .. autofunction:: make_ss_weno_boundary
 """
 
@@ -462,6 +473,11 @@ class OneSidedDiffusionSATBoundary(OneSidedSATBoundary):
     The boundary condition is described in [Mattsson2004]_ Equation 16. Note
     that :class:`OneSidedSATBoundary` can also be used, but is only
     energy stable if the derivative at the boundary vanishes.
+
+    .. [Mattsson2004] K. Mattsson, J. Nordström, *Summation by Parts Operators
+        for Finite Difference Approximations of Second Derivatives*,
+        Journal of Computational Physics, Vol. 199, pp. 503--540, 2004,
+        `DOI <http://dx.doi.org/10.1016/j.jcp.2004.03.001>`__.
     """
 
     S: ClassVar[jnp.ndarray]
