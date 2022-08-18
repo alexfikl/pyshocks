@@ -454,7 +454,7 @@ class SSWENO242(Reconstruction):
 
     Note that the scheme deteriorates to second-order in regions of strong
     gradients (and shocks) and boundaries. Boundaries are expected to be
-    implemented as described in [Fisher2013]_ to achive an entropy-stable
+    implemented as described in [Fisher2013]_ to achieve an entropy-stable
     scheme.
     """
 

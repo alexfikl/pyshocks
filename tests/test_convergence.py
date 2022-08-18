@@ -279,6 +279,8 @@ def test_burgers_convergence(
     if visualize:
         fig0.savefig(f"convergence_{case}_energy")
         fig1.savefig(f"convergence_{case}_tvd")
+        mp.close(fig0)
+        mp.close(fig1)
 
     logger.info("\n%s", eoc)
     assert eoc.estimated_order >= order - 0.1
@@ -430,6 +432,8 @@ def test_advection_convergence(
     if visualize:
         fig0.savefig(f"convergence_{case}_energy")
         fig1.savefig(f"convergence_{case}_tvd")
+        mp.close(fig0)
+        mp.close(fig1)
 
     logger.info("\n%s", eoc)
     assert eoc.estimated_order >= order - 0.5
@@ -521,10 +525,10 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
 @pytest.mark.parametrize(
     ("case", "order", "resolutions"),
     [
-        # (DiffusionTestCase("centered"), 2, list(range(80, 160 + 1, 16))),
+        (DiffusionTestCase("centered"), 2, list(range(80, 160 + 1, 16))),
         # NOTE: these schemes have order 2 p - 1
         (SATDiffusionTestCase("sbp", "sbp21"), 1, list(range(80, 160 + 1, 16))),
-        # (SATDiffusionTestCase("sbp", "sbp42"), 3, list(range(80, 160 + 1, 16))),
+        (SATDiffusionTestCase("sbp", "sbp42"), 3, list(range(80, 160 + 1, 16))),
     ],
 )
 def test_diffusion_convergence(
@@ -570,8 +574,22 @@ def test_diffusion_convergence(
     if visualize:
         fig0.savefig(f"convergence_{case}_energy")
         fig1.savefig(f"convergence_{case}_tvd")
+        mp.close(fig0)
+        mp.close(fig1)
 
     logger.info("\n%s", eoc)
+    if visualize:
+        from pyshocks.tools import visualize_eoc
+
+        visualize_eoc(
+            f"convergence_{case}",
+            eoc,
+            order,
+            abscissa=r"$\Delta x$",
+            ylabel="$Error$",
+            overwrite=True,
+        )
+
     assert eoc.estimated_order >= order - 0.1
 
 

@@ -22,7 +22,7 @@ set_recommended_matplotlib()
 def test_sbp_matrices(order: int, visualize: bool = False) -> None:
     from pyshocks import sbp
 
-    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
+    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=128, nghosts=0)
 
     n = grid.x.size
     dtype = grid.x.dtype

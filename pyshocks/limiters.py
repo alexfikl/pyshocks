@@ -60,7 +60,7 @@ class Limiter:
     .. attribute:: is_symmetric
 
         Is *True* for flux limiters that exhibit the above symmetry. This can be
-        used to simplify the recontruction procedure.
+        used to simplify the reconstruction procedure.
     """
 
     @property

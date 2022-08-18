@@ -50,6 +50,7 @@ except ImportError:
     from typing_extensions import ParamSpec
 
 from types import TracebackType
+import pathlib
 import logging
 
 import jax.numpy as jnp
@@ -257,6 +258,62 @@ class EOCRecorder:
 
     def __str__(self) -> str:
         return self.as_table()
+
+
+def visualize_eoc(
+    filename: Union[str, pathlib.Path],
+    eoc: EOCRecorder,
+    order: float,
+    *,
+    abscissa: str = "h",
+    ylabel: str = "Error",
+    enable_legend: bool = True,
+    overwrite: bool = False,
+) -> None:
+    """
+    :arg fig_or_filename: output file name or an existing figure.
+    :arg order: expected order for all the errors recorded in *eocs*.
+    :arg abscissa: name for the abscissa.
+    """
+    import matplotlib.pyplot as mp
+
+    fig = mp.figure()
+    ax = fig.gca()
+
+    # {{{ plot eoc
+
+    h, error = jnp.array(eoc.history).T  # type: ignore[no-untyped-call]
+    ax.loglog(h, error, "o-", label=ylabel)
+
+    # }}}
+
+    # {{{ plot order
+
+    max_h = jnp.max(h)
+    min_e = jnp.min(error)
+    max_e = jnp.max(error)
+    min_h = jnp.exp(jnp.log(max_h) + jnp.log(min_e / max_e) / order)
+
+    ax.loglog(
+        [max_h, min_h], [max_e, min_e], "k-", label=rf"$\mathcal{{O}}(h^{order})$"
+    )
+
+    # }}}
+
+    ax.grid(True, which="major", linestyle="-", alpha=0.75)
+    ax.grid(True, which="minor", linestyle="--", alpha=0.5)
+
+    ax.set_xlabel(abscissa)
+
+    if enable_legend:
+        ax.legend()
+
+    filename = pathlib.Path(filename)
+    if not overwrite and filename.exists():
+        raise FileExistsError(f"output file '{filename}' already exists")
+
+    fig.savefig(filename)
+    mp.close(fig)
 
 
 # }}}
