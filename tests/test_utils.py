@@ -18,13 +18,16 @@ set_recommended_matplotlib()
 # {{{ test_sbp_matrices
 
 
-@pytest.mark.parametrize("order", ["21", "42"])
-def test_sbp_matrices(order: int, visualize: bool = False) -> None:
+@pytest.mark.parametrize("name", ["21", "42"])
+@pytest.mark.parametrize("bc", [BoundaryType.Dirichlet, BoundaryType.Periodic])
+def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> None:
     from pyshocks import sbp
 
-    bc = BoundaryType.Dirichlet
-    grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
-    op = getattr(sbp, f"SBP{order}")()
+    is_periodic = bc == BoundaryType.Periodic
+    grid = make_uniform_point_grid(
+        a=-1.0, b=1.0, n=64, nghosts=0, is_periodic=is_periodic
+    )
+    op = getattr(sbp, f"SBP{name}")()
 
     n = grid.x.size
     dtype = grid.x.dtype
@@ -46,7 +49,11 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
     Q = sbp.sbp_matrix_from_name(op, grid, bc, "Q")
     assert Q.shape == (n, n)
     assert Q.dtype == dtype
-    assert jnp.linalg.norm(Q.T + Q - B) < 1.0e-15
+
+    if is_periodic:
+        assert jnp.linalg.norm(Q.T + Q) < 1.0e-15
+    else:
+        assert jnp.linalg.norm(Q.T + Q - B) < 1.0e-15
 
     # }}}
 
@@ -68,7 +75,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
         ax.set_xlabel(r"$\lambda_r$")
         ax.set_ylabel(r"$\lambda_i$")
 
-        fig.savefig(f"test_sbp_matrices_rb_{order}_eigs")
+        fig.savefig(f"test_sbp_matrices_rb_{op.ids}_eigs")
         fig.clf()
 
     assert jnp.all(jnp.real(s)) > 0.0
@@ -95,7 +102,11 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
 
     # check SBP property
     v = jnp.cos(2.0 * jnp.pi * grid.x)
-    error = abs(dotp(v, D1 @ v) + dotp(D1 @ v, v) - v @ (B @ v))
+
+    if is_periodic:
+        error = abs(dotp(v, D1 @ v) + dotp(D1 @ v, v))
+    else:
+        error = abs(dotp(v, D1 @ v) + dotp(D1 @ v, v) - v @ (B @ v))
 
     logger.info("sbp error: %.12e", error)
     assert error < 5.0e-14
@@ -105,16 +116,22 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
         dx_ref = i * grid.x ** max(0, i - 1)
         dx_app = D1 @ (grid.x**i)
 
-        error_b = jnp.linalg.norm(dx_ref - dx_app)
-        error_i = jnp.linalg.norm(dx_ref[4:-4] - dx_app[4:-4])
+        if is_periodic:
+            error_b = jnp.nan
+            error_i = jnp.linalg.norm(dx_ref - dx_app)
+        else:
+            error_b = jnp.linalg.norm(dx_ref - dx_app)
+            error_i = jnp.linalg.norm(dx_ref[4:-4] - dx_app[4:-4])
+
         logger.info(
             "error %2d / %2d: %.12e %.12e", i, op.boundary_order, error_b, error_i
         )
 
-        if i <= op.boundary_order:
-            assert error_b < 1.0e-13
-        else:
-            assert error_b > 1.0e-8
+        if not is_periodic:
+            if i <= op.boundary_order:
+                assert error_b < 1.0e-13
+            else:
+                assert error_b > 1.0e-8
 
         if i <= op.order:
             assert error_i < 1.0e-13
@@ -130,7 +147,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
         ax.set_xlabel(r"$\lambda_r$")
         ax.set_ylabel(r"$\lambda_i$")
 
-        fig.savefig(f"test_sbp_matrices_d1_{order}_eigs")
+        fig.savefig(f"test_sbp_matrices_d1_{op.ids}_eigs")
         fig.clf()
 
     assert jnp.linalg.norm(jnp.real(s)) < 1.0
@@ -165,7 +182,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
         ax.set_xlabel(r"$\lambda_r$")
         ax.set_ylabel(r"$\lambda_i$")
 
-        fig.savefig(f"test_sbp_matrices_d2_{order}_eigs")
+        fig.savefig(f"test_sbp_matrices_d2_{op.ids}_eigs")
         fig.clf()
 
     logger.info("max(eig): %.12e", jnp.max(jnp.real(s)))

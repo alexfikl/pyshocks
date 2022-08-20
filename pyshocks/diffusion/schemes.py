@@ -125,10 +125,9 @@ class SBPSAT(FiniteDifferenceScheme):
 def _bind_diffusion_sbp(  # type: ignore[misc]
     scheme: SBPSAT, grid: UniformGrid, bc: Boundary
 ) -> SBPSAT:
-    from pyshocks.scalar import SATBoundary, OneSidedDiffusionSATBoundary
+    # {{{ scheme
 
     assert isinstance(grid, UniformGrid)
-    assert isinstance(bc, SATBoundary)
     assert scheme.diffusivity is not None
 
     P = sbp.sbp_norm_matrix(scheme.op, grid, bc.boundary_type)
@@ -140,17 +139,36 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
     object.__setattr__(scheme, "P", P)
     object.__setattr__(scheme, "D2", D2)
 
-    if isinstance(bc.left, OneSidedDiffusionSATBoundary):
-        assert isinstance(bc.right, OneSidedDiffusionSATBoundary)
-        S = sbp.sbp_matrix_from_name(scheme.op, grid, bc.boundary_type, "S")
+    breakpoint()
 
-        object.__setattr__(bc.left, "S", S)
-        object.__setattr__(bc.left, "tau", -scheme.diffusivity[0])
+    # }}}
 
-        object.__setattr__(bc.right, "S", S)
-        object.__setattr__(bc.right, "tau", +scheme.diffusivity[-1])
+    # {{{ boundary
+
+    from pyshocks.scalar import SATBoundary, PeriodicBoundary
+
+    if isinstance(bc, SATBoundary):
+        from pyshocks.scalar import OneSidedDiffusionSATBoundary
+
+        # NOTE: this fixes the boundary conditions for the energy conserving
+        # version, see implementation and [Mattsson2004] for details
+        if isinstance(bc.left, OneSidedDiffusionSATBoundary):
+            assert isinstance(bc.right, OneSidedDiffusionSATBoundary)
+            S = sbp.sbp_matrix_from_name(scheme.op, grid, bc.boundary_type, "S")
+
+            object.__setattr__(bc.left, "S", S)
+            object.__setattr__(bc.left, "tau", -scheme.diffusivity[0])
+
+            object.__setattr__(bc.right, "S", S)
+            object.__setattr__(bc.right, "tau", +scheme.diffusivity[-1])
+        else:
+            assert not isinstance(bc.right, OneSidedDiffusionSATBoundary)
+    elif isinstance(bc, PeriodicBoundary):
+        pass
     else:
-        assert not isinstance(bc.right, OneSidedDiffusionSATBoundary)
+        raise TypeError(f"unsupported boundary type: '{type(bc).__name__}'")
+
+    # }}}
 
     return scheme
 

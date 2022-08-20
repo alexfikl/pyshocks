@@ -186,7 +186,12 @@ def make_uniform_cell_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> G
 
 
 def make_uniform_point_grid(
-    a: float, b: float, n: int, *, nghosts: int = 1
+    a: float,
+    b: float,
+    n: int,
+    *,
+    nghosts: int = 0,
+    is_periodic: bool = False,
 ) -> UniformGrid:
     """
     :arg a: left boundary of the domain :math:`[a, b]`.
@@ -200,15 +205,27 @@ def make_uniform_point_grid(
     if n <= 0:
         raise ValueError(f"number of cells should be > 0: '{n}'")
 
+    assert n >= 0
+    assert nghosts >= 0
+
     dx0 = (b - a) / (n - 1)
 
-    x = jnp.linspace(
-        a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=jnp.float64
-    )
-    dx = jnp.full_like(x, dx0)  # type: ignore[no-untyped-call]
+    if is_periodic:
+        if nghosts != 0:
+            raise ValueError("ghost cells are not supported with periodicity")
 
-    f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])  # type: ignore
+        x = jnp.linspace(a, b, n, endpoint=False)
+        f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])
+    else:
+        x = jnp.linspace(
+            a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=jnp.float64
+        )
+        f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])  # type: ignore
+
+    dx = jnp.full_like(x, dx0)  # type: ignore[no-untyped-call]
     df = jnp.diff(f)
+
+    assert jnp.linalg.norm(dx - dx0) / dx0 < 1.0e-8
 
     return UniformGrid(
         a=a,

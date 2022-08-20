@@ -14,7 +14,7 @@ from pyshocks import (
     predict_timestep,
 )
 from pyshocks import diffusion, sbp, get_logger
-from pyshocks.scalar import make_sat_boundary
+from pyshocks.scalar import PeriodicBoundary, make_sat_boundary
 
 logger = get_logger("diffusion-sbp-sat")
 
@@ -28,6 +28,7 @@ def main(
     n: int = 256,
     tfinal: float = 0.25,
     theta: float = 1.0,
+    is_periodic: bool = True,
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
@@ -43,17 +44,20 @@ def main(
     # {{{ setup
 
     # set up grid
-    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
+    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0, is_periodic=is_periodic)
+
+    # set up boundary conditions
+    if is_periodic:
+        boundary = PeriodicBoundary()
+    else:
+        boundary = make_sat_boundary(
+            ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
+        )
 
     # set up user data
     diffusivity = jnp.ones_like(grid.x)  # type: ignore
     func = partial(diffusion.ex_expansion, grid, diffusivity=diffusivity[0])
     u0 = func(0.0, grid.x)
-
-    # set up boundary conditions
-    boundary = make_sat_boundary(
-        ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
-    )
 
     # set up scheme
     op = sbp.make_operator_from_name(sbp_op_name)
