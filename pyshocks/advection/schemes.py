@@ -231,8 +231,8 @@ def _bind_advection_sbp(  # type: ignore[misc]
     assert isinstance(bc, SATBoundary)
     assert scheme.velocity is not None
 
-    P = sbp.sbp_norm_matrix(scheme.op, grid)
-    D1 = sbp.sbp_first_derivative_matrix(scheme.op, grid)
+    P = sbp.sbp_norm_matrix(scheme.op, grid, bc.boundary_type)
+    D1 = sbp.sbp_first_derivative_matrix(scheme.op, grid, bc.boundary_type)
 
     # FIXME: make these into sparse matrices
     object.__setattr__(scheme, "P", P)

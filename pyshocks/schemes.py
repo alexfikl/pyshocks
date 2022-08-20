@@ -42,16 +42,19 @@ They use point values (usually located at cell faces) as the main unknowns.
 Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^
 
+.. autoclass:: BoundaryType
+   :undoc-members:
+   :inherited-members:
+
 .. autoclass:: Boundary
     :no-show-inheritance:
-.. autoclass:: OneSidedBoundary
-.. autoclass:: TwoSidedBoundary
 
 .. autofunction:: evaluate_boundary
 .. autofunction:: apply_boundary
 
 """
 
+import enum
 from dataclasses import dataclass
 from functools import singledispatch
 from typing import Optional, Tuple, TypeVar
@@ -390,9 +393,33 @@ def _apply_operator_combine_conservation_law(
 # {{{ boundary conditions
 
 
+@enum.unique
+class BoundaryType(enum.Enum):
+    # A generic set of mixed boundary conditions.
+    Mixed = enum.auto()
+    # Standard periodic boundary conditions.
+    Periodic = enum.auto()
+    # Dirichlet boundary conditions, i.e. boundary conditions which impose the
+    # value of the state variable at the boundary.
+    Dirichlet = enum.auto()
+    # Neumnann boundary conditions, i.e. boundary conditions that impose the
+    # normal derivative at the boundary.
+    Neumann = enum.auto()
+
+
 @dataclass(frozen=True)
 class Boundary:
-    """Boundary conditions for one-dimensional domains."""
+    """Boundary conditions for one-dimensional domains.
+
+    .. attribute:: boundary_type
+
+        A :class:`BoundaryType` describing the general form of the boundary
+        condition.
+    """
+
+    @property
+    def boundary_type(self) -> BoundaryType:
+        raise NotImplementedError
 
 
 @singledispatch
@@ -423,67 +450,6 @@ def evaluate_boundary(
     """
 
     raise NotImplementedError(type(bc).__name__)
-
-
-@dataclass(frozen=True)
-class OneSidedBoundary(Boundary):
-    """
-    .. attribute:: side
-
-        Integer ``+1`` or ``-1`` indicating the side on which this boundary
-        condition applies.
-
-    .. automethod:: __init__
-    """
-
-    side: int
-
-
-@dataclass(frozen=True)
-class TwoSidedBoundary(Boundary):
-    """
-    .. attribute:: left
-    .. attribute:: right
-
-    .. automethod:: __init__
-    """
-
-    left: Optional[OneSidedBoundary] = None
-    right: Optional[OneSidedBoundary] = None
-
-    def __post_init__(self) -> None:
-        if isinstance(self.left, OneSidedBoundary) and self.left.side != -1:
-            raise ValueError("left boundary has incorrect side")
-
-        if isinstance(self.right, OneSidedBoundary) and self.right.side != +1:
-            raise ValueError("right boundary has incorrect side")
-
-
-@apply_boundary.register(TwoSidedBoundary)
-def _apply_boundary_two_sided(
-    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    if bc.left is not None:
-        u = apply_boundary(bc.left, grid, t, u)
-
-    if bc.right is not None:
-        u = apply_boundary(bc.right, grid, t, u)
-
-    return u
-
-
-@evaluate_boundary.register(TwoSidedBoundary)
-def _evaluate_boundary_two_sided(
-    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
-    ub = 0
-    if bc.left is not None:
-        ub = ub + evaluate_boundary(bc.left, grid, t, u)
-
-    if bc.right is not None:
-        ub = ub + evaluate_boundary(bc.right, grid, t, u)
-
-    return ub
 
 
 # }}}

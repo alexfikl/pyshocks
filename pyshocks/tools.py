@@ -106,19 +106,6 @@ class TemporalFunction(Protocol):
 # }}}
 
 
-# {{{
-
-
-def circulant_matrix(q: jnp.ndarray, n: int) -> jnp.ndarray:
-    m = q.size // 2
-    return sum(
-        jnp.roll(q[i] * jnp.eye(n, n, dtype=q.dtype), i - m, axis=1)  # type: ignore
-        for i in range(q.size)
-    )
-
-
-# }}}
-
 # {{{ eoc
 
 

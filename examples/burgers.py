@@ -55,10 +55,10 @@ def make_finite_difference(
         grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=3)
         boundary: Boundary = PeriodicBoundary()
     else:
-        from pyshocks.scalar import make_ss_weno_boundary
+        from pyshocks.scalar import make_burgers_sat_boundary
 
         grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
-        boundary = make_ss_weno_boundary(
+        boundary = make_burgers_sat_boundary(
             ga=lambda t: burgers.ex_tophat(grid, t, grid.a),
             gb=lambda t: burgers.ex_tophat(grid, t, grid.b),
         )
@@ -101,12 +101,10 @@ def main(
             scheme.order, scheme.stencil_width, a=a, b=b, n=n
         )
 
+    from pyshocks import bind
+
     u0 = solution(0.0, grid.x)
-
-    if isinstance(scheme, burgers.SSWENO242):
-        from pyshocks.burgers.ssweno import prepare_ss_weno_242_scheme
-
-        prepare_ss_weno_242_scheme(scheme, grid, boundary)
+    scheme = bind(scheme, grid, boundary)
 
     # }}}
 

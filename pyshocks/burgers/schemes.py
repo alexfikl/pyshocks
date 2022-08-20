@@ -1,18 +1,20 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import jax.numpy as jnp
 
 from pyshocks import (
     Grid,
+    Boundary,
     SchemeBase,
     FiniteDifferenceSchemeBase,
     ConservationLawScheme,
 )
 from pyshocks import reconstruction
 from pyshocks import (
+    bind,
     flux,
     numerical_flux,
     predict_timestep,
@@ -209,6 +211,17 @@ class ESWENO32(FiniteVolumeScheme):
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.ESWENO32):
             raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction")
+
+
+@bind.register(ESWENO32)
+def _bind_burgers_esweno32(  # type: ignore[misc]
+    scheme: ESWENO32, grid: Grid, bc: Boundary
+) -> ESWENO32:
+    from pyshocks.weno import es_weno_parameters
+
+    # NOTE: prefer the parameters recommended by Carpenter!
+    eps, delta = es_weno_parameters(grid, 1.0)
+    return replace(scheme, rec=replace(scheme.rec, eps=eps, delta=delta))
 
 
 @numerical_flux.register(ESWENO32)

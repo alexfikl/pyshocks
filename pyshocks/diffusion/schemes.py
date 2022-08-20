@@ -131,8 +131,10 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
     assert isinstance(bc, SATBoundary)
     assert scheme.diffusivity is not None
 
-    P = sbp.sbp_norm_matrix(scheme.op, grid)
-    D2 = sbp.sbp_second_derivative_matrix(scheme.op, grid, scheme.diffusivity)
+    P = sbp.sbp_norm_matrix(scheme.op, grid, bc.boundary_type)
+    D2 = sbp.sbp_second_derivative_matrix(
+        scheme.op, grid, bc.boundary_type, scheme.diffusivity
+    )
 
     # FIXME: make these into sparse matrices
     object.__setattr__(scheme, "P", P)
@@ -140,7 +142,7 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 
     if isinstance(bc.left, OneSidedDiffusionSATBoundary):
         assert isinstance(bc.right, OneSidedDiffusionSATBoundary)
-        S = sbp.sbp_matrix_from_name(scheme.op, grid, "S")
+        S = sbp.sbp_matrix_from_name(scheme.op, grid, bc.boundary_type, "S")
 
         object.__setattr__(bc.left, "S", S)
         object.__setattr__(bc.left, "tau", -scheme.diffusivity[0])

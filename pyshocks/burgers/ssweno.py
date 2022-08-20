@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from typing import ClassVar, Tuple
+from typing import ClassVar
 
 import jax
 import jax.numpy as jnp
 
-from pyshocks import Grid, Boundary
-from pyshocks import apply_operator, predict_timestep, flux
-from pyshocks import reconstruction
+from pyshocks import Grid, Boundary, BoundaryType
+from pyshocks import bind, apply_operator, predict_timestep, flux
+from pyshocks import reconstruction, sbp
 from pyshocks.burgers.schemes import FiniteDifferenceScheme
 
 
@@ -39,111 +39,7 @@ def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
 # }}}
 
 
-# {{{ make_ss_weno_242_matrices
-
-
-def make_ss_weno_242_matrices(
-    grid: Grid,
-    bc: Boundary,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    from pyshocks import weno
-
-    n = grid.x.size
-    dtype = grid.x.dtype
-
-    qi, hi = weno.ss_weno_242_operator_coefficients(dtype=dtype)
-    p, qb, hb = weno.ss_weno_242_operator_boundary_coefficients(dtype=dtype)
-
-    from pyshocks.tools import circulant_matrix
-    from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
-
-    if isinstance(bc, PeriodicBoundary):
-        p = jnp.ones_like(p)  # type: ignore[no-untyped-call]
-        P = weno.ss_weno_norm_matrix(p, n)
-        Q = circulant_matrix(qi, n)
-        H = circulant_matrix(hi, n)
-        Qs = weno.ss_weno_derivative_matrix(qi, None, n)
-    elif isinstance(bc, SSWENOBurgersBoundary):
-        P = weno.ss_weno_norm_matrix(p, n)
-        Q = weno.ss_weno_derivative_matrix(qi, qb, n)
-        H = weno.ss_weno_interpolation_matrix(hi, hb, n)
-        Qs = Q
-    else:
-        raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
-
-    return P, Q, H, Qs
-
-
-def make_ss_weno_242_sbp_matrix(
-    grid: Grid,
-    bc: Boundary,
-    *,
-    nu: float,
-) -> jnp.ndarray:
-    from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
-
-    if not isinstance(bc, (SSWENOBurgersBoundary, PeriodicBoundary)):
-        raise TypeError(f"unsupported boundary conditions: '{type(bc).__name__}'")
-
-    # NOTE: See [Mattsson2012] for details
-    n = grid.x.size
-    dx = grid.dx_min
-    dtype = grid.x.dtype
-
-    from pyshocks import sbp
-
-    # get metric
-    P = dx * sbp.make_sbp_21_norm_matrix(n, dtype=dtype)
-
-    invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
-    P = jnp.diag(P)  # type: ignore[no-untyped-call]
-
-    # get first-order derivative
-    Q = sbp.make_sbp_21_first_derivative_q_matrix(n, dtype=dtype)
-    D = invP @ Q
-
-    # get R matrix
-    (D22,) = sbp.make_sbp_21_second_derivative_d_matrices(n, dtype=dtype)
-    (C22,) = sbp.make_sbp_21_second_derivative_c_matrices(n, dtype=dtype)
-    B = nu * jnp.eye(n)  # type: ignore[no-untyped-call]
-    R = dx**3 / 4 * D22.T @ C22 @ B @ D22
-
-    # get Bbar matrix
-    Bbar = jnp.zeros_like(B)  # type: ignore[no-untyped-call]
-    Bbar = Bbar.at[0, 0].set(-B[0, 0])
-    Bbar = Bbar.at[-1, -1].set(B[-1, -1])
-
-    # get S matrix
-    S = sbp.make_sbp_21_second_derivative_s_matrix(n, dx, dtype=dtype)
-
-    # put it all together
-    M = D.T @ P @ B @ D + R
-
-    return -M + Bbar @ S
-
-
-# }}}
-
-
 # {{{ scheme
-
-
-def prepare_ss_weno_242_scheme(
-    scheme: "SSWENO242", grid: Grid, bc: Boundary
-) -> "SSWENO242":
-    object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
-
-    P, _, _, Qs = make_ss_weno_242_matrices(grid, bc)
-
-    object.__setattr__(scheme, "P", P)
-    object.__setattr__(scheme, "Qs", Qs)
-
-    # FIXME: replace with sbp.SBP42 operators
-    DD = make_ss_weno_242_sbp_matrix(grid, bc, nu=scheme.nu)
-
-    object.__setattr__(scheme, "DD", DD)
-
-    return scheme
 
 
 @dataclass(frozen=True)
@@ -162,6 +58,7 @@ class SSWENO242(FiniteDifferenceScheme):
     """
 
     rec: reconstruction.SSWENO242
+    sbp: sbp.SBP42
 
     nu: float = 1.0e-2
     c: float = 1.0e-12
@@ -183,6 +80,35 @@ class SSWENO242(FiniteDifferenceScheme):
     @property
     def stencil_width(self) -> int:
         return self.rec.stencil_width
+
+
+@bind.register(SSWENO242)
+def _bind_diffusion_sbp(  # type: ignore[misc]
+    scheme: SSWENO242, grid: Grid, bc: Boundary
+) -> SSWENO242:
+    from pyshocks import UniformGrid
+    from pyshocks.scalar import SATBoundary, OneSidedSSWENOBurgersBoundary
+
+    assert isinstance(grid, UniformGrid)
+    if bc.boundary_type == BoundaryType.Periodic:
+        pass
+    else:
+        assert isinstance(bc, SATBoundary)
+        assert isinstance(bc.left, OneSidedSSWENOBurgersBoundary)
+        assert isinstance(bc.right, OneSidedSSWENOBurgersBoundary)
+
+    object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
+
+    s = sbp.make_sbp_42_first_derivative_q_stencil(bc.boundary_type, dtype=grid.x.dtype)
+    P = sbp.sbp_norm_matrix(scheme.sbp, grid, bc.boundary_type)
+    Q = sbp.make_sbp_matrix_from_stencil(bc.boundary_type, grid.x.size, s)
+    D2 = sbp.sbp_second_derivative_matrix(scheme.sbp, grid, bc.boundary_type, scheme.nu)
+
+    object.__setattr__(scheme, "P", P)
+    object.__setattr__(scheme, "Qs", Q)
+    object.__setattr__(scheme, "DD", D2)
+
+    return scheme
 
 
 @flux.register(SSWENO242)
@@ -210,11 +136,6 @@ def _apply_operator_burgers_ssweno242(
     t: float,
     u: jnp.ndarray,
 ) -> jnp.ndarray:
-    from pyshocks.scalar import PeriodicBoundary, SSWENOBurgersBoundary
-
-    if not isinstance(bc, (SSWENOBurgersBoundary, PeriodicBoundary)):
-        raise TypeError(f"boundary has unsupported type: '{type(bc).__name__}'")
-
     assert u.shape == grid.x.shape
 
     from pyshocks.reconstruction import reconstruct
@@ -271,7 +192,7 @@ def _apply_operator_burgers_ssweno242(
     r = (-(fssw[1:] - fssw[:-1]) + gssw + gb) / dx
 
     # NOTE: a bit hacky, but cleans any boundary goo
-    if isinstance(bc, PeriodicBoundary):
+    if bc.boundary_type == BoundaryType.Periodic:
         from pyshocks import apply_boundary
 
         r = apply_boundary(bc, grid, t, r)

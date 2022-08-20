@@ -7,7 +7,7 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import get_logger, set_recommended_matplotlib
-from pyshocks import make_uniform_point_grid
+from pyshocks import make_uniform_point_grid, BoundaryType
 
 import pytest
 
@@ -22,15 +22,16 @@ set_recommended_matplotlib()
 def test_sbp_matrices(order: int, visualize: bool = False) -> None:
     from pyshocks import sbp
 
+    bc = BoundaryType.Dirichlet
     grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
+    op = getattr(sbp, f"SBP{order}")()
 
     n = grid.x.size
     dtype = grid.x.dtype
-    dx = grid.dx_min
 
     # {{{ P
 
-    P = getattr(sbp, f"make_sbp_{order}_norm_matrix")(n, dtype=dtype)
+    P = sbp.sbp_matrix_from_name(op, grid, bc, "P")
     assert P.shape == (n,)
     assert P.dtype == dtype
 
@@ -42,7 +43,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
     assert B.shape == (n, n)
     assert B.dtype == dtype
 
-    Q = getattr(sbp, f"make_sbp_{order}_first_derivative_q_matrix")(n, dtype=dtype)
+    Q = sbp.sbp_matrix_from_name(op, grid, bc, "Q")
     assert Q.shape == (n, n)
     assert Q.dtype == dtype
     assert jnp.linalg.norm(Q.T + Q - B) < 1.0e-15
@@ -51,8 +52,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
 
     # {{{ R
 
-    b = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
-    R = getattr(sbp, f"make_sbp_{order}_second_derivative_r_matrix")(b, dx, dtype=dtype)
+    R = sbp.sbp_matrix_from_name(op, grid, bc, "R")
     assert R.shape == (n, n)
     assert R.dtype == dtype
     assert jnp.linalg.norm(R - R.T) < 1.0e-6
@@ -77,8 +77,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
 
     # {{{ P dx
 
-    op = getattr(sbp, f"SBP{order}")()
-    P = sbp.sbp_norm_matrix(op, grid)
+    P = sbp.sbp_norm_matrix(op, grid, bc)
     assert P.shape == (n,)
 
     def dotp(x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
@@ -90,7 +89,7 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
 
     logger.info("D1")
 
-    D1 = sbp.sbp_first_derivative_matrix(op, grid)
+    D1 = sbp.sbp_first_derivative_matrix(op, grid, bc)
     assert D1.shape == (n, n)
     assert D1.dtype == dtype
 
@@ -143,12 +142,12 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
 
     logger.info("D2")
 
-    D2 = sbp.sbp_second_derivative_matrix(op, grid, 1.0)
+    D2 = sbp.sbp_second_derivative_matrix(op, grid, bc, 1.0)
     assert D2.shape == (n, n)
     assert D2.dtype == dtype
 
     # check SBP property [Mattsson2004] Equation 10
-    S = getattr(sbp, f"make_sbp_{order}_second_derivative_s_matrix")(n, dx, dtype=dtype)
+    S = sbp.sbp_matrix_from_name(op, grid, bc, "S")
     BS = B @ S
     error = abs(
         dotp(v, D2 @ v) + dotp(D2 @ v, v) + 2 * dotp(D1 @ v, D1 @ v) - 2 * v @ (BS @ v)
@@ -176,62 +175,6 @@ def test_sbp_matrices(order: int, visualize: bool = False) -> None:
 
     if visualize:
         mp.close(fig)
-
-
-# }}}
-
-
-# {{{ test_ss_weno_burgers_matrices
-
-
-@pytest.mark.parametrize("bc_type", ["periodic", "ssweno"])
-def test_ss_weno_burgers_matrices(bc_type: str) -> None:
-    from pyshocks import Boundary
-    from pyshocks.scalar import PeriodicBoundary, make_ss_weno_boundary
-
-    if bc_type == "periodic":
-        bc: Boundary = PeriodicBoundary()
-    elif bc_type == "ssweno":
-        bc = make_ss_weno_boundary(ga=lambda t: 0.0)
-    else:
-        raise ValueError(f"unknown boundary type: '{bc_type}'")
-
-    from pyshocks import EOCRecorder
-    from pyshocks.burgers.ssweno import make_ss_weno_242_matrices
-
-    eoc = EOCRecorder(name="error")
-    order = 4
-
-    for n in range(192, 384 + 1, 32):
-        grid = make_uniform_point_grid(a=-1.0, b=1.0, n=n, nghosts=0)
-        P, Q, H, _ = make_ss_weno_242_matrices(grid, bc)
-
-        # NOTE: check P can integrate to 4th order
-        u0 = jnp.sin(2.0 * jnp.pi * grid.x) ** 2
-        int_u0 = (P @ u0) * grid.dx_min
-
-        error = abs(int_u0 - 1)
-        eoc.add_data_point(grid.dx_min, error)
-        logger.info("error: %4d %.12e", n, error)
-
-        # check Q properties: Q + Q^T = B
-        assert jnp.linalg.norm(jnp.sum(Q, axis=1)) < 1.0e-12
-        if bc_type == "periodic":
-            assert jnp.linalg.norm(Q + Q.T) < 1.0e-12
-        else:
-            e_i = jnp.eye(1, n, 0).squeeze()  # type: ignore[no-untyped-call]
-            e_n = jnp.eye(1, n, n - 1).squeeze()  # type: ignore[no-untyped-call]
-
-            assert (
-                jnp.linalg.norm(Q + Q.T + jnp.outer(e_i, e_i) - jnp.outer(e_n, e_n))
-                < 1.0e-12
-            )
-
-        # check H is an interpolation matrix
-        assert jnp.linalg.norm(jnp.sum(H, axis=1) - 1) < 1.0e-12
-
-    logger.info("eoc:\n%s", eoc)
-    assert eoc.satisfied(order - 0.25)
 
 
 # }}}

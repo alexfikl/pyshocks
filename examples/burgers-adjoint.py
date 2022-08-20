@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import jax
 import jax.numpy as jnp
@@ -14,6 +14,7 @@ from pyshocks import (
     SchemeBase,
     FiniteVolumeSchemeBase,
     timeme,
+    bind,
 )
 from pyshocks import burgers, reconstruction, limiters, get_logger
 from pyshocks.checkpointing import InMemoryCheckpoint
@@ -79,18 +80,12 @@ def make_finite_volume_simulation(
 
     u0 = cell_average(quad, lambda x: burgers.ex_tophat(grid, 0.0, x))
 
-    if isinstance(scheme.rec, reconstruction.ESWENO32):
-        from pyshocks.weno import es_weno_parameters
-
-        # NOTE: prefer the parameters recommended by Carpenter!
-        eps, delta = es_weno_parameters(grid, u0)
-        scheme = replace(scheme, rec=replace(rec, eps=eps, delta=delta))
-
     from pyshocks.scalar import make_dirichlet_boundary
 
     bc = make_dirichlet_boundary(ga=lambda t, x: burgers.ex_tophat(grid, t, x))
     stepper = make_time_stepper(scheme, grid, bc, theta=theta)
 
+    scheme = bind(scheme, grid, bc)
     return Simulation(
         scheme=scheme, grid=grid, bc=bc, stepper=stepper, u0=u0, tfinal=tfinal
     )
@@ -111,14 +106,10 @@ def make_finite_difference_simulation(
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     bc = PeriodicBoundary()
 
-    if isinstance(scheme, burgers.SSWENO242):
-        from pyshocks.burgers.ssweno import prepare_ss_weno_242_scheme
-
-        scheme = prepare_ss_weno_242_scheme(scheme, grid, bc)
-
     u0 = burgers.ex_tophat(grid, 0.0, grid.x)
     stepper = make_time_stepper(scheme, grid, bc, theta=theta)
 
+    scheme = bind(scheme, grid, bc)
     return Simulation(
         scheme=scheme, grid=grid, bc=bc, stepper=stepper, u0=u0, tfinal=tfinal
     )

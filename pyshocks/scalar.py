@@ -18,6 +18,12 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autofunction:: scalar_flux_lax_friedrichs
 .. autofunction:: scalar_flux_engquist_osher
 
+Boundary Conditions
+^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: OneSidedBoundary
+.. autoclass:: TwoSidedBoundary
+
 Ghost Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -40,7 +46,7 @@ Simultaneous-Approximation-Term (SAT) Boundary Conditions
 
 .. autofunction:: make_sat_boundary
 .. autofunction:: make_diffusion_sat_boundary
-.. autofunction:: make_ss_weno_boundary
+.. autofunction:: make_burgers_sat_boundary
 """
 
 from dataclasses import dataclass
@@ -53,8 +59,7 @@ from pyshocks.schemes import (
     ConservationLawScheme,
     flux,
     Boundary,
-    OneSidedBoundary,
-    TwoSidedBoundary,
+    BoundaryType,
     apply_boundary,
     evaluate_boundary,
 )
@@ -247,15 +252,68 @@ def scalar_flux_engquist_osher(
 # {{{ boundary conditions
 
 
-def make_dirichlet_boundary(
-    ga: VectorFunction, gb: Optional[VectorFunction] = None
-) -> TwoSidedBoundary:
-    if gb is None:
-        gb = ga
+@dataclass(frozen=True)
+class OneSidedBoundary(Boundary):  # pylint: disable=abstract-method
+    """
+    .. attribute:: side
 
-    ba = DirichletBoundary(side=-1, g=ga)
-    bb = DirichletBoundary(side=+1, g=gb)
-    return TwoSidedBoundary(left=ba, right=bb)
+        Integer ``+1`` or ``-1`` indicating the side on which this boundary
+        condition applies.
+
+    .. automethod:: __init__
+    """
+
+    side: int
+
+
+@dataclass(frozen=True)
+class TwoSidedBoundary(Boundary):
+    """
+    .. attribute:: left
+    .. attribute:: right
+
+    .. automethod:: __init__
+    """
+
+    left: OneSidedBoundary
+    right: OneSidedBoundary
+
+    def __post_init__(self) -> None:
+        assert isinstance(self.left, OneSidedBoundary)
+        assert isinstance(self.right, OneSidedBoundary)
+
+        if self.left.side != -1:
+            raise ValueError("left boundary has incorrect side")
+
+        if self.right.side != +1:
+            raise ValueError("right boundary has incorrect side")
+
+    @property
+    def boundary_type(self) -> BoundaryType:
+        return (
+            self.left.boundary_type
+            if self.left.boundary_type == self.right.boundary_type
+            else BoundaryType.Mixed
+        )
+
+
+@apply_boundary.register(TwoSidedBoundary)
+def _apply_boundary_two_sided(
+    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    u = apply_boundary(bc.left, grid, t, u)
+    u = apply_boundary(bc.right, grid, t, u)
+
+    return u
+
+
+@evaluate_boundary.register(TwoSidedBoundary)
+def _evaluate_boundary_two_sided(
+    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    return evaluate_boundary(bc.left, grid, t, u) + evaluate_boundary(
+        bc.right, grid, t, u
+    )
 
 
 # {{{ Dirichlet
@@ -279,6 +337,10 @@ class DirichletBoundary(OneSidedBoundary):
 
     g: VectorFunction
 
+    @property
+    def boundary_type(self) -> BoundaryType:
+        return BoundaryType.Dirichlet
+
 
 @apply_boundary.register(DirichletBoundary)
 def _apply_boundary_scalar_dirichlet(
@@ -290,21 +352,21 @@ def _apply_boundary_scalar_dirichlet(
     return u.at[ito].set(bc.g(t, grid.x[ito]), unique_indices=True)
 
 
-# }}}
-
-
-# {{{ Neumann boundary conditions
-
-
-def make_neumann_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+def make_dirichlet_boundary(
+    ga: VectorFunction, gb: Optional[VectorFunction] = None
 ) -> TwoSidedBoundary:
     if gb is None:
         gb = ga
 
-    ba = NeumannBoundary(side=-1, g=ga)
-    bb = NeumannBoundary(side=+1, g=gb)
+    ba = DirichletBoundary(side=-1, g=ga)
+    bb = DirichletBoundary(side=+1, g=gb)
     return TwoSidedBoundary(left=ba, right=bb)
+
+
+# }}}
+
+
+# {{{ Neumann boundary conditions
 
 
 @dataclass(frozen=True)
@@ -326,6 +388,10 @@ class NeumannBoundary(OneSidedBoundary):
     """
 
     g: TemporalFunction
+
+    @property
+    def boundary_type(self) -> BoundaryType:
+        return BoundaryType.Neumann
 
 
 @apply_boundary.register(NeumannBoundary)
@@ -358,6 +424,17 @@ def _apply_boundary_scalar_neumann(
     return u.at[ito].set(ub, unique_indices=True)
 
 
+def make_neumann_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> TwoSidedBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = NeumannBoundary(side=-1, g=ga)
+    bb = NeumannBoundary(side=+1, g=gb)
+    return TwoSidedBoundary(left=ba, right=bb)
+
+
 # }}}
 
 
@@ -367,6 +444,10 @@ def _apply_boundary_scalar_neumann(
 @dataclass(frozen=True)
 class PeriodicBoundary(Boundary):
     """Periodic boundary conditions for one dimensional domains."""
+
+    @property
+    def boundary_type(self) -> BoundaryType:
+        return BoundaryType.Periodic
 
 
 @apply_boundary.register(PeriodicBoundary)
@@ -396,17 +477,6 @@ def _evaluate_boundary_scalar_periodic(
 # {{{ SAT
 
 
-def make_sat_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
-) -> TwoSidedBoundary:
-    if gb is None:
-        gb = ga
-
-    ba = OneSidedSATBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedSATBoundary(side=+1, g=gb, tau=1.0)
-    return SATBoundary(left=ba, right=bb)
-
-
 @dataclass(frozen=True)
 class OneSidedSATBoundary(OneSidedBoundary):
     r"""Simultaneous Approximation Term (SAT) Dirichlet-type boundary conditions.
@@ -432,11 +502,15 @@ class OneSidedSATBoundary(OneSidedBoundary):
     def __post_init__(self) -> None:
         assert self.tau >= 0.5
 
+    @property
+    def boundary_type(self) -> BoundaryType:
+        return BoundaryType.Dirichlet
+
 
 @dataclass(frozen=True)
 class SATBoundary(TwoSidedBoundary):
-    left: Optional[OneSidedSATBoundary]
-    right: Optional[OneSidedSATBoundary]
+    left: OneSidedSATBoundary
+    right: OneSidedSATBoundary
 
 
 @evaluate_boundary.register(OneSidedSATBoundary)
@@ -452,21 +526,21 @@ def _evaluate_boundary_sat(
     return bc.tau * (u[i] - bc.g(t)) * e_i
 
 
+def make_sat_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> SATBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = OneSidedSATBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedSATBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=ba, right=bb)
+
+
 # }}}
 
 
 # {{{ Diffusion SAT boundary conditions
-
-
-def make_diffusion_sat_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
-) -> TwoSidedBoundary:
-    if gb is None:
-        gb = ga
-
-    ba = OneSidedDiffusionSATBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedDiffusionSATBoundary(side=+1, g=gb, tau=1.0)
-    return SATBoundary(left=ba, right=bb)
 
 
 @dataclass(frozen=True)
@@ -500,21 +574,21 @@ def _evaluate_boundary_diffusion_sat(
     return bc.tau * ((u[i] + Su) - bc.g(t)) * e_i
 
 
+def make_diffusion_sat_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> SATBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = OneSidedDiffusionSATBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedDiffusionSATBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=ba, right=bb)
+
+
 # }}}
 
 
 # {{{ Burgers SAT boundary conditions
-
-
-def make_ss_weno_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
-) -> TwoSidedBoundary:
-    if gb is None:
-        gb = ga
-
-    ba = OneSidedSSWENOBurgersBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedSSWENOBurgersBoundary(side=+1, g=gb, tau=1.0)
-    return SSWENOBurgersBoundary(left=ba, right=bb)
 
 
 @dataclass(frozen=True)
@@ -525,12 +599,6 @@ class OneSidedSSWENOBurgersBoundary(OneSidedSATBoundary):
     as given by :class:`~pyshocks.burgers.SSWENO242`. They are described in
     [Fisher2013]_ Equation 4.8.
     """
-
-
-@dataclass(frozen=True)
-class SSWENOBurgersBoundary(TwoSidedBoundary):
-    left: Optional[OneSidedSSWENOBurgersBoundary]
-    right: Optional[OneSidedSSWENOBurgersBoundary]
 
 
 @evaluate_boundary.register(OneSidedSSWENOBurgersBoundary)
@@ -546,6 +614,17 @@ def _evaluate_boundary_ssweno_burgers(
     # NOTE: [Fisher2013] Equation 4.8
     s = bc.side
     return s * ((u[i] + s * abs(u[i])) * u[i] / 3 + s * bc.g(t)) * e_i
+
+
+def make_burgers_sat_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> SATBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = OneSidedSSWENOBurgersBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedSSWENOBurgersBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=ba, right=bb)
 
 
 # }}}
