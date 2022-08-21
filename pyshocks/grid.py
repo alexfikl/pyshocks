@@ -215,7 +215,7 @@ def make_uniform_point_grid(
             raise ValueError("ghost cells are not supported with periodicity")
 
         x = jnp.linspace(a, b, n, endpoint=False)
-        f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])
+        f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])  # type: ignore
     else:
         x = jnp.linspace(
             a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=jnp.float64

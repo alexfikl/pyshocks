@@ -8,6 +8,7 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
+    Boundary,
     make_uniform_point_grid,
     bind,
     apply_operator,
@@ -46,18 +47,18 @@ def main(
     # set up grid
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0, is_periodic=is_periodic)
 
-    # set up boundary conditions
-    if is_periodic:
-        boundary = PeriodicBoundary()
-    else:
-        boundary = make_sat_boundary(
-            ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
-        )
-
     # set up user data
     diffusivity = jnp.ones_like(grid.x)  # type: ignore
     func = partial(diffusion.ex_expansion, grid, diffusivity=diffusivity[0])
     u0 = func(0.0, grid.x)
+
+    # set up boundary conditions
+    if is_periodic:
+        boundary: Boundary = PeriodicBoundary()
+    else:
+        boundary = make_sat_boundary(
+            ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
+        )
 
     # set up scheme
     op = sbp.make_operator_from_name(sbp_op_name)
