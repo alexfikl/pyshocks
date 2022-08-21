@@ -537,7 +537,7 @@ def test_diffusion_convergence(
     resolutions: List[int],
     a: float = -1.0,
     b: float = 1.0,
-    tfinal: float = 1.0,
+    tfinal: float = 0.5,
     diffusivity: float = 1.0,
     visualize: bool = False,
 ) -> None:

@@ -541,7 +541,9 @@ def _evaluate_boundary_advection_sat(
     i = grid.b_[bc.side]
     e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
 
-    return e_i * jnp.where(bc.side * bc.velocity < 0, 0.0, bc.tau * (u[i] - bc.g(t)))
+    return e_i * jnp.where(  # type: ignore[no-untyped-call]
+        bc.side * bc.velocity < 0, 0.0, bc.tau * (u[i] - bc.g(t))
+    )
 
 
 def make_advection_sat_boundary(

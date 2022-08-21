@@ -87,15 +87,15 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
     scheme: SSWENO242, grid: Grid, bc: Boundary
 ) -> SSWENO242:
     from pyshocks import UniformGrid
-    from pyshocks.scalar import SATBoundary, OneSidedSSWENOBurgersBoundary
+    from pyshocks.scalar import SATBoundary, OneSidedBurgersBoundary
 
     assert isinstance(grid, UniformGrid)
     if bc.boundary_type == BoundaryType.Periodic:
         pass
     else:
         assert isinstance(bc, SATBoundary)
-        assert isinstance(bc.left, OneSidedSSWENOBurgersBoundary)
-        assert isinstance(bc.right, OneSidedSSWENOBurgersBoundary)
+        assert isinstance(bc.left, OneSidedBurgersBoundary)
+        assert isinstance(bc.right, OneSidedBurgersBoundary)
 
     object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
 
