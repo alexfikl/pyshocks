@@ -379,12 +379,12 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
 @pytest.mark.parametrize(
     ("case", "order", "resolutions"),
     [
-        # (AdvectionTestCase("godunov", "constant"), 1, list(range(80, 160 + 1, 16))),
-        # (AdvectionTestCase("godunov", "muscl"), 2, list(range(80, 160 + 1, 16))),
-        # (AdvectionTestCase("godunov", "wenojs32"), 3, list(range(192, 384 + 1, 32))),
-        # (AdvectionTestCase("godunov", "wenojs53"), 5, list(range(32, 256 + 1, 32))),
-        # (AdvectionTestCase("godunov", "esweno32"), 3, list(range(32, 256 + 1, 32))),
-        # (AdvectionTestCase("godunov", "ssweno242"), 4, list(range(192, 384 + 1, 32))),
+        (AdvectionTestCase("godunov", "constant"), 1, list(range(80, 160 + 1, 16))),
+        (AdvectionTestCase("godunov", "muscl"), 2, list(range(80, 160 + 1, 16))),
+        (AdvectionTestCase("godunov", "wenojs32"), 3, list(range(192, 384 + 1, 32))),
+        (AdvectionTestCase("godunov", "wenojs53"), 5, list(range(32, 256 + 1, 32))),
+        (AdvectionTestCase("godunov", "esweno32"), 3, list(range(32, 256 + 1, 32))),
+        (AdvectionTestCase("godunov", "ssweno242"), 4, list(range(192, 384 + 1, 32))),
         (SATAdvectionTestCase("sbp", "sbp21"), 2, list(range(80, 160 + 1, 16))),
         (SATAdvectionTestCase("sbp", "sbp42"), 3, list(range(192, 384 + 1, 32))),
     ],
