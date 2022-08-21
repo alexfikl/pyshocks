@@ -24,12 +24,15 @@ Reconstruction
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Any, ClassVar, Dict, Tuple, Type
+from typing import Any, ClassVar, Dict, Tuple, Type, TYPE_CHECKING
 
 import jax.numpy as jnp
 
-from pyshocks import Grid
+from pyshocks.grid import Grid
 from pyshocks.limiters import Limiter
+
+if TYPE_CHECKING:
+    from pyshocks.schemes import BoundaryType
 
 # {{{
 
@@ -71,7 +74,7 @@ class Reconstruction:
 
 @singledispatch
 def reconstruct(
-    rec: Reconstruction, grid: Grid, u: jnp.ndarray
+    rec: Reconstruction, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     r"""Reconstruct face values from the cell-averaged values *u*.
 
@@ -89,6 +92,7 @@ def reconstruct(
 
     :arg rec: a reconstruction algorithm.
     :arg grid: the computational grid representation.
+    :arg bc: generic type of the boundary required to build the reconstruction
     :arg u: variable to reconstruct at the left and right cell faces.
 
     :returns: a :class:`tuple` of ``(ul, ur)`` containing a reconstructed
@@ -132,7 +136,7 @@ class ConstantReconstruction(Reconstruction):
 
 @reconstruct.register(ConstantReconstruction)
 def _reconstruct_first_order(
-    rec: ConstantReconstruction, grid: Grid, u: jnp.ndarray
+    rec: ConstantReconstruction, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     assert grid.nghosts >= rec.stencil_width
     return u, u
@@ -186,7 +190,7 @@ class MUSCL(Reconstruction):
 
 @reconstruct.register(MUSCL)
 def _reconstruct_muscl(
-    rec: MUSCL, grid: Grid, u: jnp.ndarray
+    rec: MUSCL, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     from pyshocks import UniformGrid
 
@@ -243,7 +247,7 @@ class MUSCLS(MUSCL):
 
 @reconstruct.register(MUSCLS)
 def _reconstruct_muscls(
-    rec: MUSCLS, grid: Grid, u: jnp.ndarray
+    rec: MUSCLS, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     from pyshocks import UniformGrid
 
@@ -356,7 +360,7 @@ def _reconstruct_weno_js_side(rec: WENOJS, u: jnp.ndarray) -> jnp.ndarray:
 
 @reconstruct.register(WENOJS)
 def _reconstruct_wenojs(
-    rec: WENOJS, grid: Grid, u: jnp.ndarray
+    rec: WENOJS, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     from pyshocks import UniformGrid
 
@@ -426,7 +430,7 @@ def _reconstruct_es_weno_side(rec: ESWENO32, u: jnp.ndarray) -> jnp.ndarray:
 
 @reconstruct.register(ESWENO32)
 def _reconstruct_esweno32(
-    rec: ESWENO32, grid: Grid, u: jnp.ndarray
+    rec: ESWENO32, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     from pyshocks import UniformGrid
 
@@ -516,7 +520,7 @@ def _reconstruct_ss_weno_boundary_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.nd
 
 @reconstruct.register(SSWENO242)
 def _reconstruct_ssweno242(
-    rec: SSWENO242, grid: Grid, u: jnp.ndarray
+    rec: SSWENO242, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     from pyshocks import UniformGrid
 

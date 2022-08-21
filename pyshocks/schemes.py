@@ -179,7 +179,7 @@ def apply_operator(
 
 @singledispatch
 def predict_timestep(
-    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray
+    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     r"""Estimate the time step based on the current solution. This time step
     prediction can then be used together with a Courant number to give
@@ -265,12 +265,14 @@ class CombineScheme(SchemeBase):
 
 @predict_timestep.register(CombineScheme)
 def _predict_time_combine(
-    scheme: CombineScheme, grid: Grid, t: float, u: jnp.ndarray
+    scheme: CombineScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from functools import reduce
 
     return reduce(
-        jnp.minimum, [predict_timestep(s, grid, t, u) for s in scheme.schemes], jnp.inf
+        jnp.minimum,
+        [predict_timestep(s, grid, bc, t, u) for s in scheme.schemes],
+        jnp.inf,
     )
 
 
@@ -327,7 +329,7 @@ def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.nd
 
 @singledispatch
 def numerical_flux(
-    scheme: SchemeBase, grid: Grid, t: float, u: jnp.ndarray
+    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     """Approximate the flux at each cell-cell interface.
 
@@ -348,7 +350,7 @@ def _apply_operator_conservation_law(
     scheme: ConservationLawScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     u = apply_boundary(bc, grid, t, u)
-    f = numerical_flux(scheme, grid, t, u)
+    f = numerical_flux(scheme, grid, bc, t, u)
 
     return -(f[1:] - f[:-1]) / grid.dx
 
@@ -364,11 +366,15 @@ class CombineConservationLawScheme(CombineScheme, ConservationLawScheme):
 
 @numerical_flux.register(CombineConservationLawScheme)
 def _numerical_flux_combine_conversation_law(
-    scheme: CombineConservationLawScheme, grid: Grid, t: float, u: jnp.ndarray
+    scheme: CombineConservationLawScheme,
+    grid: Grid,
+    bc: "Boundary",
+    t: float,
+    u: jnp.ndarray,
 ) -> jnp.ndarray:
-    f = numerical_flux(scheme.schemes[0], grid, t, u)
+    f = numerical_flux(scheme.schemes[0], grid, bc, t, u)
     for s in scheme.schemes[1:]:
-        f = f + numerical_flux(s, grid, t, u)
+        f = f + numerical_flux(s, grid, bc, t, u)
 
     return f
 
@@ -382,7 +388,7 @@ def _apply_operator_combine_conservation_law(
     u: jnp.ndarray,
 ) -> jnp.ndarray:
     u = apply_boundary(bc, grid, t, u)
-    f = numerical_flux(scheme, grid, t, u)
+    f = numerical_flux(scheme, grid, bc, t, u)
 
     return -(f[1:] - f[:-1]) / grid.dx
 
@@ -395,16 +401,26 @@ def _apply_operator_combine_conservation_law(
 
 @enum.unique
 class BoundaryType(enum.Enum):
-    # A generic set of mixed boundary conditions.
+    """An enumeration defining broad classes of boundary conditions.
+
+    The exact implementation is given by a :class:`Boundary`, but this can be
+    used to aid in operator construction. For example, periodic boundaries
+    can be implemented using ghost cells or circulant operators, but both
+    are described by :attr:`BoundaryType.Periodic`.
+    """
+
+    #: A generic set of mixed boundary conditions.
     Mixed = enum.auto()
-    # Standard periodic boundary conditions.
+    #: Standard periodic boundary conditions.
     Periodic = enum.auto()
-    # Dirichlet boundary conditions, i.e. boundary conditions which impose the
-    # value of the state variable at the boundary.
+    #: Dirichlet boundary conditions, i.e. boundary conditions which impose the
+    #: value of the state variable at the boundary.
     Dirichlet = enum.auto()
-    # Neumnann boundary conditions, i.e. boundary conditions that impose the
-    # normal derivative at the boundary.
+    #: Neumnann boundary conditions, i.e. boundary conditions that impose the
+    #: normal derivative at the boundary.
     Neumann = enum.auto()
+    #: Ghost cell boundary conditions (can be any of the above).
+    Ghost = enum.auto()
 
 
 @dataclass(frozen=True)

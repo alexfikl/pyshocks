@@ -265,7 +265,7 @@ def main(
     from pyshocks import predict_timestep, apply_operator
 
     def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
-        return theta * predict_timestep(scheme, grid, _t, _u)
+        return theta * predict_timestep(scheme, grid, boundary, _t, _u)
 
     def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)

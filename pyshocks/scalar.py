@@ -62,7 +62,6 @@ from pyshocks.schemes import (
     apply_boundary,
     evaluate_boundary,
 )
-from pyshocks.reconstruction import reconstruct
 from pyshocks.tools import TemporalFunction, VectorFunction
 
 
@@ -74,6 +73,7 @@ from pyshocks.tools import TemporalFunction, VectorFunction
 def scalar_flux_upwind(
     scheme: ConservationLawScheme,
     grid: Grid,
+    bc: BoundaryType,
     t: float,
     a: jnp.ndarray,
     u: jnp.ndarray,
@@ -100,8 +100,10 @@ def scalar_flux_upwind(
     assert a.shape == u.shape
     assert scheme.rec is not None
 
-    ul, ur = reconstruct(scheme.rec, grid, u)
-    al, ar = reconstruct(scheme.rec, grid, a)
+    from pyshocks.reconstruction import reconstruct
+
+    ul, ur = reconstruct(scheme.rec, grid, bc, u)
+    al, ar = reconstruct(scheme.rec, grid, bc, a)
 
     fl = flux(scheme, t, grid.f, ul)
     fr = flux(scheme, t, grid.f, ur)
@@ -121,6 +123,7 @@ def scalar_flux_upwind(
 def scalar_flux_rusanov(
     scheme: ConservationLawScheme,
     grid: Grid,
+    bc: BoundaryType,
     t: float,
     a: jnp.ndarray,
     u: jnp.ndarray,
@@ -161,7 +164,9 @@ def scalar_flux_rusanov(
     else:
         nu = 1.0
 
-    ul, ur = reconstruct(scheme.rec, grid, u)
+    from pyshocks.reconstruction import reconstruct
+
+    ul, ur = reconstruct(scheme.rec, grid, bc, u)
     fl = flux(scheme, t, grid.f, ul)
     fr = flux(scheme, t, grid.f, ur)
 
@@ -184,6 +189,7 @@ def scalar_flux_rusanov(
 def scalar_flux_lax_friedrichs(
     scheme: ConservationLawScheme,
     grid: Grid,
+    bc: BoundaryType,
     t: float,
     a: jnp.ndarray,
     u: jnp.ndarray,
@@ -200,7 +206,7 @@ def scalar_flux_lax_friedrichs(
         S(a_L, a_R) = \max_i a_i.
     """
     amax = jnp.max(jnp.abs(a))
-    return scalar_flux_rusanov(scheme, grid, t, amax, u, alpha=alpha)
+    return scalar_flux_rusanov(scheme, grid, bc, t, amax, u, alpha=alpha)
 
 
 # }}}
@@ -212,6 +218,7 @@ def scalar_flux_lax_friedrichs(
 def scalar_flux_engquist_osher(
     scheme: ConservationLawScheme,
     grid: Grid,
+    bc: BoundaryType,
     t: float,
     u: jnp.ndarray,
     omega: float = 0.0,
@@ -229,7 +236,9 @@ def scalar_flux_engquist_osher(
     assert u.shape[0] == grid.x.size
     assert scheme.rec is not None
 
-    ul, ur = reconstruct(scheme.rec, grid, u)
+    from pyshocks.reconstruction import reconstruct
+
+    ul, ur = reconstruct(scheme.rec, grid, bc, u)
     fr = flux(scheme, t, grid.f, jnp.maximum(ur, omega))
     fl = flux(scheme, t, grid.f, jnp.minimum(ul, omega))
     fo = flux(

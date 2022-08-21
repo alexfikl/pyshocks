@@ -151,8 +151,8 @@ def _apply_operator_burgers_ssweno242(
     fm = (f - alpha * u) / 2
 
     # reconstruct
-    _, fp = reconstruct(scheme.rec, grid, fp)
-    fm, _ = reconstruct(scheme.rec, grid, fm)
+    _, fp = reconstruct(scheme.rec, grid, bc.boundary_type, fp)
+    fm, _ = reconstruct(scheme.rec, grid, bc.boundary_type, fm)
 
     # {{{ inviscid flux
 

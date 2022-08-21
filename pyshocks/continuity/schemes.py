@@ -6,7 +6,13 @@ from typing import Optional
 
 import jax.numpy as jnp
 
-from pyshocks import Grid, SchemeBase, FiniteDifferenceSchemeBase, ConservationLawScheme
+from pyshocks import (
+    Grid,
+    Boundary,
+    SchemeBase,
+    FiniteDifferenceSchemeBase,
+    ConservationLawScheme,
+)
 from pyshocks import flux, numerical_flux, predict_timestep
 
 
@@ -39,7 +45,7 @@ def _flux_continuity(
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_continuity(
-    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.velocity is not None
 
@@ -84,7 +90,7 @@ class Godunov(FiniteVolumeScheme):
 
 @numerical_flux.register(Godunov)
 def _numerical_flux_continuity_godunov(
-    scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Godunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.velocity is not None
     assert scheme.rec is not None
@@ -92,8 +98,8 @@ def _numerical_flux_continuity_godunov(
 
     from pyshocks.reconstruction import reconstruct
 
-    ul, ur = reconstruct(scheme.rec, grid, u)
-    al, ar = reconstruct(scheme.rec, grid, scheme.velocity)
+    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u)
+    al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, scheme.velocity)
 
     aavg = (ar[:-1] + al[1:]) / 2
     fnum = jnp.where(

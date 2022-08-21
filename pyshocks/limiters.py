@@ -29,7 +29,7 @@ from typing import Any, Dict, Tuple, Type
 
 import jax.numpy as jnp
 
-from pyshocks import Grid
+from pyshocks.grid import Grid
 
 
 # {{{ limiter interface

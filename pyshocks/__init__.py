@@ -4,6 +4,21 @@
 from importlib import metadata
 import jax
 
+from pyshocks.tools import (
+    T,
+    P,
+    ScalarFunction,
+    VectorFunction,
+    SpatialFunction,
+    TemporalFunction,
+    EOCRecorder,
+    estimate_order_of_convergence,
+    BlockTimer,
+    IterationTimer,
+    timeme,
+    get_logger,
+    set_recommended_matplotlib,
+)
 from pyshocks.grid import (
     Grid,
     Quadrature,
@@ -32,21 +47,6 @@ from pyshocks.schemes import (
     BoundaryType,
     apply_boundary,
     evaluate_boundary,
-)
-from pyshocks.tools import (
-    T,
-    P,
-    ScalarFunction,
-    VectorFunction,
-    SpatialFunction,
-    TemporalFunction,
-    EOCRecorder,
-    estimate_order_of_convergence,
-    BlockTimer,
-    IterationTimer,
-    timeme,
-    get_logger,
-    set_recommended_matplotlib,
 )
 
 # {{{ config

@@ -106,7 +106,8 @@ from typing import Any, Dict, Optional, Tuple, Type
 
 import jax.numpy as jnp
 
-from pyshocks import UniformGrid, BoundaryType
+from pyshocks.grid import UniformGrid
+from pyshocks.schemes import BoundaryType
 
 
 # {{{ SBP helpers

@@ -34,7 +34,7 @@ class Scheme(SchemeBase):
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_burgers(
-    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     # largest wave speed i.e. max |f'(u)|
     smax = jnp.max(jnp.abs(u[grid.i_]))
@@ -82,11 +82,11 @@ class Godunov(FiniteVolumeScheme):
 
 @numerical_flux.register(Godunov)
 def _numerical_flux_burgers_godunov(
-    scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Godunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_upwind
 
-    return scalar_flux_upwind(scheme, grid, t, u, u)
+    return scalar_flux_upwind(scheme, grid, bc.boundary_type, t, u, u)
 
 
 # }}}
@@ -110,16 +110,18 @@ class Rusanov(FiniteVolumeScheme):
 
 @numerical_flux.register(Rusanov)
 def _numerical_flux_burgers_rusanov(
-    scheme: Rusanov, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Rusanov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_rusanov
 
-    return scalar_flux_rusanov(scheme, grid, t, u, u, alpha=scheme.alpha)
+    return scalar_flux_rusanov(
+        scheme, grid, bc.boundary_type, t, u, u, alpha=scheme.alpha
+    )
 
 
 @predict_timestep.register(Rusanov)
 def _predict_timestep_burgers_rusanov(
-    scheme: Rusanov, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Rusanov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
@@ -145,11 +147,13 @@ class LaxFriedrichs(Rusanov):
 
 @numerical_flux.register(LaxFriedrichs)
 def _numerical_flux_burgers_lax_friedrichs(
-    scheme: LaxFriedrichs, grid: Grid, t: float, u: jnp.ndarray
+    scheme: LaxFriedrichs, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_lax_friedrichs
 
-    return scalar_flux_lax_friedrichs(scheme, grid, t, u, u, alpha=scheme.alpha)
+    return scalar_flux_lax_friedrichs(
+        scheme, grid, bc.boundary_type, t, u, u, alpha=scheme.alpha
+    )
 
 
 # }}}
@@ -187,11 +191,13 @@ class EngquistOsher(FiniteVolumeScheme):
 
 @numerical_flux.register(EngquistOsher)
 def _numerical_flux_burgers_engquist_osher(
-    scheme: EngquistOsher, grid: Grid, t: float, u: jnp.ndarray
+    scheme: EngquistOsher, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_engquist_osher
 
-    return scalar_flux_engquist_osher(scheme, grid, t, u, omega=scheme.omega)
+    return scalar_flux_engquist_osher(
+        scheme, grid, bc.boundary_type, t, u, omega=scheme.omega
+    )
 
 
 # }}}
@@ -226,7 +232,7 @@ def _bind_burgers_esweno32(  # type: ignore[misc]
 
 @numerical_flux.register(ESWENO32)
 def _numerical_flux_burgers_esweno32(
-    scheme: ESWENO32, grid: Grid, t: float, u: jnp.ndarray
+    scheme: ESWENO32, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.scalar import scalar_flux_upwind
     from pyshocks.weno import es_weno_weights
@@ -249,7 +255,7 @@ def _numerical_flux_burgers_esweno32(
 
     # }}}
 
-    fnum = scalar_flux_upwind(scheme, grid, t, u, u)
+    fnum = scalar_flux_upwind(scheme, grid, bc.boundary_type, t, u, u)
     return fnum + gnum
 
 

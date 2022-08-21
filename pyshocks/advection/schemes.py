@@ -72,7 +72,7 @@ def _apply_operator_advection(
     from pyshocks import apply_boundary
 
     u = apply_boundary(bc, grid, t, u)
-    f = numerical_flux(scheme, grid, t, u)
+    f = numerical_flux(scheme, grid, bc, t, u)
 
     return -scheme.velocity * (f[1:] - f[:-1]) / grid.dx
 
@@ -101,15 +101,17 @@ class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
 # {{{ godunov
 
 
-def upwind_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+def upwind_flux(
+    scheme: Scheme, grid: Grid, bc: Boundary, u: jnp.ndarray
+) -> jnp.ndarray:
     assert scheme.velocity is not None
     assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
 
     from pyshocks.reconstruction import reconstruct
 
-    ul, ur = reconstruct(scheme.rec, grid, u)
-    al, ar = reconstruct(scheme.rec, grid, scheme.velocity)
+    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u)
+    al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, scheme.velocity)
 
     aavg = (ar[:-1] + al[1:]) / 2
     fnum = jnp.where(aavg > 0, ur[:-1], ul[1:])  # type: ignore[no-untyped-call]
@@ -127,9 +129,9 @@ class Godunov(FiniteVolumeScheme):
 
 @numerical_flux.register(Godunov)
 def _numerical_flux_advection_godunov(
-    scheme: Godunov, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Godunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    return upwind_flux(scheme, grid, u)
+    return upwind_flux(scheme, grid, bc, u)
 
 
 # }}}
@@ -138,7 +140,9 @@ def _numerical_flux_advection_godunov(
 # {{{ ESWENO
 
 
-def esweno_lf_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+def esweno_lf_flux(
+    scheme: Scheme, grid: Grid, bc: Boundary, u: jnp.ndarray
+) -> jnp.ndarray:
     assert scheme.velocity is not None
     assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
@@ -146,8 +150,8 @@ def esweno_lf_flux(scheme: Scheme, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     from pyshocks.reconstruction import reconstruct
 
     f = scheme.velocity * u
-    ul, ur = reconstruct(scheme.rec, grid, u)
-    fl, fr = reconstruct(scheme.rec, grid, f)
+    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u)
+    fl, fr = reconstruct(scheme.rec, grid, bc.boundary_type, f)
 
     a = jnp.max(jnp.abs(scheme.velocity))
     fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * (ul[1:] - ur[:-1])
@@ -167,7 +171,7 @@ class ESWENO32(FiniteVolumeScheme):
 
 @numerical_flux.register(ESWENO32)
 def _apply_derivative_burgers_esweno32(
-    scheme: ESWENO32, grid: Grid, t: float, u: jnp.ndarray
+    scheme: ESWENO32, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.weno import es_weno_weights
     from pyshocks import reconstruction
@@ -192,7 +196,7 @@ def _apply_derivative_burgers_esweno32(
     else:
         gnum = 0.0
 
-    return esweno_lf_flux(scheme, grid, u) + gnum
+    return esweno_lf_flux(scheme, grid, bc, u) + gnum
 
 
 # }}}
