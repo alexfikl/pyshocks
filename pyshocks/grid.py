@@ -27,7 +27,7 @@ Grid
 
 from dataclasses import dataclass
 from functools import partial
-from typing import Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import jax
 import jax.numpy as jnp
@@ -111,6 +111,10 @@ class Grid:
     dx_max: float
 
     @property
+    def dtype(self) -> "jnp.dtype[Any]":
+        return jnp.dtype(self.x.dtype)
+
+    @property
     def n(self) -> int:
         return int(self.x.size) - 2 * self.nghosts
 
@@ -143,7 +147,14 @@ class UniformGrid(Grid):
 # {{{ finite volume / cell-focused
 
 
-def make_uniform_cell_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> Grid:
+def make_uniform_cell_grid(
+    a: float,
+    b: float,
+    n: int,
+    *,
+    nghosts: int = 1,
+    dtype: Optional["jnp.dtype[Any]"] = None,
+) -> Grid:
     """
     :arg a: left boundary of the domain :math:`[a, b]`.
     :arg b: right boundary of the domain :math:`[a, b]`.
@@ -156,10 +167,16 @@ def make_uniform_cell_grid(a: float, b: float, n: int, *, nghosts: int = 1) -> G
     if n <= 0:
         raise ValueError(f"number of cells should be > 0: '{n}'")
 
+    assert n >= 0
+    assert nghosts >= 0
+
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
     dx0 = (b - a) / n
 
     f = jnp.linspace(
-        a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts + 1, dtype=jnp.float64
+        a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts + 1, dtype=dtype
     )
     x = (f[1:] + f[:-1]) / 2
 
@@ -194,6 +211,7 @@ def make_uniform_point_grid(
     *,
     nghosts: int = 0,
     is_periodic: bool = False,
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> UniformGrid:
     """
     :arg a: left boundary of the domain :math:`[a, b]`.
@@ -210,17 +228,20 @@ def make_uniform_point_grid(
     assert n >= 0
     assert nghosts >= 0
 
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
     dx0 = (b - a) / (n - 1)
 
     if is_periodic:
         if nghosts != 0:
             raise ValueError("ghost cells are not supported with periodicity")
 
-        x = jnp.linspace(a, b, n - 1, endpoint=False)
+        x = jnp.linspace(a, b, n - 1, endpoint=False, dtype=dtype)
         f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])  # type: ignore
     else:
         x = jnp.linspace(
-            a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=jnp.float64
+            a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=dtype
         )
         f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])  # type: ignore
 

@@ -295,8 +295,8 @@ class SBPOperator:
 def sbp_matrix_from_name(
     op: SBPOperator, grid: UniformGrid, bc: BoundaryType, name: str
 ) -> jnp.ndarray:
-    n = grid.x.size
-    dtype = grid.x.dtype
+    n = grid.n
+    dtype = grid.dtype
 
     if name == "P":
         func = globals()[f"make_sbp_{op.ids}_norm_stencil"]
@@ -325,8 +325,8 @@ def make_sbp_mattsson2012_second_derivative(
     S: Optional[jnp.ndarray] = None,
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
-    n = grid.x.size
-    dtype = grid.x.dtype
+    n = grid.n
+    dtype = grid.dtype
 
     # get lower order operators
     P = sbp_norm_matrix(op, grid, bc)
@@ -425,8 +425,8 @@ class SBP21(SBPOperator):
 def _sbp_21_norm_matrix(op: SBP21, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    p = make_sbp_21_norm_stencil(bc, dtype=grid.x.dtype)
-    return make_sbp_matrix_from_stencil(bc, grid.x.size, p, weight=grid.dx_min)
+    p = make_sbp_21_norm_stencil(bc, dtype=grid.dtype)
+    return make_sbp_matrix_from_stencil(bc, grid.n, p, weight=grid.dx_min)
 
 
 @sbp_first_derivative_matrix.register(SBP21)
@@ -435,8 +435,8 @@ def _sbp_21_first_derivative_matrix(
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    q = make_sbp_21_first_derivative_q_stencil(bc, dtype=grid.x.dtype)
-    Q = make_sbp_matrix_from_stencil(bc, grid.x.size, q)
+    q = make_sbp_21_first_derivative_q_stencil(bc, dtype=grid.dtype)
+    Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
     return jnp.diag(1.0 / P) @ Q  # type: ignore[no-untyped-call]
@@ -449,8 +449,8 @@ def _sbp_21_second_derivative_matrix(
     from numbers import Number
 
     assert isinstance(grid, UniformGrid)
-    n = grid.x.size
-    dtype = grid.x.dtype
+    n = grid.n
+    dtype = grid.dtype
 
     if isinstance(b, jnp.ndarray):
         pass
@@ -459,7 +459,7 @@ def _sbp_21_second_derivative_matrix(
     else:
         raise TypeError(f"unknown coefficient type: '{type(b).__name__}'")
 
-    assert b.shape == (grid.x.size,)
+    assert b.shape == (grid.n,)
 
     # get R matrix ([Mattsson2012] Equation 8)
     R = make_sbp_21_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
@@ -629,8 +629,8 @@ class SBP42(SBPOperator):
 def _sbp_42_norm_matrix(op: SBP42, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    p = make_sbp_42_norm_stencil(bc, dtype=grid.x.dtype)
-    return make_sbp_matrix_from_stencil(bc, grid.x.size, p, weight=grid.dx_min)
+    p = make_sbp_42_norm_stencil(bc, dtype=grid.dtype)
+    return make_sbp_matrix_from_stencil(bc, grid.n, p, weight=grid.dx_min)
 
 
 @sbp_first_derivative_matrix.register(SBP42)
@@ -639,8 +639,8 @@ def _sbp_42_first_derivative_matrix(
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    q = make_sbp_42_first_derivative_q_stencil(bc, dtype=grid.x.dtype)
-    Q = make_sbp_matrix_from_stencil(bc, grid.x.size, q)
+    q = make_sbp_42_first_derivative_q_stencil(bc, dtype=grid.dtype)
+    Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
     return jnp.diag(1.0 / P) @ Q  # type: ignore[no-untyped-call]
@@ -653,8 +653,8 @@ def _sbp_42_second_derivative_matrix(
     from numbers import Number
 
     assert isinstance(grid, UniformGrid)
-    n = grid.x.size
-    dtype = grid.x.dtype
+    n = grid.n
+    dtype = grid.dtype
 
     if isinstance(b, jnp.ndarray):
         pass
@@ -663,7 +663,7 @@ def _sbp_42_second_derivative_matrix(
     else:
         raise TypeError(f"unknown diffusivity coefficient: '{type(b).__name__}'")
 
-    assert b.shape == (grid.x.size,)
+    assert b.shape == (grid.n,)
 
     # get R matrix ([Mattsson2012] Equation 8)
     R = make_sbp_42_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
@@ -910,8 +910,8 @@ class SBP64(SBPOperator):
 def _sbp_64_norm_matrix(op: SBP64, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    p = make_sbp_64_norm_stencil(bc, dtype=grid.x.dtype)
-    return make_sbp_matrix_from_stencil(bc, grid.x.size, p, weight=grid.dx_min)
+    p = make_sbp_64_norm_stencil(bc, dtype=grid.dtype)
+    return make_sbp_matrix_from_stencil(bc, grid.n, p, weight=grid.dx_min)
 
 
 @sbp_first_derivative_matrix.register(SBP64)
@@ -920,8 +920,8 @@ def _sbp_64_first_derivative_matrix(
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    q = make_sbp_64_first_derivative_q_stencil(bc, dtype=grid.x.dtype)
-    Q = make_sbp_matrix_from_stencil(bc, grid.x.size, q)
+    q = make_sbp_64_first_derivative_q_stencil(bc, dtype=grid.dtype)
+    Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
     return jnp.diag(1.0 / P) @ Q  # type: ignore[no-untyped-call]

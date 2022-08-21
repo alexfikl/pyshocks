@@ -542,7 +542,7 @@ def _evaluate_boundary_advection_sat(
     e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
 
     return e_i * jnp.where(  # type: ignore[no-untyped-call]
-        bc.side * bc.velocity < 0, 0.0, bc.tau * (u[i] - bc.g(t))
+        bc.side * bc.velocity > 0, 0.0, bc.tau * (u[i] - bc.g(t))
     )
 
 
