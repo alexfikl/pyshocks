@@ -13,7 +13,7 @@ from pyshocks import (
     Boundary,
     SchemeBase,
     FiniteVolumeSchemeBase,
-    timeme,
+    timeit,
     bind,
 )
 from pyshocks import burgers, reconstruction, limiters, get_logger
@@ -76,13 +76,14 @@ def make_finite_volume_simulation(
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     quad = make_leggauss_quadrature(grid, order=order)
 
+    from pyshocks import funcs
     from pyshocks import cell_average
 
-    u0 = cell_average(quad, lambda x: burgers.ex_tophat(grid, 0.0, x))
+    u0 = cell_average(quad, lambda x: funcs.burgers_tophat(grid, 0.0, x))
 
     from pyshocks.scalar import make_dirichlet_boundary
 
-    bc = make_dirichlet_boundary(ga=lambda t, x: burgers.ex_tophat(grid, t, x))
+    bc = make_dirichlet_boundary(ga=lambda t, x: funcs.burgers_tophat(grid, t, x))
     stepper = make_time_stepper(scheme, grid, bc, theta=theta)
 
     scheme = bind(scheme, grid, bc)
@@ -106,7 +107,9 @@ def make_finite_difference_simulation(
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     bc = PeriodicBoundary()
 
-    u0 = burgers.ex_tophat(grid, 0.0, grid.x)
+    from pyshocks import funcs
+
+    u0 = funcs.burgers_tophat(grid, 0.0, grid.x)
     stepper = make_time_stepper(scheme, grid, bc, theta=theta)
 
     scheme = bind(scheme, grid, bc)
@@ -115,7 +118,7 @@ def make_finite_difference_simulation(
     )
 
 
-@timeme
+@timeit
 def evolve_forward(
     sim: Simulation,
     u0: jnp.ndarray,
@@ -172,7 +175,7 @@ def evolve_forward(
     return event.u, event.iteration
 
 
-@timeme
+@timeit
 def evolve_adjoint(
     sim: Simulation,
     uf: jnp.ndarray,

@@ -5,6 +5,7 @@
 Weighted Essentially Non-Oscillatory (WENO) Reconstruction
 ----------------------------------------------------------
 
+.. autoclass:: Stencil
 .. autofunction:: weno_smoothness
 .. autofunction:: weno_reconstruct
 
@@ -22,6 +23,7 @@ ES-WENO
 .. autofunction:: es_weno_parameters
 """
 
+from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
 import jax.numpy as jnp
@@ -29,9 +31,73 @@ import jax.numpy as jnp
 from pyshocks.grid import Grid
 
 
-def weno_smoothness(
-    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, *, mode: str = "same"
-) -> jnp.ndarray:
+# {{{ weno
+
+
+@dataclass(frozen=True)
+class Stencil:
+    r"""Stencil coefficients for a WENO reconstruction.
+
+    Let the coefficients be :math:`a, b, c` and `d`. Then, the smoothness
+    indicators are given by
+
+    .. math::
+
+        \beta_{i, m} = \sum_j a_j \left(\sum_k u_{m, k} b_{i, j, k}\right)^2,
+
+    where :math:`u_{m, k}` represents the stencil around :math:`m`. See
+    Equations 3.2-3.4 in [JiangShu1996] for an example of the fifth-order
+    scheme. The value of the function is reconstructed using the :math:`c`
+    coefficients as
+
+    .. math::
+
+        \hat{u}_{i, m} = \sum u_{m, j} c_{i, j}.
+
+    Finally, the weights are constructed from
+
+    .. math::
+
+        \alpha_{i, m} = \frac{d_i}{(\beta_{i, m} + \epsilon)^2}
+
+    as
+
+    .. math::
+
+        \omega_{i, m} = \frac{\alpha_{i, m}}{\sum_n \alpha_{i, n}}.
+
+    THe general setup is more akin to the description provided in [Shu1998]_.
+
+    .. [Shu1998] C.-W. Shu, *Essentially Non-Oscillatory and Weighted Essentially
+        Non-Oscillatory Schemes for Hyperbolic Conservation Laws*,
+        Lecture Notes in Mathematics, pp. 325--432, 1998,
+        `DOI <http://dx.doi.org/10.1007/bfb0096355>`.
+
+    .. attribute:: a
+
+        Coefficients that are part of the smoothness coefficient reconstruction.
+
+    .. attribute:: b
+
+        Coefficients that define the smoothness stencils.
+
+    .. attribute:: c
+
+        Coefficients that define the solution reconstruction stencils.
+
+    .. attribute:: d
+
+        Ideal weights for the WENO scheme, that define a high-order
+        reconstruction using the stencils :attr:`c`.
+    """
+
+    a: jnp.ndarray
+    b: jnp.ndarray
+    c: jnp.ndarray
+    d: jnp.ndarray
+
+
+def weno_smoothness(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.ndarray:
     r"""Compute the smoothness coefficients for a WENO scheme.
 
     The coefficients must have the form
@@ -47,17 +113,15 @@ def weno_smoothness(
     return jnp.stack(
         [
             sum(
-                a[j] * jnp.convolve(u, b[i, j, :], mode=mode) ** 2
-                for j in range(a.size)
+                s.a[j] * jnp.convolve(u, s.b[i, j, :], mode=mode) ** 2
+                for j in range(s.a.size)
             )
-            for i in range(b.shape[0])
+            for i in range(s.b.shape[0])
         ]
     )
 
 
-def weno_reconstruct(
-    u: jnp.ndarray, c: jnp.ndarray, *, mode: str = "same"
-) -> jnp.ndarray:
+def weno_reconstruct(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.ndarray:
     r"""Reconstruct the variable *u* at the cell faces for WENO-JS.
 
     The reconstruction has the form
@@ -69,49 +133,23 @@ def weno_reconstruct(
     :returns: the :math:`\hat{u}_i` reconstruction, for each stencil in the
         scheme. The returned array has a shape of ``(c.shape[0], u.size)``.
     """
-    return jnp.stack([jnp.convolve(u, c[i, :], mode=mode) for i in range(c.shape[0])])
+    return jnp.stack(
+        [jnp.convolve(u, s.c[i, :], mode=mode) for i in range(s.c.shape[0])]
+    )
+
+
+# }}}
 
 
 # {{{ WENOJS
 
 
-def weno_js_32_coefficients(
-    dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def weno_js_32_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
     r"""Initialize the coefficients of the third-order WENO-JS scheme.
 
-    Let the coefficients be :math:`a, b, c` and `d`. Then, the smoothness
-    indicators are given by
-
-    .. math::
-
-        \beta_{i, m} = \sum_j a_j \left(\sum_k u_{m, k} b_{i, j, k}\right)^2,
-
-    where :math:`u_{m, k}` represents the stencil around :math:`m`. See
-    Equations 3.2-3.4 in [JiangShu1996] for an example of the fifth-order
-    scheme. The value of the function is reconstructed using the :math:`c`
-    coefficients
-
-    .. math::
-
-        \hat{u}_{i, m} = \sum u_{m, j} c_{i, j}.
-
-    Finally, the weights are given by
-
-    .. math::
-
-        \alpha_{i, m} = \frac{d_i}{(\beta_{i, m} + \epsilon)^2}.
-
-    THe general setup is more akin to the description provided in [Shu1998]_.
-
-    .. [Shu1998] C.-W. Shu, *Essentially Non-Oscillatory and Weighted Essentially
-        Non-Oscillatory Schemes for Hyperbolic Conservation Laws*,
-        Lecture Notes in Mathematics, pp. 325--432, 1998,
-        `DOI <http://dx.doi.org/10.1007/bfb0096355>`.
-
-    :returns: a 4-tuple containing the coefficients :math:`a, b, c` and :math:`d`.
-        For a third-order scheme, :math:`a` is of shape ``(1,)``, :math:`b`
-        is of shape ``(2, 3, 1)``, :math:`c` is of shape ``(2, 3)`` and
+    :returns: a :class:`Stencil` containing the coefficients :math:`a, b, c`
+        and :math:`d`. For a third-order scheme, :math:`a` is of shape ``(1,)``,
+        :math:`b` is of shape ``(2, 3, 1)``, :math:`c` is of shape ``(2, 3)`` and
         :math:`d` is of shape ``(1, 2)``.
     """
 
@@ -144,17 +182,15 @@ def weno_js_32_coefficients(
         [[1.0 / 3.0, 2.0 / 3.0]], dtype=dtype
     ).T
 
-    return a, b, c, d
+    return Stencil(a=a, b=b, c=c, d=d)
 
 
-def weno_js_53_coefficients(
-    dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def weno_js_53_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
     r"""Initialize the coefficients of the fifth-order WENO-JS scheme.
 
-    :returns: a 4-tuple containing the coefficients :math:`a, b, c` and :math:`d`.
-        For a third-order scheme, :math:`a` is of shape ``(2,)``, :math:`b`
-        is of shape ``(3, 4, 2)``, :math:`c` is of shape ``(3, 5)`` and
+    :returns: a :class:`Stencil` containing the coefficients :math:`a, b, c`
+        and :math:`d`. For a fifth-order scheme, :math:`a` is of shape ``(2,)``,
+        :math:`b` is of shape ``(3, 4, 2)``, :math:`c` is of shape ``(3, 5)`` and
         :math:`d` is of shape ``(1, 3)``.
     """
     if dtype is None:
@@ -190,19 +226,17 @@ def weno_js_53_coefficients(
         [[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=dtype
     ).T
 
-    return a, b, c, d
+    return Stencil(a=a, b=b, c=c, d=d)
 
 
-def weno_js_weights(
-    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
-) -> jnp.ndarray:
+def weno_js_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
     r"""Compute the standard WENO-JS weights.
 
     :returns: the weights :math:`\omega_i` for each stencil reconstruction
         from :func:`weno_reconstruct`.
     """
-    beta = weno_smoothness(u, a, b)
-    alpha = d / (eps + beta) ** 2
+    beta = weno_smoothness(s, u)
+    alpha = s.d / (eps + beta) ** 2
 
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
@@ -232,19 +266,17 @@ def es_weno_parameters(grid: Grid, u0: jnp.ndarray) -> Tuple[float, float]:
     return eps, delta
 
 
-def es_weno_weights(
-    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
-) -> jnp.ndarray:
+def es_weno_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
     r"""Compute the ESWENO weights.
 
     :returns: the weights :math:`\omega_i` for each stencil reconstruction
         from :func:`weno_reconstruct`.
     """
-    beta = weno_smoothness(u, a, b)
+    beta = weno_smoothness(s, u)
 
     # NOTE: see Equations 21-22 in [Yamaleev2009]
     tau = jnp.pad((u[2:] - 2 * u[1:-1] + u[:-2]) ** 2, 1)  # type: ignore
-    alpha = d * (1 + tau / (eps + beta))
+    alpha = s.d * (1 + tau / (eps + beta))
 
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
@@ -271,14 +303,12 @@ def ss_weno_parameters(grid: Grid, u0: jnp.ndarray) -> float:
     return float(jnp.sum(grid.dx[i] * jnp.abs(u0[i]))) * grid.dx_min**4
 
 
-def ss_weno_242_weights(
-    u: jnp.ndarray, a: jnp.ndarray, b: jnp.ndarray, d: jnp.ndarray, *, eps: float
-) -> jnp.ndarray:
-    beta = weno_smoothness(u, a, b)
+def ss_weno_242_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
+    beta = weno_smoothness(s, u)
     tau = jnp.pad(  # type: ignore[no-untyped-call]
         (u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2)
     )
-    alpha = d * (1.0 + tau / (eps + beta))
+    alpha = s.d * (1.0 + tau / (eps + beta))
 
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
@@ -286,9 +316,7 @@ def ss_weno_242_weights(
 # {{{ reconstruction
 
 
-def ss_weno_242_coefficients(
-    dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def ss_weno_242_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
     """Initialize coefficients for the fourth-order WENO scheme of [Fisher2013].
 
     The actual implementation details of the scheme are given in [Fisher2011]_.
@@ -336,12 +364,12 @@ def ss_weno_242_coefficients(
         [[1.0 / 6.0, 2.0 / 3.0, 1.0 / 6.0]], dtype=dtype
     ).T
 
-    return a, b, c, d
+    return Stencil(a=a, b=b, c=c, d=d)
 
 
 def ss_weno_242_boundary_coefficients(
     dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
@@ -404,124 +432,7 @@ def ss_weno_242_boundary_coefficients(
         ]
     )
 
-    return c, d
-
-
-# }}}
-
-
-# {{{ operators
-
-
-def ss_weno_242_operator_coefficients(
-    dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
-    if dtype is None:
-        dtype = jnp.dtype(jnp.float64)
-
-    # [Fisher2013] Appendix A, Equation A.2 interior
-    q = jnp.array(  # type: ignore[no-untyped-call]
-        [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12],
-        dtype=dtype,
-    )
-
-    # [Fisher2013] Appendix A, Equation A.5 interior
-    h = jnp.array(  # type: ignore[no-untyped-call]
-        [-1 / 12, 7 / 12, 7 / 12, -1 / 12, 0],
-        dtype=dtype,
-    )
-
-    return q, h
-
-
-def ss_weno_242_operator_boundary_coefficients(
-    dtype: Optional["jnp.dtype[Any]"] = None,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    if dtype is None:
-        dtype = jnp.dtype(jnp.float64)
-
-    # [Fisher2013] Appendix A, Equation A.1
-    p = jnp.array(  # type: ignore[no-untyped-call]
-        [17 / 48, 59 / 48, 43 / 48, 49 / 48],
-        dtype=dtype,
-    )
-
-    # [Fisher2013] Appendix A, Equation A.2 boundary
-    qb = jnp.array(  # type: ignore[no-untyped-call]
-        [
-            [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
-            [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
-            [1 / 12, -59 / 96, 0.0, 59 / 96, -1 / 12, 0.0],
-            [1 / 32, 0.0, -59 / 96, 0.0, 2 / 3, -1 / 12],
-        ],
-        dtype=dtype,
-    )
-
-    # [Fisher2013] Appendix A, Equation A.5 boundary
-    hb = jnp.array(  # type: ignore[no-untyped-call]
-        [
-            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
-            [-11 / 96, 59 / 96, 17 / 32, -1 / 32, 0.0, 0.0],
-            [-1 / 32, 0.0, 17 / 32, 7 / 12, -1 / 12, 0.0],
-        ],
-        dtype=dtype,
-    )
-
-    return p, qb, hb
-
-
-def ss_weno_norm_matrix(p: jnp.ndarray, n: int) -> jnp.ndarray:
-    assert n > 2 * p.size
-
-    # [Fisher2013] Appendix A, Equation A.1
-    P = jnp.concatenate(
-        [
-            p,
-            jnp.ones(n - 2 * p.size, dtype=p.dtype),  # type: ignore[no-untyped-call]
-            p[::-1],
-        ]
-    )
-    assert P.shape == (n,)
-    return P
-
-
-def ss_weno_derivative_matrix(
-    qi: jnp.ndarray, qb: Optional[jnp.ndarray], n: int
-) -> jnp.ndarray:
-    # [Fisher2013] Appendix A.1, Equation A.4
-    m = qi.size // 2
-    Q: jnp.ndarray = sum(
-        qi[k] * jnp.eye(n, n, k=k - m, dtype=qi.dtype)  # type: ignore[no-untyped-call]
-        for k in range(qi.size)
-    )
-
-    # [Fisher2013] Appendix A.1, Equation A.2
-    if qb is not None:
-        n, m = qb.shape
-        Q = Q.at[:n, :m].set(qb)
-        Q = Q.at[-n:, -m:].set(-qb[::-1, ::-1])
-
-    return Q
-
-
-def ss_weno_interpolation_matrix(
-    hi: jnp.ndarray, hb: Optional[jnp.ndarray], n: int
-) -> jnp.ndarray:
-    # [Fisher2013] Appendix A.1, Equation A.4
-    m = hi.size // 2
-    H: jnp.ndarray = sum(
-        hi[k] * jnp.eye(n, n, k=k - m, dtype=hi.dtype)  # type: ignore[no-untyped-call]
-        for k in range(hi.size)
-    )
-
-    # [Fisher2013] Appendix A.1, Equation A.2
-    if hb is not None:
-        m, p = hb.shape
-        H = H.at[:m, :p].set(hb)
-        H = H.at[-m:, -p:].set(hb[::-1, ::-1])
-
-    return H
+    return Stencil(a=0, b=0, c=c, d=d)
 
 
 # }}}

@@ -9,7 +9,7 @@ import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as mp
 
-from pyshocks import Grid, Boundary, timeme
+from pyshocks import Grid, Boundary, timeit
 from pyshocks import advection, reconstruction, limiters, get_logger
 from pyshocks.checkpointing import InMemoryCheckpoint
 from pyshocks.timestepping import Stepper, step, adjoint_step
@@ -31,7 +31,7 @@ class Simulation:
         return f"{self.scheme.name}_{type(self.stepper).__name__}_{n:05d}".lower()
 
 
-@timeme
+@timeit
 def evolve_forward(
     sim: Simulation,
     u0: jnp.ndarray,
@@ -110,7 +110,7 @@ def evolve_forward(
     return event.u, event.iteration
 
 
-@timeme
+@timeit
 def evolve_adjoint(
     sim: Simulation,
     uf: jnp.ndarray,
@@ -223,12 +223,12 @@ def main(
 
     # {{{ geometry
 
-    from pyshocks import continuity
+    from pyshocks import funcs
     from pyshocks import make_uniform_cell_grid
 
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
-    func_velocity = partial(continuity.velocity_const, grid, 0.0)
-    func_ic = partial(continuity.ic_sine, grid)
+    func_velocity = partial(funcs.ic_constant, grid, c=1.0)
+    func_ic = partial(funcs.ic_sine, grid, k=1)
 
     from pyshocks import make_leggauss_quadrature, cell_average
 
@@ -242,7 +242,7 @@ def main(
 
     # {{{ boundary conditions
 
-    solution = partial(continuity.ex_constant_velocity_field, a=1.0, u0=func_ic)
+    solution = partial(funcs.advection_from_constant_velocity, a=1.0, u0=func_ic)
 
     u0 = cell_average(quad, func_ic)
 

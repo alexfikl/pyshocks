@@ -28,6 +28,7 @@ from typing import Any, ClassVar, Dict, Tuple, Type, TYPE_CHECKING
 
 import jax.numpy as jnp
 
+from pyshocks import weno
 from pyshocks.grid import Grid
 from pyshocks.limiters import Limiter
 
@@ -289,12 +290,7 @@ class WENOJS(Reconstruction):  # pylint: disable=abstract-method
     """
 
     eps: float
-
-    # coefficients
-    a: ClassVar[jnp.ndarray]
-    b: ClassVar[jnp.ndarray]
-    c: ClassVar[jnp.ndarray]
-    d: ClassVar[jnp.ndarray]
+    s: ClassVar[weno.Stencil]
 
     @property
     def stencil_width(self) -> int:
@@ -310,15 +306,7 @@ class WENOJS32(WENOJS):
     eps: float = 1.0e-6
 
     def __post_init__(self) -> None:
-        from pyshocks.weno import weno_js_32_coefficients
-
-        a, b, c, d = weno_js_32_coefficients()
-
-        # NOTE: hack to keep the class frozen
-        object.__setattr__(self, "a", a)
-        object.__setattr__(self, "b", b)
-        object.__setattr__(self, "c", c)
-        object.__setattr__(self, "d", d)
+        object.__setattr__(self, "s", weno.weno_js_32_coefficients())
 
     @property
     def order(self) -> int:
@@ -334,15 +322,7 @@ class WENOJS53(WENOJS):
     eps: float = 1.0e-12
 
     def __post_init__(self) -> None:
-        from pyshocks.weno import weno_js_53_coefficients
-
-        a, b, c, d = weno_js_53_coefficients()
-
-        # NOTE: hack to keep the class frozen
-        object.__setattr__(self, "a", a)
-        object.__setattr__(self, "b", b)
-        object.__setattr__(self, "c", c)
-        object.__setattr__(self, "d", d)
+        object.__setattr__(self, "s", weno.weno_js_53_coefficients())
 
     @property
     def order(self) -> int:
@@ -350,10 +330,8 @@ class WENOJS53(WENOJS):
 
 
 def _reconstruct_weno_js_side(rec: WENOJS, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_reconstruct, weno_js_weights
-
-    omega = weno_js_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
-    uhat = weno_reconstruct(u, rec.c)
+    omega = weno.weno_js_weights(rec.s, u, eps=rec.eps)
+    uhat = weno.weno_reconstruct(rec.s, u)
 
     return jnp.sum(omega * uhat, axis=0)
 
@@ -394,21 +372,10 @@ class ESWENO32(Reconstruction):
     delta: float = 1.0e-6
 
     # coefficients
-    a: ClassVar[jnp.ndarray]
-    b: ClassVar[jnp.ndarray]
-    c: ClassVar[jnp.ndarray]
-    d: ClassVar[jnp.ndarray]
+    s: ClassVar[weno.Stencil]
 
     def __post_init__(self) -> None:
-        from pyshocks.weno import weno_js_32_coefficients
-
-        a, b, c, d = weno_js_32_coefficients()
-
-        # NOTE: hack to keep the class frozen
-        object.__setattr__(self, "a", a)
-        object.__setattr__(self, "b", b)
-        object.__setattr__(self, "c", c)
-        object.__setattr__(self, "d", d)
+        object.__setattr__(self, "s", weno.weno_js_32_coefficients())
 
     @property
     def order(self) -> int:
@@ -420,10 +387,8 @@ class ESWENO32(Reconstruction):
 
 
 def _reconstruct_es_weno_side(rec: ESWENO32, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_reconstruct, es_weno_weights
-
-    omega = es_weno_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
-    uhat = weno_reconstruct(u, rec.c)
+    omega = weno.es_weno_weights(rec.s, u, eps=rec.eps)
+    uhat = weno.weno_reconstruct(rec.s, u)
 
     return jnp.sum(omega * uhat, axis=0)
 
@@ -465,31 +430,12 @@ class SSWENO242(Reconstruction):
     eps: float = 1.0e-6
 
     # coefficients
-    a: ClassVar[jnp.ndarray]
-    b: ClassVar[jnp.ndarray]
-    c: ClassVar[jnp.ndarray]
-    d: ClassVar[jnp.ndarray]
-
-    cb: ClassVar[jnp.ndarray]
-    db: ClassVar[jnp.ndarray]
+    si: ClassVar[weno.Stencil]
+    sb: ClassVar[weno.Stencil]
 
     def __post_init__(self) -> None:
-        from pyshocks.weno import (
-            ss_weno_242_coefficients,
-            ss_weno_242_boundary_coefficients,
-        )
-
-        a, b, c, d = ss_weno_242_coefficients()
-
-        object.__setattr__(self, "a", a)
-        object.__setattr__(self, "b", b)
-        object.__setattr__(self, "c", c)
-        object.__setattr__(self, "d", d)
-
-        cb, db = ss_weno_242_boundary_coefficients()
-
-        object.__setattr__(self, "cb", cb)
-        object.__setattr__(self, "db", db)
+        object.__setattr__(self, "si", weno.ss_weno_242_coefficients())
+        object.__setattr__(self, "sb", weno.ss_weno_242_boundary_coefficients())
 
     @property
     def order(self) -> int:
@@ -501,19 +447,15 @@ class SSWENO242(Reconstruction):
 
 
 def _reconstruct_ss_weno_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_reconstruct, ss_weno_242_weights
-
-    omega = ss_weno_242_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
-    uhat = weno_reconstruct(u, rec.c)
+    omega = weno.ss_weno_242_weights(rec.si, u, eps=rec.eps)
+    uhat = weno.weno_reconstruct(rec.si, u)
 
     return jnp.sum(omega * uhat, axis=0)
 
 
 def _reconstruct_ss_weno_boundary_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.weno import weno_reconstruct, ss_weno_242_weights
-
-    omega = ss_weno_242_weights(u, rec.a, rec.b, rec.d, eps=rec.eps)
-    uhat = weno_reconstruct(u, rec.c)
+    omega = weno.ss_weno_242_weights(rec.si, u, eps=rec.eps)
+    uhat = weno.weno_reconstruct(rec.si, u)
 
     return jnp.sum(omega * uhat, axis=0)
 

@@ -38,7 +38,7 @@ class Scheme(SchemeBase):
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_diffusion(
-    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.diffusivity is not None
 
@@ -75,7 +75,7 @@ class CenteredScheme(FiniteVolumeScheme):
 
 @numerical_flux.register(CenteredScheme)
 def _numerical_flux_diffusion_centered_scheme(
-    scheme: CenteredScheme, grid: Grid, t: float, u: jnp.ndarray
+    scheme: CenteredScheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.diffusivity is not None
 

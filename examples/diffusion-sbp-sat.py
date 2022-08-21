@@ -42,6 +42,8 @@ def main(
     :arg theta: Courant number used in time step estimation as
         :math:`\Delta t = \theta \Delta \tilde{t}`.
     """
+    from pyshocks import funcs
+
     # {{{ setup
 
     # set up grid
@@ -50,7 +52,7 @@ def main(
     # set up user data
     diffusivity = jnp.ones_like(grid.x)  # type: ignore
     func = partial(
-        diffusion.ex_expansion,
+        funcs.diffusion_expansion,
         # NOTE: odd nodes are not periodic!
         grid,
         modes=(2,),

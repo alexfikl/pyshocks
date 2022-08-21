@@ -208,12 +208,13 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
 
 
 def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
-    from pyshocks.weno import ss_weno_derivative_matrix
-
     grid = make_uniform_point_grid(a=-1.0, b=1.0, n=n, nghosts=0)
-    q = ss_weno_derivative_matrix(
-        jnp.array([-0.5, 0, 0.5], dtype=grid.x.dtype), None, grid.x.size  # type: ignore
-    )
+
+    from pyshocks import sbp
+
+    bc_type = BoundaryType.Periodic
+    q = sbp.make_sbp_21_first_derivative_q_stencil(bc_type, dtype=grid.dtype)
+    Q = sbp.make_sbp_banded_matrix(grid.n, q)
 
     from pyshocks.burgers.ssweno import two_point_entropy_flux
 
@@ -221,7 +222,7 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
     u = jnp.full_like(grid.x, 1.0)  # type: ignore
 
     fs_ref = (u[1:] * u[1:] + u[1:] * u[:-1] + u[:-1] * u[:-1]) / 6
-    fs = two_point_entropy_flux(q, u)
+    fs = two_point_entropy_flux(Q, u)
     assert fs.shape == grid.f.shape
 
     # NOTE: constant solutions should just do nothing
@@ -232,29 +233,21 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
     u = jnp.sin(2.0 * jnp.pi * grid.x)
 
     fs_ref = (u[1:] * u[1:] + u[1:] * u[:-1] + u[:-1] * u[:-1]) / 6
-    fs = two_point_entropy_flux(q, u)
+    fs = two_point_entropy_flux(Q, u)
     assert fs.shape == grid.f.shape
 
     error = jnp.linalg.norm(fs[1:-1] - fs_ref)
     assert error < 1.0e-15
 
 
-@pytest.mark.parametrize("bc_type", ["periodic"])
-def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
-    from pyshocks.scalar import PeriodicBoundary
-
+@pytest.mark.parametrize("bc_type", [BoundaryType.Periodic])
+def test_ss_weno_burgers_two_point_flux(bc_type: BoundaryType) -> None:
     grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
-    if bc_type == "periodic":
-        bc = PeriodicBoundary()
-    else:
-        raise ValueError(f"unknown boundary type: '{bc_type}'")
-    assert bc is not None
 
-    from pyshocks import BlockTimer
-    from pyshocks import weno
+    from pyshocks import sbp
 
-    qi, _ = weno.ss_weno_242_operator_coefficients()
-    Q = weno.ss_weno_derivative_matrix(qi, None, grid.x.size)
+    q = sbp.make_sbp_42_first_derivative_q_stencil(bc_type, dtype=grid.dtype)
+    Q = sbp.make_sbp_banded_matrix(grid.n, q)
 
     def two_point_flux_numpy_v0(u: jnp.ndarray) -> jnp.ndarray:
         q = jax.device_get(Q)
@@ -305,6 +298,8 @@ def test_ss_weno_burgers_two_point_flux(bc_type: str) -> None:
         return jax.lax.fori_loop(
             0, u.size, body, jnp.empty_like(u)  # type: ignore[no-untyped-call]
         )
+
+    from pyshocks import BlockTimer
 
     # {{{ reference numpy version
 

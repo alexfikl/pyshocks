@@ -10,13 +10,13 @@ from pyshocks import (
     Grid,
     Boundary,
     SpatialFunction,
-    timeme,
+    timeit,
     get_logger,
     set_recommended_matplotlib,
 )
 from pyshocks.reconstruction import make_reconstruction_from_name
 from pyshocks.limiters import make_limiter_from_name
-from pyshocks import burgers, advection, continuity, diffusion
+from pyshocks import funcs, burgers, advection, diffusion
 
 import jax
 import jax.numpy as jnp
@@ -92,7 +92,7 @@ class FiniteDifferenceTestCase(ConvergenceTestCase):  # pylint: disable=abstract
         return make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
 
 
-@timeme
+@timeit
 def evolve(
     case: ConvergenceTestCase,
     n: int,
@@ -217,8 +217,8 @@ class BurgersTestCase(FiniteVolumeTestCase):
         from pyshocks.scalar import make_dirichlet_boundary
 
         return make_dirichlet_boundary(
-            ga=lambda t, x: burgers.ex_shock(grid, t, x),
-            gb=lambda t, x: burgers.ex_shock(grid, t, x),
+            ga=lambda t, x: funcs.burgers_shock(grid, t, x),
+            gb=lambda t, x: funcs.burgers_shock(grid, t, x),
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
@@ -226,7 +226,7 @@ class BurgersTestCase(FiniteVolumeTestCase):
         return burgers.make_scheme_from_name(self.scheme_name, rec=rec, alpha=0.98)
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return self.cell_average(grid, partial(burgers.ex_shock, grid, t))
+        return self.cell_average(grid, partial(funcs.burgers_shock, grid, t))
 
 
 @pytest.mark.parametrize(
@@ -321,8 +321,8 @@ class AdvectionTestCase(FiniteVolumeTestCase):
         # most robust of the WENO family of schemes). The choice here seems to work!
 
         def func(x: jnp.ndarray) -> jnp.ndarray:
-            u0 = partial(continuity.ic_sine_sine, grid)
-            return continuity.ex_constant_velocity_field(t, x, a=self.a, u0=u0)
+            u0 = partial(funcs.ic_sine_sine, grid)
+            return funcs.advection_from_constant_velocity(t, x, a=self.a, u0=u0)
 
         return self.cell_average(grid, func)
 
@@ -354,8 +354,8 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
         )
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
-        u0 = partial(continuity.ic_sine_sine, grid)
-        return continuity.ex_constant_velocity_field(t, x, a=self.a, u0=u0)
+        u0 = partial(funcs.ic_sine_sine, grid)
+        return funcs.advection_from_constant_velocity(t, x, a=self.a, u0=u0)
 
     def norm(
         self,
@@ -456,8 +456,8 @@ class DiffusionTestCase(FiniteVolumeTestCase):
         from pyshocks.scalar import make_dirichlet_boundary
 
         return make_dirichlet_boundary(
-            ga=lambda t, x: diffusion.ex_expansion(grid, t, x, diffusivity=self.d),
-            gb=lambda t, x: diffusion.ex_expansion(grid, t, x, diffusivity=self.d),
+            ga=lambda t, x: funcs.diffusion_expansion(grid, t, x, diffusivity=self.d),
+            gb=lambda t, x: funcs.diffusion_expansion(grid, t, x, diffusivity=self.d),
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
@@ -470,7 +470,7 @@ class DiffusionTestCase(FiniteVolumeTestCase):
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
         return self.cell_average(
-            grid, partial(diffusion.ex_expansion, grid, t, diffusivity=self.d)
+            grid, partial(funcs.diffusion_expansion, grid, t, diffusivity=self.d)
         )
 
 
@@ -501,7 +501,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         )
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return diffusion.ex_expansion(grid, t, x)
+        return funcs.diffusion_expansion(grid, t, x)
 
     def norm(
         self,

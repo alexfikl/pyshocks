@@ -22,36 +22,37 @@ logger = get_logger("advection")
 
 
 def make_solution(
-    name: str, grid: Grid, a: float = 1.0, x0: float = 1.0
+    name: str, grid: Grid, a: float = 1.0, offset: float = 1.0
 ) -> Tuple[VectorFunction, VectorFunction]:
-    from pyshocks import continuity
+    from pyshocks import funcs
 
     if name == "const":
 
         def ic_sine(x: jnp.ndarray) -> jnp.ndarray:
-            return x0 + continuity.ic_sine(grid, x)
+            return offset + funcs.ic_sine(grid, x, k=1)
 
         def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return a * continuity.velocity_const(grid, t, x)
+            return funcs.ic_constant(grid, x, c=a)
 
         def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return continuity.ex_constant_velocity_field(t, x, a=a, u0=ic_sine)
+            return funcs.advection_from_constant_velocity(t, x, a=a, u0=ic_sine)
 
     elif name == "sign":
 
         def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return a * continuity.velocity_sign(grid, t, x)
+            return a * funcs.ic_sign(grid, x)
 
         def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return x0 + continuity.ic_sine(grid, x)
+            # FIXME: this has an known solution for all time!
+            return offset + funcs.ic_sine(grid, x, k=1)
 
     elif name == "double_sign":
 
         def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return a * continuity.velocity_sign(grid, t, x)
+            return a * funcs.ic_sign(grid, x)
 
         def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return a * continuity.velocity_sign(grid, t, x)
+            return a * funcs.ic_sign(grid, x)
 
     else:
         raise ValueError(f"unknown example: '{name}'")
@@ -62,7 +63,7 @@ def make_solution(
 def make_boundary_conditions(
     name: str, solution: VectorFunction, *, a: float = 1.0
 ) -> Boundary:
-    from pyshocks import continuity
+    from pyshocks import funcs
 
     bc: Boundary
     if name == "const":
@@ -72,12 +73,12 @@ def make_boundary_conditions(
     elif name in ["sign", "double_sign"]:
 
         def bc_left(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return continuity.ex_constant_velocity_field(
+            return funcs.advection_from_constant_velocity(
                 t, x, a=-a, u0=partial(solution, t)
             )
 
         def bc_right(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return continuity.ex_constant_velocity_field(
+            return funcs.advection_from_constant_velocity(
                 t, x, a=+a, u0=partial(solution, t)
             )
 
@@ -118,7 +119,7 @@ def main(
 
     from dataclasses import replace
 
-    velocity, solution = make_solution(example_name, grid, a=0.5, x0=1.0)
+    velocity, solution = make_solution(example_name, grid, a=0.5, offset=1.0)
     boundary = make_boundary_conditions(example_name, solution, a=0.5)
 
     # initial condition

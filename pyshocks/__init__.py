@@ -15,7 +15,8 @@ from pyshocks.tools import (
     estimate_order_of_convergence,
     BlockTimer,
     IterationTimer,
-    timeme,
+    timeit,
+    profileit,
     get_logger,
     set_recommended_matplotlib,
 )
@@ -99,7 +100,8 @@ __all__ = (
     "estimate_order_of_convergence",
     "BlockTimer",
     "IterationTimer",
-    "timeme",
+    "timeit",
+    "profileit",
     "get_logger",
     "set_recommended_matplotlib",
 )

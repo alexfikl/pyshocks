@@ -63,11 +63,10 @@ class SSWENO242(FiniteDifferenceScheme):
     nu: float = 1.0e-2
     c: float = 1.0e-12
 
-    # first derivative
+    # sbp operators
     P: ClassVar[jnp.ndarray]
+    Q: ClassVar[jnp.ndarray]
     DD: ClassVar[jnp.ndarray]
-
-    Qs: ClassVar[jnp.ndarray]
 
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.SSWENO242):
@@ -99,13 +98,16 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 
     object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
 
-    s = sbp.make_sbp_42_first_derivative_q_stencil(bc.boundary_type, dtype=grid.x.dtype)
+    s = sbp.make_sbp_42_first_derivative_q_stencil(
+        BoundaryType.Periodic, dtype=grid.dtype
+    )
+    Q = sbp.make_sbp_banded_matrix(grid.n, s)
+
     P = sbp.sbp_norm_matrix(scheme.sbp, grid, bc.boundary_type)
-    Q = sbp.make_sbp_matrix_from_stencil(bc.boundary_type, grid.x.size, s)
     D2 = sbp.sbp_second_derivative_matrix(scheme.sbp, grid, bc.boundary_type, scheme.nu)
 
     object.__setattr__(scheme, "P", P)
-    object.__setattr__(scheme, "Qs", Q)
+    object.__setattr__(scheme, "Q", Q)
     object.__setattr__(scheme, "DD", D2)
 
     return scheme
@@ -160,7 +162,7 @@ def _apply_operator_burgers_ssweno242(
     fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = two_point_entropy_flux(scheme.Qs, u)
+    fs = two_point_entropy_flux(scheme.Q, u)
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)

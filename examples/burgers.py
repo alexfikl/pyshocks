@@ -30,10 +30,13 @@ def make_finite_volume(
     order = int(max(order, 1.0)) + 1
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=sw)
     quad = make_leggauss_quadrature(grid, order=order)
-    boundary = make_dirichlet_boundary(ga=lambda t, x: burgers.ex_tophat(grid, t, x))
+
+    from pyshocks import funcs
+
+    boundary = make_dirichlet_boundary(ga=lambda t, x: funcs.burgers_tophat(grid, t, x))
 
     def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return cell_average(quad, lambda x: burgers.ex_tophat(grid, t, x))
+        return cell_average(quad, lambda x: funcs.burgers_tophat(grid, t, x))
 
     return grid, boundary, make_solution
 
@@ -48,6 +51,7 @@ def make_finite_difference(
     periodic: bool = True,
 ) -> Tuple[Grid, Boundary, VectorFunction]:
     from pyshocks import make_uniform_point_grid
+    from pyshocks import funcs
 
     if periodic:
         from pyshocks.scalar import PeriodicBoundary
@@ -59,12 +63,12 @@ def make_finite_difference(
 
         grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
         boundary = make_burgers_sat_boundary(
-            ga=lambda t: burgers.ex_tophat(grid, t, grid.a),
-            gb=lambda t: burgers.ex_tophat(grid, t, grid.b),
+            ga=lambda t: funcs.burgers_tophat(grid, t, grid.a),
+            gb=lambda t: funcs.burgers_tophat(grid, t, grid.b),
         )
 
     def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return burgers.ex_tophat(grid, t, x)
+        return funcs.burgers_tophat(grid, t, x)
 
     return grid, boundary, make_solution
 

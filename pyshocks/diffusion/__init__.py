@@ -30,9 +30,6 @@ Schemes
 
 from typing import Any, Dict, Tuple, Type
 
-import jax.numpy as jnp
-
-from pyshocks import Grid
 from pyshocks.diffusion.schemes import (
     Scheme,
     FiniteVolumeScheme,
@@ -76,44 +73,12 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 
 # }}}
 
-# {{{ exact solutions
-
-
-def ex_expansion(
-    grid: Grid,
-    t: float,
-    x: jnp.ndarray,
-    *,
-    modes: Tuple[float, ...] = (1.0,),
-    amplitudes: Tuple[float, ...] = (1.0,),
-    diffusivity: float = 1.0,
-) -> jnp.ndarray:
-    assert len(modes) > 0
-    assert len(modes) == len(amplitudes)
-    assert diffusivity > 0
-
-    L = grid.b - grid.a
-    return sum(
-        [
-            a
-            * jnp.sin(jnp.pi * n * x / L)
-            * jnp.exp(-diffusivity * (n * jnp.pi / L) ** 2 * t)
-            for a, n in zip(amplitudes, modes)
-        ],
-        jnp.zeros_like(x),  # type: ignore[no-untyped-call]
-    )
-
-
-# }}}
-
-
 __all__ = (
     "Scheme",
     "FiniteVolumeScheme",
     "FiniteDifferenceScheme",
     "CenteredScheme",
     "SBPSAT",
-    "ex_expansion",
     "scheme_ids",
     "make_scheme_from_name",
 )

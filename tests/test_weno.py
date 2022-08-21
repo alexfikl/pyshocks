@@ -40,9 +40,9 @@ def test_weno_smoothness_indicator_vectorization(
     rec = make_reconstruction_from_name(rec_name)
     assert isinstance(rec, WENOJS)
 
-    a = rec.a
-    b = rec.b
-    c = rec.c
+    a = rec.s.a
+    b = rec.s.b
+    c = rec.s.c
 
     nghosts = b.shape[-1] // 2
     nstencils = b.shape[0]
@@ -69,7 +69,7 @@ def test_weno_smoothness_indicator_vectorization(
     # jnp.convolve-based
     from pyshocks.weno import weno_smoothness
 
-    beta1 = weno_smoothness(u, a, b)
+    beta1 = weno_smoothness(rec.s, u)
 
     # }}}
 
@@ -84,7 +84,7 @@ def test_weno_smoothness_indicator_vectorization(
     # jnp.convolve-based
     from pyshocks.weno import weno_reconstruct
 
-    uhat1 = weno_reconstruct(u, c)
+    uhat1 = weno_reconstruct(rec.s, u)
 
     # }}}
 
@@ -117,8 +117,7 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> No
     rec = make_reconstruction_from_name(rec_name)
     assert isinstance(rec, WENOJS)
 
-    a = rec.a
-    b = rec.b
+    b = rec.s.b
 
     nghosts = b.shape[-1] // 2
     n = n + 2 * nghosts
@@ -136,9 +135,9 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> No
 
     from pyshocks.weno import weno_smoothness
 
-    beta = weno_smoothness(u, a, b)
+    beta = weno_smoothness(rec.s, u)
 
-    alpha = rec.d / (rec.eps + beta) ** 2
+    alpha = rec.s.d / (rec.eps + beta) ** 2
     omega = alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
     # }}}
@@ -148,7 +147,7 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> No
     # NOTE: rec.d are the "ideal" coefficients, so we're comparing how
     # close we are to those
 
-    error = jnp.max(jnp.abs(omega[:, m] - rec.d))
+    error = jnp.max(jnp.abs(omega[:, m] - rec.s.d))
     logger.info("error[%s, %s]: %.8e", type(rec).__name__, is_smooth, error)
 
     if is_smooth:
@@ -221,8 +220,8 @@ def test_weno_vs_pyweno(
 
     from pyshocks.weno import weno_smoothness
 
-    betar = weno_smoothness(u[::-1], rec.a, rec.b)[:, ::-1].T
-    betal = weno_smoothness(u, rec.a, rec.b).T
+    betar = weno_smoothness(rec.s, u[::-1])[:, ::-1].T
+    betal = weno_smoothness(rec.s, u).T
 
     error_l = rnorm(grid, sl, betal)
     error_r = rnorm(grid, sr, betar)

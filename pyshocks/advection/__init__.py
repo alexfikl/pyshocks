@@ -49,6 +49,8 @@ from pyshocks.advection.schemes import (
 # NOTE: just providing an alias for common usage
 Upwind = Godunov
 
+# {{{ make_scheme_from_name
+
 _SCHEMES: Dict[str, Type[Scheme]] = {
     "default": Godunov,
     "godunov": Godunov,
@@ -83,6 +85,8 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 
     return cls(**{f.name: kwargs[f.name] for f in fields(cls) if f.name in kwargs})
 
+
+# }}}
 
 __all__ = (
     "Scheme",

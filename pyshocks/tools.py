@@ -4,6 +4,9 @@
 """
 .. currentmodule:: pyshocks
 
+Typing
+------
+
 .. class:: T
     :canonical: pyshocks.tools.T
 
@@ -19,15 +22,23 @@
 .. autoclass:: SpatialFunction
 .. autoclass:: TemporalFunction
 
+Convergence
+-----------
+
 .. autoclass:: EOCRecorder
     :no-show-inheritance:
 .. autofunction:: estimate_order_of_convergence
+
+Timing and Profiling
+--------------------
 
 .. autoclass:: BlockTimer
     :no-show-inheritance:
 .. autoclass:: IterationTimer
     :no-show-inheritance:
-.. autofunction:: timeme
+
+.. autofunction:: timeit
+.. autofunction:: profileit
 """
 
 from dataclasses import dataclass, field
@@ -425,7 +436,7 @@ class IterationTimer:
         return (jnp.sum(t_deltas), jnp.mean(t_deltas[5:-1]), jnp.std(t_deltas[5:-1]))
 
 
-def timeme(func: Callable[P, T]) -> Callable[P, T]:
+def timeit(func: Callable[P, T]) -> Callable[P, T]:
     """Decorator that applies :class:`BlockTimer`."""
 
     @wraps(func)
@@ -435,6 +446,24 @@ def timeme(func: Callable[P, T]) -> Callable[P, T]:
 
         print(t)
         return ret
+
+    return wrapper
+
+
+def profileit(func: Callable[P, T]) -> Callable[P, T]:
+    """Decorator that runs :mod:`cProfile`."""
+    import cProfile
+    import datetime
+
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        today = datetime.datetime.utcnow()
+        filename = f"{func.__name__}-{today}.cProfile".replace(" ", "-")
+
+        prof = cProfile.Profile()
+        retval = prof.runcall(func, *args, **kwargs)
+
+        prof.dump_stats(filename)
+        return retval
 
     return wrapper
 
