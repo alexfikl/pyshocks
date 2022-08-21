@@ -117,8 +117,9 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
         dx_app = D1 @ (grid.x**i)
 
         if is_periodic:
+            # NOTE: x is not periodic, so the first element is incorrect
             error_b = jnp.nan
-            error_i = jnp.linalg.norm(dx_ref - dx_app)
+            error_i = jnp.linalg.norm(dx_ref[2:-2] - dx_app[2:-2])
         else:
             error_b = jnp.linalg.norm(dx_ref - dx_app)
             error_i = jnp.linalg.norm(dx_ref[4:-4] - dx_app[4:-4])
@@ -164,11 +165,17 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
     assert D2.dtype == dtype
 
     # check SBP property [Mattsson2004] Equation 10
-    S = sbp.sbp_matrix_from_name(op, grid, bc, "S")
-    BS = B @ S
-    error = abs(
-        dotp(v, D2 @ v) + dotp(D2 @ v, v) + 2 * dotp(D1 @ v, D1 @ v) - 2 * v @ (BS @ v)
-    )
+    if is_periodic:
+        error = abs(dotp(v, D2 @ v) + dotp(D2 @ v, v) + 2 * dotp(D1 @ v, D1 @ v))
+    else:
+        S = sbp.sbp_matrix_from_name(op, grid, bc, "S")
+        BS = B @ S
+        error = abs(
+            dotp(v, D2 @ v)
+            + dotp(D2 @ v, v)
+            + 2 * dotp(D1 @ v, D1 @ v)
+            - 2 * v @ (BS @ v)
+        )
 
     logger.info("sbp error: %.12e", error)
     # FIXME: why is this so large?

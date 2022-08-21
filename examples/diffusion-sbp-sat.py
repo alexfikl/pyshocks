@@ -15,7 +15,7 @@ from pyshocks import (
     predict_timestep,
 )
 from pyshocks import diffusion, sbp, get_logger
-from pyshocks.scalar import PeriodicBoundary, make_sat_boundary
+from pyshocks.scalar import PeriodicBoundary, make_diffusion_sat_boundary
 
 logger = get_logger("diffusion-sbp-sat")
 
@@ -49,14 +49,20 @@ def main(
 
     # set up user data
     diffusivity = jnp.ones_like(grid.x)  # type: ignore
-    func = partial(diffusion.ex_expansion, grid, diffusivity=diffusivity[0])
+    func = partial(
+        diffusion.ex_expansion,
+        # NOTE: odd nodes are not periodic!
+        grid,
+        modes=(2,),
+        diffusivity=diffusivity[0],
+    )
     u0 = func(0.0, grid.x)
 
     # set up boundary conditions
     if is_periodic:
         boundary: Boundary = PeriodicBoundary()
     else:
-        boundary = make_sat_boundary(
+        boundary = make_diffusion_sat_boundary(
             ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
         )
 
@@ -83,7 +89,6 @@ def main(
         ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
     # }}}
 
@@ -113,7 +118,8 @@ def main(
     for event in timestepping.step(method, u0, tfinal=tfinal):
         if verbose:
             umax = jnp.max(jnp.abs(event.u[s]))
-            logger.info("%s umax %.5e", event, umax)
+            usqr = jnp.sqrt(event.u[s] @ (scheme.P * event.u[s]))
+            logger.info("%s umax %.5e usqr %.5e", event, umax, usqr)
 
         if interactive:
             ln0.set_ydata(event.u[s])
@@ -132,7 +138,8 @@ def main(
         ax = fig.gca()
 
         ax.plot(grid.x[s], event.u[s])
-        ax.plot(grid.x[s], func(tfinal, grid.x), "k--")
+        ax.plot(grid.x[s], u0[s], "k--")
+        ax.plot(grid.x[s], func(tfinal, grid.x), "k:")
         ax.set_xlim([grid.a, grid.b])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")

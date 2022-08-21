@@ -139,8 +139,6 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
     object.__setattr__(scheme, "P", P)
     object.__setattr__(scheme, "D2", D2)
 
-    breakpoint()
-
     # }}}
 
     # {{{ boundary

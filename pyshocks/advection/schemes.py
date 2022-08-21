@@ -225,10 +225,9 @@ class SBPSAT(FiniteDifferenceScheme):
 def _bind_advection_sbp(  # type: ignore[misc]
     scheme: SBPSAT, grid: UniformGrid, bc: Boundary
 ) -> SBPSAT:
-    from pyshocks.scalar import SATBoundary
+    # {{{ scheme
 
     assert isinstance(grid, UniformGrid)
-    assert isinstance(bc, SATBoundary)
     assert scheme.velocity is not None
 
     P = sbp.sbp_norm_matrix(scheme.op, grid, bc.boundary_type)
@@ -238,6 +237,29 @@ def _bind_advection_sbp(  # type: ignore[misc]
     object.__setattr__(scheme, "P", P)
     object.__setattr__(scheme, "D1", D1)
 
+    # }}}
+
+    # {{{ boundary
+
+    from pyshocks.scalar import SATBoundary, PeriodicBoundary
+
+    if isinstance(bc, SATBoundary):
+        from pyshocks.scalar import OneSidedAdvectionSATBoundary
+
+        if isinstance(bc.left, OneSidedAdvectionSATBoundary):
+            assert isinstance(bc.right, OneSidedAdvectionSATBoundary)
+
+            object.__setattr__(bc.left, "velocity", scheme.velocity[0])
+            object.__setattr__(bc.right, "velocity", scheme.velocity[-1])
+        else:
+            assert not isinstance(bc.right, OneSidedAdvectionSATBoundary)
+    elif isinstance(bc, PeriodicBoundary):
+        pass
+    else:
+        raise TypeError(f"unsupported boundary type: '{type(bc).__name__}'")
+
+    # }}}
+
     return scheme
 
 
@@ -245,19 +267,8 @@ def _bind_advection_sbp(  # type: ignore[misc]
 def _apply_operator_sbp_sat_21(
     scheme: SBPSAT, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    from pyshocks.scalar import SATBoundary
-
-    assert isinstance(bc, SATBoundary)
-
-    assert bc.left is not None
-    ga = evaluate_boundary(bc.left, grid, t, u)
-    ga = (scheme.velocity[0] > 0) * ga
-
-    assert bc.right is not None
-    gb = evaluate_boundary(bc.right, grid, t, u)
-    gb = (scheme.velocity[-1] < 0) * gb
-
-    return -scheme.velocity * (scheme.D1 @ u) - (ga + gb) / scheme.P
+    gb = evaluate_boundary(bc, grid, t, u)
+    return -scheme.velocity * (scheme.D1 @ u) - gb / scheme.P
 
 
 # }}}

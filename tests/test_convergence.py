@@ -336,9 +336,9 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
         return f"advection_{self.scheme_name}_{self.sbp_name}"
 
     def make_boundary(self, grid: Grid) -> Boundary:
-        from pyshocks.scalar import make_sat_boundary
+        from pyshocks.scalar import make_advection_sat_boundary
 
-        return make_sat_boundary(
+        return make_advection_sat_boundary(
             ga=partial(self.evaluate, grid, x=grid.a),
             gb=partial(self.evaluate, grid, x=grid.b),
         )
@@ -396,7 +396,7 @@ def test_advection_convergence(
     a: float = -1.0,
     b: float = +1.0,
     tfinal: float = 1.0,
-    visualize: bool = False,
+    visualize: bool = True,
 ) -> None:
     from pyshocks import EOCRecorder
 

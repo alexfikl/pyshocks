@@ -8,13 +8,14 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
+    Boundary,
     make_uniform_point_grid,
     bind,
     apply_operator,
     predict_timestep,
 )
 from pyshocks import advection, sbp, get_logger
-from pyshocks.scalar import make_sat_boundary
+from pyshocks.scalar import PeriodicBoundary, make_advection_sat_boundary
 
 logger = get_logger("advection-sbp-sat")
 
@@ -32,6 +33,7 @@ def main(
     n: int = 512,
     tfinal: float = 3.0,
     theta: float = 1.0,
+    is_periodic: bool = True,
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
@@ -47,7 +49,7 @@ def main(
     # {{{ setup
 
     # set up grid
-    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
+    grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0, is_periodic=is_periodic)
 
     # set up user data
     velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
@@ -55,7 +57,12 @@ def main(
     u0 = func(0.0, grid.x)
 
     # set up boundary conditions
-    boundary = make_sat_boundary(ga=lambda t: func(t, grid.a), gb=lambda t: 0.0)
+    if is_periodic:
+        boundary: Boundary = PeriodicBoundary()
+    else:
+        boundary = make_advection_sat_boundary(
+            ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
+        )
 
     # set up scheme
     op = sbp.make_operator_from_name(sbp_op_name)
@@ -80,7 +87,6 @@ def main(
         ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
     # }}}
 
@@ -129,10 +135,11 @@ def main(
         ax = fig.gca()
 
         ax.plot(grid.x[s], event.u[s])
+        ax.plot(grid.x[s], u0[s], "k--")
+        ax.plot(grid.x[s], func(tfinal, grid.x), "k:")
         ax.set_xlim([grid.a, grid.b])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
         fig.savefig(outdir / f"advection_{scheme.name}_{n:05d}")
         plt.close(fig)

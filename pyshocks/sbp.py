@@ -90,6 +90,14 @@ SBP 4-2
 .. autofunction:: make_sbp_42_second_derivative_s_stencil
 .. autofunction:: make_sbp_42_second_derivative_c_stencils
 .. autofunction:: make_sbp_42_second_derivative_d_stencils
+
+SBP 6-4
+^^^^^^^
+
+.. autoclass:: SBP64
+
+.. autofunction:: make_sbp_64_norm_stencil
+.. autofunction:: make_sbp_64_first_derivative_q_stencil
 """
 
 from dataclasses import dataclass
@@ -314,7 +322,7 @@ def make_sbp_mattsson2012_second_derivative(
     bc: BoundaryType,
     b: jnp.ndarray,
     R: jnp.ndarray,
-    S: jnp.ndarray,
+    S: Optional[jnp.ndarray] = None,
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
     n = grid.x.size
@@ -328,15 +336,19 @@ def make_sbp_mattsson2012_second_derivative(
     P = jnp.diag(P)  # type: ignore[no-untyped-call]
 
     # get Bbar matrix ([Mattsson2012] Definition 2.3)
-    Bbar = jnp.zeros((n, n), dtype=dtype)  # type: ignore[no-untyped-call]
-    Bbar = Bbar.at[0, 0].set(-b[0])
-    Bbar = Bbar.at[-1, -1].set(b[-1])
+    if bc != BoundaryType.Periodic:
+        Bbar = jnp.zeros((n, n), dtype=dtype)  # type: ignore[no-untyped-call]
+        Bbar = Bbar.at[0, 0].set(-b[0])
+        Bbar = Bbar.at[-1, -1].set(b[-1])
+        BS = Bbar @ S
+    else:
+        BS = 0
 
     # put it all together ([Mattsson2012] Definition 2.4)
     B = jnp.diag(b)  # type: ignore[no-untyped-call]
     M = D.T @ P @ B @ D + R
 
-    return invP @ (-M + Bbar @ S)
+    return invP @ (-M + BS)
 
 
 @singledispatch
@@ -453,8 +465,11 @@ def _sbp_21_second_derivative_matrix(
     R = make_sbp_21_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
 
     # get S matrix
-    s = make_sbp_21_second_derivative_s_stencil(bc, dtype=dtype)
-    S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
+    if bc == BoundaryType.Periodic:
+        S = None
+    else:
+        s = make_sbp_21_second_derivative_s_stencil(bc, dtype=dtype)
+        S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
 
     return make_sbp_mattsson2012_second_derivative(op, grid, bc, b, R, S)
 
@@ -654,8 +669,11 @@ def _sbp_42_second_derivative_matrix(
     R = make_sbp_42_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
 
     # get S matrix
-    s = make_sbp_42_second_derivative_s_stencil(bc, dtype=dtype)
-    S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
+    if bc == BoundaryType.Periodic:
+        S = None
+    else:
+        s = make_sbp_42_second_derivative_s_stencil(bc, dtype=dtype)
+        S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
 
     return make_sbp_mattsson2012_second_derivative(op, grid, bc, b, R, S)
 

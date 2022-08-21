@@ -38,13 +38,12 @@ Simultaneous-Approximation-Term (SAT) Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: OneSidedSATBoundary
+.. autoclass:: OneSidedAdvectionSATBoundary
 .. autoclass:: OneSidedDiffusionSATBoundary
+.. autoclass:: OneSidedBurgersBoundary
 .. autoclass:: SATBoundary
 
-.. autoclass:: OneSidedSSWENOBurgersBoundary
-.. autoclass:: SSWENOBurgersBoundary
-
-.. autofunction:: make_sat_boundary
+.. autofunction:: make_advection_sat_boundary
 .. autofunction:: make_diffusion_sat_boundary
 .. autofunction:: make_burgers_sat_boundary
 """
@@ -330,7 +329,7 @@ class DirichletBoundary(OneSidedBoundary):
     .. attribute:: f
 
         Callable that can be used to evaluate the boundary condition in the
-        ghost cells on the given :attr:`~pyshocks.OneSidedBoundary.side`.
+        ghost cells on the given :attr:`~OneSidedBoundary.side`.
 
     .. automethod:: __init__
     """
@@ -382,7 +381,7 @@ class NeumannBoundary(OneSidedBoundary):
     .. attribute:: f
 
         Callable that can be used to evaluate the boundary condition in the
-        ghost cells on the given :attr:`~pyshocks.OneSidedBoundary.side`.
+        ghost cells on the given :attr:`~OneSidedBoundary.side`.
 
     .. automethod:: __init__
     """
@@ -513,9 +512,28 @@ class SATBoundary(TwoSidedBoundary):
     right: OneSidedSATBoundary
 
 
-@evaluate_boundary.register(OneSidedSATBoundary)
-def _evaluate_boundary_sat(
-    bc: OneSidedSATBoundary, grid: Grid, t: float, u: jnp.ndarray
+# }}}
+
+
+# {{{ advection SAT boundary conditions
+
+
+@dataclass(frozen=True)
+class OneSidedAdvectionSATBoundary(OneSidedSATBoundary):
+    """Implements the SAT boundary condition for the advection equation.
+
+    .. attribute:: velocity
+
+        Velocity at the boundary (not dotted with the normal), which is used
+        to determine if the boundary conditions is necessary.
+    """
+
+    velocity: float
+
+
+@evaluate_boundary.register(OneSidedAdvectionSATBoundary)
+def _evaluate_boundary_advection_sat(
+    bc: OneSidedAdvectionSATBoundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert grid.nghosts == 0
     assert grid.x.shape == u.shape
@@ -523,24 +541,24 @@ def _evaluate_boundary_sat(
     i = grid.b_[bc.side]
     e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
 
-    return bc.tau * (u[i] - bc.g(t)) * e_i
+    return e_i * jnp.where(bc.side * bc.velocity < 0, 0.0, bc.tau * (u[i] - bc.g(t)))
 
 
-def make_sat_boundary(
+def make_advection_sat_boundary(
     ga: TemporalFunction, gb: Optional[TemporalFunction] = None
 ) -> SATBoundary:
     if gb is None:
         gb = ga
 
-    ba = OneSidedSATBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedSATBoundary(side=+1, g=gb, tau=1.0)
+    ba = OneSidedAdvectionSATBoundary(side=-1, g=ga, tau=1.0, velocity=1.0)
+    bb = OneSidedAdvectionSATBoundary(side=+1, g=gb, tau=1.0, velocity=1.0)
     return SATBoundary(left=ba, right=bb)
 
 
 # }}}
 
 
-# {{{ Diffusion SAT boundary conditions
+# {{{ diffusion SAT boundary conditions
 
 
 @dataclass(frozen=True)
@@ -592,7 +610,7 @@ def make_diffusion_sat_boundary(
 
 
 @dataclass(frozen=True)
-class OneSidedSSWENOBurgersBoundary(OneSidedSATBoundary):
+class OneSidedBurgersBoundary(OneSidedSATBoundary):
     """SSWENO boundary conditions for Burgers' equation.
 
     The boundary conditions implemented here only consider the inviscid problem,
@@ -601,9 +619,9 @@ class OneSidedSSWENOBurgersBoundary(OneSidedSATBoundary):
     """
 
 
-@evaluate_boundary.register(OneSidedSSWENOBurgersBoundary)
+@evaluate_boundary.register(OneSidedBurgersBoundary)
 def _evaluate_boundary_ssweno_burgers(
-    bc: OneSidedSSWENOBurgersBoundary, grid: Grid, t: float, u: jnp.ndarray
+    bc: OneSidedBurgersBoundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert grid.nghosts == 0
     assert grid.x.shape == u.shape
@@ -622,8 +640,8 @@ def make_burgers_sat_boundary(
     if gb is None:
         gb = ga
 
-    ba = OneSidedSSWENOBurgersBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedSSWENOBurgersBoundary(side=+1, g=gb, tau=1.0)
+    ba = OneSidedBurgersBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedBurgersBoundary(side=+1, g=gb, tau=1.0)
     return SATBoundary(left=ba, right=bb)
 
 
