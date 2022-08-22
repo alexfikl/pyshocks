@@ -321,8 +321,7 @@ class AdvectionTestCase(FiniteVolumeTestCase):
         # most robust of the WENO family of schemes). The choice here seems to work!
 
         def func(x: jnp.ndarray) -> jnp.ndarray:
-            u0 = partial(funcs.ic_sine_sine, grid)
-            return funcs.advection_from_constant_velocity(t, x, a=self.a, u0=u0)
+            return funcs.ic_sine_sine(grid, x - self.a * t)
 
         return self.cell_average(grid, func)
 
@@ -354,8 +353,7 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
         )
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
-        u0 = partial(funcs.ic_sine_sine, grid)
-        return funcs.advection_from_constant_velocity(t, x, a=self.a, u0=u0)
+        return funcs.ic_sine_sine(grid, x - self.a * t)
 
     def norm(
         self,

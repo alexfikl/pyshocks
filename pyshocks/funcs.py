@@ -11,7 +11,12 @@ equations.
 Advection Equation Solutions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: advection_from_constant_velocity
+For a constant velocity field :math:`a`, exact solutions can be obtained from
+the initial condition :math:`u_0(x)` as
+
+.. math::
+
+    u(t, x) = u_0(x - a t).
 
 Diffusion Equation Solutions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -42,7 +47,6 @@ from typing import Optional, Tuple
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
-from pyshocks.tools import SpatialFunction
 
 # {{{ misc
 
@@ -222,22 +226,8 @@ def ic_boxcar(
 # {{{ advection
 
 
-def advection_from_constant_velocity(
-    t: float, x: jnp.ndarray, *, a: float, u0: SpatialFunction
-) -> jnp.ndarray:
-    """Evaluates exact solution for a constant velocity field.
-
-    The exact solution is simply given by the traveling wave
-
-    .. math::
-
-        u(t, x) = u_0(x - a t).
-    """
-
-    return u0(x - a * t)
-
-
 # }}}
+
 
 # {{{ diffusion
 

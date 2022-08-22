@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-from functools import partial
 from typing import Tuple
 
 import jax
@@ -35,7 +34,7 @@ def make_solution(
             return funcs.ic_constant(grid, x, c=a)
 
         def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return funcs.advection_from_constant_velocity(t, x, a=a, u0=ic_sine)
+            return ic_sine(x - a * t)
 
     elif name == "sign":
 
@@ -63,28 +62,13 @@ def make_solution(
 def make_boundary_conditions(
     name: str, solution: VectorFunction, *, a: float = 1.0
 ) -> Boundary:
-    from pyshocks import funcs
+    from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
 
     bc: Boundary
     if name == "const":
-        from pyshocks.scalar import PeriodicBoundary
-
         bc = PeriodicBoundary()
     elif name in ["sign", "double_sign"]:
-
-        def bc_left(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return funcs.advection_from_constant_velocity(
-                t, x, a=-a, u0=partial(solution, t)
-            )
-
-        def bc_right(t: float, x: jnp.ndarray) -> jnp.ndarray:
-            return funcs.advection_from_constant_velocity(
-                t, x, a=+a, u0=partial(solution, t)
-            )
-
-        from pyshocks.scalar import make_dirichlet_boundary
-
-        bc = make_dirichlet_boundary(ga=jax.jit(bc_left), gb=jax.jit(bc_right))
+        bc = make_dirichlet_boundary(ga=jax.jit(solution))
     else:
         raise ValueError(f"unknown example: '{name}'")
 

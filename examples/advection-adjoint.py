@@ -215,6 +215,7 @@ def main(
     tfinal: float = 1.0,
     theta: float = 0.75,
     bctype: str = "dirichlet",
+    c_velocity: float = 1.0,
     interactive: bool = False,
     visualize: bool = True,
 ) -> None:
@@ -227,7 +228,7 @@ def main(
     from pyshocks import make_uniform_cell_grid
 
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
-    func_velocity = partial(funcs.ic_constant, grid, c=1.0)
+    func_velocity = partial(funcs.ic_constant, grid, c=c_velocity)
     func_ic = partial(funcs.ic_sine, grid, k=1)
 
     from pyshocks import make_leggauss_quadrature, cell_average
@@ -242,8 +243,6 @@ def main(
 
     # {{{ boundary conditions
 
-    solution = partial(funcs.advection_from_constant_velocity, a=1.0, u0=func_ic)
-
     u0 = cell_average(quad, func_ic)
 
     boundary: Boundary
@@ -254,7 +253,7 @@ def main(
     elif bctype == "dirichlet":
         from pyshocks.scalar import make_dirichlet_boundary
 
-        boundary = make_dirichlet_boundary(solution)
+        boundary = make_dirichlet_boundary(lambda t, x: func_ic(x - c_velocity * t))
     else:
         raise ValueError(bctype)
 
