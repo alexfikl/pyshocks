@@ -997,6 +997,7 @@ def make_sbp_64_first_derivative_q_stencil(
 # {{{ make_operator_from_name
 
 _OPERATORS: Dict[str, Type[SBPOperator]] = {
+    "default": SBP42,
     "sbp21": SBP21,
     "sbp42": SBP42,
     "sbp64": SBP64,

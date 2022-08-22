@@ -116,7 +116,7 @@ class Grid:
 
     @property
     def n(self) -> int:
-        return int(self.x.size) - 2 * self.nghosts
+        return int(self.x.size)  # - 2 * self.nghosts
 
     @property
     def i_(self) -> slice:

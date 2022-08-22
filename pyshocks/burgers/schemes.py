@@ -32,6 +32,13 @@ class Scheme(SchemeBase):
     """
 
 
+@flux.register(Scheme)
+def _flux_burgers(
+    scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray
+) -> jnp.ndarray:
+    return u**2 / 2
+
+
 @predict_timestep.register(Scheme)
 def _predict_timestep_burgers(
     scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
@@ -48,13 +55,6 @@ class FiniteVolumeScheme(Scheme, ConservationLawScheme):
 
     .. automethod:: __init__
     """
-
-
-@flux.register(FiniteVolumeScheme)
-def _flux_burgers(
-    scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray
-) -> jnp.ndarray:
-    return u**2 / 2
 
 
 @dataclass(frozen=True)

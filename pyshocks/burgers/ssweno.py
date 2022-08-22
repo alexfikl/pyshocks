@@ -70,7 +70,7 @@ class SSWENO242(FiniteDifferenceScheme):
     rec: reconstruction.SSWENO242
     sbp: sbp.SBP42
 
-    nu: float = 1.0e-2
+    nu: float = 0.0
     c: float = 1.0e-12
 
     # sbp operators
@@ -106,7 +106,7 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
         assert isinstance(bc.left, OneSidedBurgersBoundary)
         assert isinstance(bc.right, OneSidedBurgersBoundary)
 
-    object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
+    # object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
 
     q = sbp.make_sbp_42_first_derivative_q_stencil(
         BoundaryType.Periodic, dtype=grid.dtype
@@ -131,12 +131,14 @@ def _flux_burgers_ssweno242(
 
 @predict_timestep.register(SSWENO242)
 def _predict_timestep_burgers_ssweno242(
-    scheme: SSWENO242, grid: Grid, t: float, u: jnp.ndarray
+    scheme: SSWENO242, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    return jnp.minimum(
-        predict_timestep.dispatch(FiniteDifferenceScheme)(scheme, grid, t, u),
-        0.5 * grid.dx_min**2 / scheme.nu,
-    )
+    dt = predict_timestep.dispatch(FiniteDifferenceScheme)(scheme, grid, bc, t, u)
+
+    if scheme.nu > 0:
+        dt = jnp.minimum(dt, 0.5 * grid.dx_min**2 / scheme.nu)
+
+    return dt
 
 
 @apply_operator.register(SSWENO242)
@@ -170,7 +172,7 @@ def _apply_operator_burgers_ssweno242(
     fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = two_point_entropy_flux(scheme.q, u)
+    fs = two_point_entropy_flux(scheme.q.int, u)
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
@@ -186,8 +188,10 @@ def _apply_operator_burgers_ssweno242(
     # NOTE: the viscous part is described only in terms of the SBP matrices,
     # not as a flux, in [Fisher2013], so we're keeping it that way here too
 
-    # gssw = scheme.DD @ w
-    gssw = 0.0
+    if scheme.nu > 0:
+        gssw = scheme.DD @ w
+    else:
+        gssw = 0.0
 
     # }}}
 

@@ -16,7 +16,7 @@ from pyshocks import (
     apply_operator,
     predict_timestep,
 )
-from pyshocks import burgers, limiters, reconstruction, get_logger
+from pyshocks import burgers, limiters, reconstruction, sbp, get_logger
 
 logger = get_logger("burgers")
 
@@ -237,6 +237,13 @@ if __name__ == "__main__":
         choices=limiters.limiter_ids(),
     )
     parser.add_argument(
+        "-p",
+        "--sbp",
+        default="default",
+        type=str.lower,
+        choices=sbp.operator_ids(),
+    )
+    parser.add_argument(
         "--alpha", default=1.0, type=float, help="Lax-Friedrichs scheme parameter"
     )
     parser.add_argument("-n", "--numcells", type=int, default=256)
@@ -246,9 +253,10 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    op = sbp.make_operator_from_name(args.sbp)
     lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
     rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
-    ascheme = burgers.make_scheme_from_name(args.scheme, rec=rec)
+    ascheme = burgers.make_scheme_from_name(args.scheme, rec=rec, sbp=op)
 
     from pyshocks.tools import set_recommended_matplotlib
 
