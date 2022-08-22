@@ -106,7 +106,7 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
         assert isinstance(bc.left, OneSidedBurgersBoundary)
         assert isinstance(bc.right, OneSidedBurgersBoundary)
 
-    # object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
+    object.__setattr__(scheme, "nu", 1.0e-3)
 
     q = sbp.make_sbp_42_first_derivative_q_stencil(
         BoundaryType.Periodic, dtype=grid.dtype
@@ -163,8 +163,8 @@ def _apply_operator_burgers_ssweno242(
     fm = (f - alpha * u) / 2
 
     # reconstruct
-    _, fp = reconstruct(scheme.rec, grid, bc.boundary_type, fp)
-    fm, _ = reconstruct(scheme.rec, grid, bc.boundary_type, fm)
+    fp, _ = reconstruct(scheme.rec, grid, bc.boundary_type, fp)
+    _, fm = reconstruct(scheme.rec, grid, bc.boundary_type, fm)
 
     # {{{ inviscid flux
 

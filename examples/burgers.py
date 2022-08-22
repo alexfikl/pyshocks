@@ -256,7 +256,9 @@ if __name__ == "__main__":
     op = sbp.make_operator_from_name(args.sbp)
     lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
     rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
-    ascheme = burgers.make_scheme_from_name(args.scheme, rec=rec, sbp=op)
+    ascheme = burgers.make_scheme_from_name(
+        args.scheme, rec=rec, sbp=op, alpha=args.alpha
+    )
 
     from pyshocks.tools import set_recommended_matplotlib
 

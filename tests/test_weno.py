@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from dataclasses import replace
 from itertools import product
 from typing import List, Tuple
 
@@ -352,11 +351,11 @@ def test_weno_smooth_reconstruction_order_cell_values(
 @pytest.mark.parametrize(
     "func_name",
     [
-        "sine",
+        # "sine",
         # NOTE: mostly for debugging to see where the points fall
         # "linear",
-        # "quadratic",
-        # "cubic"
+        "quadratic",
+        "cubic",
     ],
 )
 def test_weno_smooth_reconstruction_order_point_values(
@@ -364,9 +363,8 @@ def test_weno_smooth_reconstruction_order_point_values(
     order: int,
     resolutions: List[int],
     func_name: str,
-    visualize: bool = False,
+    visualize: bool = True,
 ) -> None:
-    from pyshocks.weno import ss_weno_parameters
     from pyshocks import EOCRecorder, rnorm
 
     eoc_l = EOCRecorder(name="ul")
@@ -382,12 +380,9 @@ def test_weno_smooth_reconstruction_order_point_values(
     for n in resolutions:
         grid = make_uniform_point_grid(-1.0, 1.0, n=n, nghosts=6)
         u0 = func(grid.x)
+        ul_ref = ur_ref = func(grid.f[1:-1])
 
         rec = make_reconstruction_from_name(name)
-        if name == "ssweno242":
-            rec = replace(rec, eps=ss_weno_parameters(grid, u0))
-
-        ul_ref = ur_ref = func(grid.f[1:-1])
         ul, ur = reconstruct(rec, grid, BoundaryType.Ghost, u0)
 
         ul = ul[1:]
@@ -416,70 +411,6 @@ def test_weno_smooth_reconstruction_order_point_values(
 
     assert eoc_l.satisfied(order - 0.5)
     assert eoc_r.satisfied(order - 0.5)
-
-
-# }}}
-
-
-# {{{ test_weno_boundary_reconstruction
-
-
-@pytest.mark.parametrize(
-    ("name", "order", "resolutions"),
-    [
-        ("ssweno242", 2, list(range(192, 384 + 1, 32))),
-    ],
-)
-@pytest.mark.parametrize(
-    "func_name",
-    [
-        "sine",
-        # NOTE: mostly for debugging to see where the points fall
-        # "linear",
-        # "quadratic",
-        # "cubic"
-    ],
-)
-def test_weno_boundary_reconstruction(
-    name: str,
-    order: int,
-    resolutions: List[int],
-    func_name: str,
-    visualize: bool = False,
-) -> None:
-    from pyshocks.weno import ss_weno_parameters
-
-    func = get_function(func_name)
-
-    if visualize:
-        import matplotlib.pyplot as mp
-
-        fig = mp.figure()
-        ax = fig.gca()
-
-    for n in resolutions:
-        grid = make_uniform_point_grid(-1.0, 1.0, n=n, nghosts=0)
-        u0 = func(grid.x)
-
-        rec = make_reconstruction_from_name(name)
-        if name == "ssweno242":
-            rec = replace(rec, eps=ss_weno_parameters(grid, u0))
-
-        ul_ref = func(grid.f)
-        ul, _ = reconstruct(rec, grid, BoundaryType.Ghost, u0)
-
-        if visualize:
-            # ax.semilogy(grid.x[grid.i_], jnp.abs(ul_ref - ul)[grid.i_], "-")
-            # ax.semilogy(grid.x[grid.i_], jnp.abs(ur_ref - ur)[grid.i_], "--")
-            ax.plot(grid.x[grid.i_], ul[grid.i_])
-            ax.plot(grid.x[grid.i_], ul_ref[grid.i_], "--")
-
-        break
-
-    if visualize:
-        ax.set_xlabel("$x$")
-        ax.set_ylabel("$u^L$")
-        fig.savefig(f"test_weno_bdry_{name}_{func_name}")
 
 
 # }}}

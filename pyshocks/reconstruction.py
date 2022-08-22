@@ -427,7 +427,7 @@ class SSWENO242(Reconstruction):
     scheme.
     """
 
-    eps: float = 1.0e-6
+    eps: float = 1.0e-12
 
     # coefficients
     si: ClassVar[weno.Stencil]
@@ -446,18 +446,30 @@ class SSWENO242(Reconstruction):
         return 3
 
 
-def _reconstruct_ss_weno_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
-    omega = weno.ss_weno_242_weights(rec.si, u, eps=rec.eps)
-    uhat = weno.weno_reconstruct(rec.si, u)
+def _reconstruct_ss_weno_side(
+    rec: SSWENO242, grid: Grid, bc: "BoundaryType", u: jnp.ndarray
+) -> jnp.ndarray:
+    if grid.nghosts >= rec.stencil_width:
+        w = u
+    else:
+        assert grid.nghosts == 0
 
-    return jnp.sum(omega * uhat, axis=0)
+        # FIXME: put this in the weno code to "prepare" for WENO
+        from pyshocks.schemes import BoundaryType
 
+        if bc == BoundaryType.Periodic:
+            w = jnp.pad(  # type: ignore[no-untyped-call]
+                u, rec.stencil_width, mode="wrap"
+            )
+        else:
+            w = jnp.pad(  # type: ignore[no-untyped-call]
+                u, rec.stencil_width, constant_values=jnp.inf
+            )
 
-def _reconstruct_ss_weno_boundary_side(rec: SSWENO242, u: jnp.ndarray) -> jnp.ndarray:
-    omega = weno.ss_weno_242_weights(rec.si, u, eps=rec.eps)
-    uhat = weno.weno_reconstruct(rec.si, u)
+    omega = weno.ss_weno_242_weights(rec.si, w, eps=rec.eps)
+    what = weno.weno_reconstruct(rec.si, w)
 
-    return jnp.sum(omega * uhat, axis=0)
+    return jnp.sum(omega * what, axis=0)
 
 
 @reconstruct.register(SSWENO242)
@@ -469,15 +481,8 @@ def _reconstruct_ssweno242(
     if not isinstance(grid, UniformGrid):
         raise NotImplementedError("SSWENO is only implemented for uniform grids")
 
-    assert grid.nghosts == 0 or grid.nghosts >= rec.stencil_width
-
-    if grid.nghosts == 0:
-        # FIXME: need a cleaner way to denote we need the boundary stencils
-        ur = _reconstruct_ss_weno_boundary_side(rec, u)
-        ul = _reconstruct_ss_weno_boundary_side(rec, u[::-1])[::-1]
-    else:
-        ur = _reconstruct_ss_weno_side(rec, u)
-        ul = _reconstruct_ss_weno_side(rec, u[::-1])[::-1]
+    ur = _reconstruct_ss_weno_side(rec, grid, bc, u)
+    ul = _reconstruct_ss_weno_side(rec, grid, bc, u[::-1])[::-1]
 
     return ul, ur
 

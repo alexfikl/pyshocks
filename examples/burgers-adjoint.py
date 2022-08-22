@@ -16,7 +16,7 @@ from pyshocks import (
     timeit,
     bind,
 )
-from pyshocks import burgers, reconstruction, limiters, get_logger
+from pyshocks import burgers, sbp, reconstruction, limiters, get_logger
 from pyshocks.checkpointing import InMemoryCheckpoint
 from pyshocks.timestepping import step, adjoint_step, Stepper
 
@@ -377,6 +377,13 @@ if __name__ == "__main__":
         choices=limiters.limiter_ids(),
     )
     parser.add_argument(
+        "-p",
+        "--sbp",
+        default="default",
+        type=str.lower,
+        choices=sbp.operator_ids(),
+    )
+    parser.add_argument(
         "--alpha", default=0.995, type=float, help="Lax-Friedrichs scheme parameter"
     )
     parser.add_argument("-n", "--numcells", type=int, default=256)
@@ -386,9 +393,12 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    op = sbp.make_operator_from_name(args.sbp)
     lm = limiters.make_limiter_from_name(args.limiter, theta=1.0, variant=1)
     rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
-    ascheme = burgers.make_scheme_from_name(args.scheme, rec=rec, alpha=args.alpha)
+    ascheme = burgers.make_scheme_from_name(
+        args.scheme, rec=rec, sbp=op, alpha=args.alpha
+    )
 
     from pyshocks.tools import set_recommended_matplotlib
 
