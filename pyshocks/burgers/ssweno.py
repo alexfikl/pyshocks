@@ -11,29 +11,39 @@ from pyshocks import Grid, Boundary, BoundaryType
 from pyshocks import bind, apply_operator, predict_timestep, flux
 from pyshocks import reconstruction, sbp
 from pyshocks.burgers.schemes import FiniteDifferenceScheme
-
+from pyshocks.sbp import Stencil
 
 # {{{ two-point entropy conservative flux
 
 
 @jax.jit
-def two_point_entropy_flux(q: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
-    uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore[no-untyped-call]
-    qfs = q * (jnp.outer(u, u) + uu + uu.T) / 3
+def two_point_entropy_flux(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+        """First-order entropy-conservative flux."""
+        return (ul * ul + ul * ur + ur * ur) / 6
 
-    # NOTE: u is numbered [1, N] and fluxes are number [0, N] ([Fisher2013] Fig. 1)
+    qr = qi[qi.size // 2 + 1 :]
     fss = jnp.zeros(u.size + 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
 
-    # FIXME: jax unrolls this to `u.size` statements, which is horrible!
-    for i in range(1, u.size):
-        assert 0 <= i < fss.size
+    # FIXME: this only works for the 4-2 scheme
+    # FIXME: boundary stencil is just plain old wrong
+    i = 1
+    fss = fss.at[i].set(
+        2 * qr[0] * fs(u[i - 1], u[i]) + 2 * qr[1] * fs(u[i - 1], u[i + 1])
+    )
+    i = u.size - 1
+    fss = fss.at[i].set(
+        2 * qr[0] * fs(u[i - 1], u[i + 1]) + 2 * qr[1] * fs(u[i - 2], u[i + 1])
+    )
 
-        # NOTE: computes the following sum
-        #   sum(k, i, N) sum(l, 1, i + 1) 2 q[l, k] f(u_l, u_k)
-        # where the python indexing is exclusive, not inclusive!
-        fss = fss.at[i].set(jnp.sum(qfs[:i, i:]))
+    def body(i: int, fss: jnp.ndarray) -> jnp.ndarray:
+        return fss.at[i].set(
+            2 * qr[1] * fs(u[i - 2], u[i])
+            + 2 * qr[0] * fs(u[i - 1], u[i])
+            + 2 * qr[1] * fs(u[i - 1], u[i + 1])
+        )
 
-    return fss
+    return jax.lax.fori_loop(2, u.size - 1, body, fss)
 
 
 # }}}
@@ -65,7 +75,7 @@ class SSWENO242(FiniteDifferenceScheme):
 
     # sbp operators
     P: ClassVar[jnp.ndarray]
-    Q: ClassVar[jnp.ndarray]
+    q: ClassVar[Stencil]
     DD: ClassVar[jnp.ndarray]
 
     def __post_init__(self) -> None:
@@ -98,16 +108,15 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 
     object.__setattr__(scheme, "nu", grid.dx_min ** (4 / 3))
 
-    s = sbp.make_sbp_42_first_derivative_q_stencil(
+    q = sbp.make_sbp_42_first_derivative_q_stencil(
         BoundaryType.Periodic, dtype=grid.dtype
     )
-    Q = sbp.make_sbp_banded_matrix(grid.n, s)
 
     P = sbp.sbp_norm_matrix(scheme.sbp, grid, bc.boundary_type)
     D2 = sbp.sbp_second_derivative_matrix(scheme.sbp, grid, bc.boundary_type, scheme.nu)
 
     object.__setattr__(scheme, "P", P)
-    object.__setattr__(scheme, "Q", Q)
+    object.__setattr__(scheme, "q", q)
     object.__setattr__(scheme, "DD", D2)
 
     return scheme
@@ -144,7 +153,6 @@ def _apply_operator_burgers_ssweno242(
 
     # NOTE: w is taken to be the entropy variable ([Fisher2013] Section 4.1)
     w = u
-    dx = scheme.P * grid.dx_min
 
     # NOTE: use a global Lax-Friedrichs splitting as recommended in [Frenzel2021]
     f = flux(scheme, t, grid.x, u)
@@ -162,7 +170,7 @@ def _apply_operator_burgers_ssweno242(
     fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = two_point_entropy_flux(scheme.Q, u)
+    fs = two_point_entropy_flux(scheme.q, u)
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
@@ -178,7 +186,8 @@ def _apply_operator_burgers_ssweno242(
     # NOTE: the viscous part is described only in terms of the SBP matrices,
     # not as a flux, in [Fisher2013], so we're keeping it that way here too
 
-    gssw = scheme.DD @ w
+    # gssw = scheme.DD @ w
+    gssw = 0.0
 
     # }}}
 
@@ -191,7 +200,7 @@ def _apply_operator_burgers_ssweno242(
     # }}}
 
     # [Fisher2013] Equation 3.45
-    r = (-(fssw[1:] - fssw[:-1]) + gssw + gb) / dx
+    r = -(fssw[1:] - fssw[:-1]) / scheme.P + gb / scheme.P + gssw
 
     # NOTE: a bit hacky, but cleans any boundary goo
     if bc.boundary_type == BoundaryType.Periodic:

@@ -249,55 +249,20 @@ def test_ss_weno_burgers_two_point_flux(bc_type: BoundaryType) -> None:
     q = sbp.make_sbp_42_first_derivative_q_stencil(bc_type, dtype=grid.dtype)
     Q = sbp.make_sbp_banded_matrix(grid.n, q)
 
+    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+        return (ul * ul + ul * ur + ur * ur) / 6
+
     def two_point_flux_numpy_v0(u: jnp.ndarray) -> jnp.ndarray:
         q = jax.device_get(Q)
         w = jax.device_get(u)
-        fs = np.zeros(w.size + 1, dtype=w.dtype)
+        fss = np.zeros(w.size + 1, dtype=w.dtype)
 
         for i in range(1, w.size):
             for j in range(i):
                 for k in range(i, u.size):
-                    fs[i] += q[j, k] * (w[k] * w[k] + w[k] * w[j] + w[j] * w[j]) / 3
+                    fss[i] += 2 * q[j, k] * fs(w[j], w[k])
 
-        return jax.device_put(fs)
-
-    def two_point_flux_numpy_v1(u: jnp.ndarray) -> jnp.ndarray:
-        q = jax.device_get(Q)
-        w = jax.device_get(u)
-
-        ww = np.tile((w * w).reshape(-1, 1), w.size)
-        qfs = q * (np.outer(w, w) + ww + ww.T) / 3
-
-        fs = np.zeros(w.size + 1, dtype=w.dtype)
-        for i in range(1, w.size):
-            fs[i] = np.sum(qfs[:i, i:])
-
-        return jax.device_put(fs)
-
-    def two_point_flux_numpy_v2(u: jnp.ndarray) -> jnp.ndarray:
-        q = jax.device_get(Q)
-        w = jax.device_get(u)
-
-        ww = np.tile((w * w).reshape(-1, 1), w.size)
-        qfs = q * (np.outer(w, w) + ww + ww.T) / 3
-
-        fs = np.zeros(w.size + 1, dtype=w.dtype)
-        for i in range(1, w.size):
-            fs[i] = np.sum(qfs[:i, i:])
-
-        return jax.device_put(fs)
-
-    @jax.jit
-    def two_point_flux_jax_v1(u: jnp.ndarray) -> jnp.ndarray:
-        uu = jnp.tile((u * u).reshape(-1, 1), u.size)  # type: ignore
-        qfs = Q * (jnp.outer(u, u) + uu + uu.T) / 3
-
-        def body(i: int, fss: jnp.ndarray) -> jnp.ndarray:
-            return fss.at[i].set(jnp.sum(qfs[:i, i:]))
-
-        return jax.lax.fori_loop(
-            0, u.size, body, jnp.empty_like(u)  # type: ignore[no-untyped-call]
-        )
+        return jax.device_put(fss)
 
     from pyshocks import BlockTimer
 
@@ -310,49 +275,26 @@ def test_ss_weno_burgers_two_point_flux(bc_type: BoundaryType) -> None:
 
     # }}}
 
-    # {{{ numpy v1
-
-    with BlockTimer() as bt:
-        fs_np = two_point_flux_numpy_v1(u0)
-    logger.info("%s", bt)
-
-    error = jnp.linalg.norm(fs_ref - fs_np) / jnp.linalg.norm(fs_ref)
-    logger.info("error: %.12e", error)
-    assert error < 1.0e-15
-
-    # }}}
-
-    # {{{ numpy v2
-
-    with BlockTimer() as bt:
-        fs_np = two_point_flux_numpy_v2(u0)
-    logger.info("%s", bt)
-
-    error = jnp.linalg.norm(fs_ref - fs_np) / jnp.linalg.norm(fs_ref)
-    logger.info("error: %.12e", error)
-    assert error < 1.0e-15
-
-    # }}}
-
     # {{{ jax
 
     from pyshocks.burgers.ssweno import two_point_entropy_flux
 
     with BlockTimer() as bt:
-        fs_jax = two_point_entropy_flux(Q, u0)
+        fs_jax = two_point_entropy_flux(q.int, u0)
+    logger.info("%s", bt)
+
+    # NOTE: repeat computation for the sake of the JIT, to see the speedup
+    with BlockTimer() as bt:
+        fs_jax = two_point_entropy_flux(q.int, u0)
     logger.info("%s", bt)
 
     error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)
     logger.info("error: %.12e", error)
     assert error < 1.0e-15
 
-    # with BlockTimer() as bt:
-    #     fs_jax = two_point_flux_jax_v1(u0)
-    # logger.info("%s", bt)
-
-    # error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)
-    # logger.info("error: %.12e", error)
-    # assert error < 1.0e-15
+    error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)
+    logger.info("error: %.12e", error)
+    assert error < 1.0e-15
 
     # }}}
 
