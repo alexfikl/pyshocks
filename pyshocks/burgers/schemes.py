@@ -262,4 +262,26 @@ def _numerical_flux_burgers_esweno32(
 # }}}
 
 
+# {{{ SSMUSCL
+
+
+@dataclass(frozen=True)
+class SSMUSCL(FiniteVolumeScheme):
+    def __post_init__(self) -> None:
+        if not isinstance(self.rec, reconstruction.MUSCLS):
+            raise TypeError("SSMUSCL scheme requires the MUSCLS reconstruction")
+
+
+@numerical_flux.register(SSMUSCL)
+def _numerical_flux_burgers_ssmuscl(
+    scheme: SSMUSCL, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks.scalar import scalar_flux_upwind
+
+    return scalar_flux_upwind(scheme, grid, bc.boundary_type, t, u, u)
+
+
+# }}}
+
+
 # vim: fdm=marker

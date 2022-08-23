@@ -254,7 +254,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     op = sbp.make_operator_from_name(args.sbp)
-    lm = limiters.make_limiter_from_name(args.limiter, theta=1.0)
+    lm = limiters.make_limiter_from_name(args.limiter, variant=1, theta=1.0)
     rec = reconstruction.make_reconstruction_from_name(args.reconstruct, lm=lm)
     ascheme = burgers.make_scheme_from_name(
         args.scheme, rec=rec, sbp=op, alpha=args.alpha
