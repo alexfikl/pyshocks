@@ -21,22 +21,29 @@ from pyshocks import burgers, limiters, reconstruction, sbp, get_logger
 logger = get_logger("burgers")
 
 
+def ic_func(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    from pyshocks import funcs
+
+    return funcs.burgers_tophat(grid, t, x)
+
+
 def make_finite_volume(
-    order: float, sw: int, *, a: float, b: float, n: int
+    order: float, sw: int, *, a: float, b: float, n: int, periodic: bool = True
 ) -> Tuple[Grid, Boundary, VectorFunction]:
-    from pyshocks.scalar import make_dirichlet_boundary
+    from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
     from pyshocks import make_uniform_cell_grid, make_leggauss_quadrature, cell_average
 
     order = int(max(order, 1.0)) + 1
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=sw)
     quad = make_leggauss_quadrature(grid, order=order)
 
-    from pyshocks import funcs
-
-    boundary = make_dirichlet_boundary(ga=lambda t, x: funcs.burgers_tophat(grid, t, x))
+    if periodic:
+        boundary: Boundary = PeriodicBoundary()
+    else:
+        boundary = make_dirichlet_boundary(ga=lambda t, x: ic_func(grid, t, x))
 
     def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return cell_average(quad, lambda x: funcs.burgers_tophat(grid, t, x))
+        return cell_average(quad, lambda x: ic_func(grid, t, x))
 
     return grid, boundary, make_solution
 
@@ -50,25 +57,21 @@ def make_finite_difference(
     n: int,
     periodic: bool = True,
 ) -> Tuple[Grid, Boundary, VectorFunction]:
+    from pyshocks.scalar import PeriodicBoundary, make_burgers_sat_boundary
     from pyshocks import make_uniform_point_grid
-    from pyshocks import funcs
 
     if periodic:
-        from pyshocks.scalar import PeriodicBoundary
-
         grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=3)
         boundary: Boundary = PeriodicBoundary()
     else:
-        from pyshocks.scalar import make_burgers_sat_boundary
-
         grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
         boundary = make_burgers_sat_boundary(
-            ga=lambda t: funcs.burgers_tophat(grid, t, grid.a),
-            gb=lambda t: funcs.burgers_tophat(grid, t, grid.b),
+            ga=lambda t: ic_func(grid, t, grid.a),
+            gb=lambda t: ic_func(grid, t, grid.b),
         )
 
     def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return funcs.burgers_tophat(grid, t, x)
+        return ic_func(grid, t, x)
 
     return grid, boundary, make_solution
 
@@ -78,9 +81,9 @@ def main(
     *,
     outdir: pathlib.Path,
     a: float = -1.5,
-    b: float = +1.5,
-    n: int = 256,
-    tfinal: float = 1.0,
+    b: float = 1.5,
+    n: int = 512,
+    tfinal: float = 0.5,
     theta: float = 1.0,
     interactive: bool = False,
     visualize: bool = True,
@@ -124,10 +127,17 @@ def main(
         plt.ion()
 
         ln0, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
+        if isinstance(scheme, burgers.SSMUSCL):
+            from pyshocks.burgers.schemes import hesthaven_limiter
+
+            phi = hesthaven_limiter(u0, variant=scheme.variant)
+            (ln2,) = ax.plot(grid.f[1:-1], phi, "k", lw=1)
+
         ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
+        ax.set_ylim([jnp.min(u0) - 1.5, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
+        ax.set_title(f"t = {0.0:.3f}")
 
     # }}}
 
@@ -168,10 +178,15 @@ def main(
                 logger.info("%s umax %.5e", event, umax)
 
             if interactive:
+                if isinstance(scheme, burgers.SSMUSCL):
+                    phi = hesthaven_limiter(event.u, variant=scheme.variant)
+                    ln2.set_ydata(phi)
+
                 uhat = solution(event.t, grid.x)
                 ln0.set_ydata(uhat[s])
                 ln1.set_ydata(event.u[s])
-                plt.pause(0.2)
+                ax.set_title(f"t = {event.t:.3f}")
+                plt.pause(0.01)
     except StopIteration:
         pass
 

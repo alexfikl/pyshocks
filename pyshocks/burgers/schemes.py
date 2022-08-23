@@ -267,18 +267,82 @@ def _numerical_flux_burgers_esweno32(
 
 @dataclass(frozen=True)
 class SSMUSCL(FiniteVolumeScheme):
-    def __post_init__(self) -> None:
-        if not isinstance(self.rec, reconstruction.MUSCLS):
-            raise TypeError("SSMUSCL scheme requires the MUSCLS reconstruction")
+    """Implements the entropy stable MUSCL scheme described in [Hesthaven2018]_.
+
+    This implements the entropy stable schemes described in Example 8.15
+    from [Hesthaven2018]_. The variants define a first-order and a second-order
+    scheme.
+
+    .. [Hesthaven2018] J. S. Hesthaven, *Numerical Methods for Conservation
+        Laws - From Analysis to Algorithms*,
+        SIAM, 2018.
+
+    .. attribute:: variant
+
+        An integer denoting the version of the schemes described in
+        [Hesthaven2018]_. First variant denotes the limiter defined on
+        page 193 and the second variant denotes the limiter defined on
+        page 194.
+    """
+
+    variant: int = 2
+
+    @property
+    def name(self) -> str:
+        return f"{type(self).__name__}_v{self.variant}".lower()
+
+    @property
+    def order(self) -> int:
+        return self.variant
+
+
+def hesthaven_limiter(u: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
+    # [Hesthaven2018] Page 193
+    # gives phi_{i + 1/2} for i in [0, n - 1]
+    phi = jnp.where(  # type: ignore[no-untyped-call]
+        u[:-1] * u[1:] > 0,
+        1 - jnp.sign(u[:-1]),
+        jnp.where(  # type: ignore[no-untyped-call]
+            u[:-1] >= u[1:],
+            1 - jnp.sign(u[:-1] + u[1:]),
+            -2 * u[:-1] / (u[1:] - u[:-1]),
+        ),
+    )
+
+    if variant == 1:
+        pass
+    else:
+        from pyshocks.limiters import local_slope_ratio
+
+        # [Hesthaven2018] Page 194
+        # r_i for i in [1, n - 1]
+        r = jnp.pad(local_slope_ratio(u), 1)  # type: ignore[no-untyped-call]
+
+        phi = jnp.where(  # type: ignore[no-untyped-call]
+            # if u_i * u_{i + 1} have different signs, revert to variant 1
+            u[:-1] * u[1:] <= 0,
+            phi,
+            # otherwise use second-order scheme
+            jnp.where(  # type: ignore[no-untyped-call]
+                u[:-1] > 0,
+                jnp.minimum(1, r[:-1]),
+                jnp.maximum(1, 2 - r[:-1]),
+            ),
+        )
+
+    return phi
 
 
 @numerical_flux.register(SSMUSCL)
 def _numerical_flux_burgers_ssmuscl(
     scheme: SSMUSCL, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    from pyshocks.scalar import scalar_flux_upwind
+    # FIXME: any way to include this in the MUSCL reconstruction?
+    phi = hesthaven_limiter(u, variant=scheme.variant)
+    up = u[:-1] + 0.5 * phi * (u[1:] - u[:-1])
 
-    return scalar_flux_upwind(scheme, grid, bc.boundary_type, t, u, u)
+    fnum = flux(scheme, t, grid.f, up)
+    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
 
 
 # }}}

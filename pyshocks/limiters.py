@@ -412,46 +412,6 @@ def _evaluate_koren(lm: KorenLimiter, r: jnp.ndarray) -> jnp.ndarray:
 # }}}
 
 
-# {{{ Hesthaven
-
-
-@dataclass(frozen=True)
-class HesthavenLimiter(Limiter):
-    variant: int = 1
-
-
-@slope_limit.register(HesthavenLimiter)
-def _slope_limit_hesthaven(
-    lm: HesthavenLimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
-    if lm.variant == 1:
-        phi = jnp.where(  # type: ignore[no-untyped-call]
-            u[:-1] * u[1:] > 0,
-            1 - jnp.sign(u[:-1]),
-            jnp.where(  # type: ignore[no-untyped-call]
-                u[:-1] >= u[1:],
-                1 - jnp.sign(u[:-1] + u[1:]),
-                -2 * u[:-1] / (u[1:] - u[:-1]),
-            ),
-        )
-    else:
-        r = jnp.pad(local_slope_ratio(u), 1)  # type: ignore[no-untyped-call]
-        phi = jnp.where(  # type: ignore[no-untyped-call]
-            u[1:] * u[:-1] <= 0,
-            0,
-            jnp.where(  # type: ignore[no-untyped-call]
-                u[1:] > 0,
-                jnp.minimum(1, r[:-1]),
-                jnp.maximum(1, 2 - 1 / r[:-1]),
-            ),
-        )
-
-    return phi
-
-
-# }}}
-
-
 # {{{ make_flux_limiter_from_name
 
 
@@ -465,7 +425,6 @@ _LIMITERS: Dict[str, Type[Limiter]] = {
     "vanalbada": VanAlbadaLimiter,
     "vanleer": VanLeerLimiter,
     "koren": KorenLimiter,
-    "hesthaven": HesthavenLimiter,
 }
 
 
