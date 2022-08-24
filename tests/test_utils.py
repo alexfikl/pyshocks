@@ -207,6 +207,25 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
 # {{{ test_ss_weno_burgers_two_point_flux
 
 
+@jax.jit
+def two_point_entropy_flux_21(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+        return (ul * ul + ul * ur + ur * ur) / 6
+
+    qr = qi[qi.size // 2 + 1 :]
+    fss = jnp.zeros(u.size + 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
+
+    i = 1
+    fss = fss.at[i].set(2 * qr[1] * fs(u[i - 1], u[i]))
+    i = u.size - 1
+    fss = fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i + 1]))
+
+    def body(i: int, fss: jnp.ndarray) -> jnp.ndarray:
+        return fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
+
+    return jax.lax.fori_loop(2, u.size - 1, body, fss)
+
+
 def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
     grid = make_uniform_point_grid(a=-1.0, b=1.0, n=n, nghosts=0)
 
@@ -214,15 +233,12 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
 
     bc_type = BoundaryType.Periodic
     q = sbp.make_sbp_21_first_derivative_q_stencil(bc_type, dtype=grid.dtype)
-    Q = sbp.make_sbp_banded_matrix(grid.n, q)
-
-    from pyshocks.burgers.ssweno import two_point_entropy_flux
 
     # check constant
     u = jnp.full_like(grid.x, 1.0)  # type: ignore
 
     fs_ref = (u[1:] * u[1:] + u[1:] * u[:-1] + u[:-1] * u[:-1]) / 6
-    fs = two_point_entropy_flux(Q, u)
+    fs = two_point_entropy_flux_21(q.int, u)
     assert fs.shape == grid.f.shape
 
     # NOTE: constant solutions should just do nothing
@@ -233,7 +249,7 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
     u = jnp.sin(2.0 * jnp.pi * grid.x)
 
     fs_ref = (u[1:] * u[1:] + u[1:] * u[:-1] + u[:-1] * u[:-1]) / 6
-    fs = two_point_entropy_flux(Q, u)
+    fs = two_point_entropy_flux_21(q.int, u)
     assert fs.shape == grid.f.shape
 
     error = jnp.linalg.norm(fs[1:-1] - fs_ref)
@@ -277,15 +293,15 @@ def test_ss_weno_burgers_two_point_flux(bc_type: BoundaryType) -> None:
 
     # {{{ jax
 
-    from pyshocks.burgers.ssweno import two_point_entropy_flux
+    from pyshocks.burgers.ssweno import two_point_entropy_flux_42
 
     with BlockTimer() as bt:
-        fs_jax = two_point_entropy_flux(q.int, u0)
+        fs_jax = two_point_entropy_flux_42(q.int, u0)
     logger.info("%s", bt)
 
     # NOTE: repeat computation for the sake of the JIT, to see the speedup
     with BlockTimer() as bt:
-        fs_jax = two_point_entropy_flux(q.int, u0)
+        fs_jax = two_point_entropy_flux_42(q.int, u0)
     logger.info("%s", bt)
 
     error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)

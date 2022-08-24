@@ -351,11 +351,11 @@ def test_weno_smooth_reconstruction_order_cell_values(
 @pytest.mark.parametrize(
     "func_name",
     [
-        # "sine",
+        "sine",
         # NOTE: mostly for debugging to see where the points fall
         # "linear",
-        "quadratic",
-        "cubic",
+        # "quadratic",
+        # "cubic",
     ],
 )
 def test_weno_smooth_reconstruction_order_point_values(

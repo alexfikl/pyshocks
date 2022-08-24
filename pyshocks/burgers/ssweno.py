@@ -17,16 +17,16 @@ from pyshocks.sbp import Stencil
 
 
 @jax.jit
-def two_point_entropy_flux(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+def two_point_entropy_flux_42(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    # FIXME: this only works for the 4-2 scheme
+    # FIXME: boundary stencil is just plain old wrong
+
     def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
-        """First-order entropy-conservative flux."""
         return (ul * ul + ul * ur + ur * ur) / 6
 
     qr = qi[qi.size // 2 + 1 :]
     fss = jnp.zeros(u.size + 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
 
-    # FIXME: this only works for the 4-2 scheme
-    # FIXME: boundary stencil is just plain old wrong
     i = 1
     fss = fss.at[i].set(
         2 * qr[0] * fs(u[i - 1], u[i]) + 2 * qr[1] * fs(u[i - 1], u[i + 1])
@@ -172,7 +172,7 @@ def _apply_operator_burgers_ssweno242(
     fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = two_point_entropy_flux(scheme.q.int, u)
+    fs = two_point_entropy_flux_42(scheme.q.int, u)
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)

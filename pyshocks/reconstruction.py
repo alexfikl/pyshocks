@@ -427,7 +427,7 @@ class SSWENO242(Reconstruction):
     scheme.
     """
 
-    eps: float = 1.0e-12
+    eps: float = 1.0e-6
 
     # coefficients
     si: ClassVar[weno.Stencil]
