@@ -414,7 +414,7 @@ def test_advection_convergence(
 
     for n in resolutions:
         # NOTE: SSPRK33 is order dt^3, so this makes it dt^3 ~ dx^5
-        dt = 8.0 * ((b - a) / n) ** (5.0 / 3.0)
+        dt = (8.0 / case.a) * ((b - a) / n) ** (5.0 / 3.0)
 
         r = evolve(
             case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal, visualize=visualize
