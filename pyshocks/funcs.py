@@ -22,6 +22,7 @@ Diffusion Equation Solutions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: diffusion_expansion
+.. autofunction:: diffusion_tophat
 
 Inviscid Burgers' Equation Solutions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -268,6 +269,33 @@ def diffusion_expansion(
         ],
         jnp.zeros_like(x),  # type: ignore[no-untyped-call]
     )
+
+
+def diffusion_tophat(
+    grid: Grid,
+    t: float,
+    x: jnp.ndarray,
+    *,
+    x0: Optional[float] = None,
+    diffusivity: float = 1.0,
+) -> jnp.ndarray:
+    r"""A tophat exact solution for the diffusion equation.
+
+    .. math::
+
+        u(t, x) = \frac{1}{2} \left(
+            \operatorname{erf} \left(\frac{1 - 2 x}{4 \sqrt{d t}}\right)
+            + \operatorname{erf} \left(\frac{1 + 2 x}{4 \sqrt{d t}}\right)
+        \right).
+    """
+    if x0 is None:
+        x0 = (grid.b + grid.a) / 2
+        x = x - x0
+
+    from jax.scipy.special import erf
+
+    td = 4 * jnp.sqrt(diffusivity * t) + 1.0e-15
+    return (erf((1 - 2 * x) / td) + erf((1 + 2 * x) / td)) / 2  # type: ignore
 
 
 # }}}

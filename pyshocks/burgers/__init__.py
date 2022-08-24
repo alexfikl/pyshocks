@@ -17,11 +17,15 @@ Schemes
 .. autoclass:: Scheme
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: FiniteDifferenceScheme
+
 .. autoclass:: Godunov
 .. autoclass:: Rusanov
 .. autoclass:: LaxFriedrichs
 .. autoclass:: EngquistOsher
+
 .. autoclass:: ESWENO32
+.. autoclass:: SSMUSCL
+
 .. autoclass:: SSWENO242
 
 .. autofunction:: scheme_ids

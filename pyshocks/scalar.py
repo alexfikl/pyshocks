@@ -567,10 +567,34 @@ class OneSidedSATBoundary(OneSidedBoundary):
         return BoundaryType.Dirichlet
 
 
+@evaluate_boundary.register(OneSidedSATBoundary)
+def _evaluate_boundary_sat(
+    bc: OneSidedSATBoundary, grid: Grid, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert grid.nghosts == 0
+    assert grid.x.shape == u.shape
+
+    i = grid.b_[bc.side]
+    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
+
+    return bc.tau * (u[i] - bc.g(t)) * e_i
+
+
 @dataclass(frozen=True)
 class SATBoundary(TwoSidedBoundary):
     left: OneSidedSATBoundary
     right: OneSidedSATBoundary
+
+
+def make_sat_boundary(
+    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+) -> SATBoundary:
+    if gb is None:
+        gb = ga
+
+    ba = OneSidedSATBoundary(side=-1, g=ga, tau=1.0)
+    bb = OneSidedSATBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=ba, right=bb)
 
 
 # }}}

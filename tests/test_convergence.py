@@ -475,7 +475,7 @@ class DiffusionTestCase(FiniteVolumeTestCase):
 @dataclass(frozen=True)
 class SATDiffusionTestCase(FiniteDifferenceTestCase):
     sbp_name: str
-    d: float = 1.0
+    d: float = 0.1
 
     def __str__(self) -> str:
         return f"diffusion_{self.scheme_name}_{self.sbp_name}"
@@ -484,8 +484,8 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         from pyshocks.scalar import make_diffusion_sat_boundary
 
         return make_diffusion_sat_boundary(
-            ga=partial(self.evaluate, grid, x=grid.a),
-            gb=partial(self.evaluate, grid, x=grid.b),
+            ga=lambda t: self.evaluate(grid, t, grid.a),
+            gb=lambda t: self.evaluate(grid, t, grid.b),
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
@@ -499,7 +499,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         )
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return funcs.diffusion_expansion(grid, t, x)
+        return funcs.diffusion_expansion(grid, t, x, diffusivity=self.d)
 
     def norm(
         self,
@@ -536,7 +536,6 @@ def test_diffusion_convergence(
     a: float = -1.0,
     b: float = 1.0,
     tfinal: float = 0.5,
-    diffusivity: float = 1.0,
     visualize: bool = False,
 ) -> None:
     from pyshocks.timestepping import predict_timestep_from_resolutions
