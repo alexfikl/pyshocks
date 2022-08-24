@@ -205,6 +205,10 @@ def main(
     except StopIteration:
         pass
 
+    if interactive:
+        plt.ioff()
+        plt.close(fig)
+
     # }}}
 
     # {{{ visualize
@@ -220,9 +224,6 @@ def main(
 
     if verbose:
         logger.info("error %.12e", error)
-
-    if interactive:
-        plt.close(fig)
 
     if visualize:
         fig = plt.figure()

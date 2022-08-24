@@ -85,6 +85,7 @@ def evolve_forward(
     # {{{ plot
 
     if interactive:
+        mp.ioff()
         mp.close(fig)
 
     if not visualize:

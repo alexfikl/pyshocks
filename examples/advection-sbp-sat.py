@@ -124,6 +124,7 @@ def main(
             plt.pause(0.01)
 
     if interactive:
+        plt.ioff()
         plt.close(fig)
 
     # }}}

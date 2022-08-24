@@ -168,6 +168,7 @@ def evolve_forward(
             mp.pause(0.01)
 
     if interactive:
+        mp.ioff()
         mp.close(fig)
 
     # }}}
@@ -246,6 +247,7 @@ def evolve_adjoint(
             mp.pause(0.01)
 
     if interactive:
+        mp.ioff()
         mp.close(fig)
 
     # }}}

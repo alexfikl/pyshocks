@@ -136,6 +136,7 @@ def main(
     # {{{ visualize
 
     if interactive:
+        plt.ioff()
         plt.close(fig)
 
     if visualize:
