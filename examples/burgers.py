@@ -21,10 +21,15 @@ from pyshocks import burgers, limiters, reconstruction, sbp, get_logger
 logger = get_logger("burgers")
 
 
-def ic_func(grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+def ic_func(grid: Grid, t: float, x: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
     from pyshocks import funcs
 
-    return funcs.burgers_tophat(grid, t, x)
+    if variant == 1:
+        return funcs.burgers_tophat(grid, t, x)
+    elif variant == 2:
+        return 0.5 - funcs.ic_sine(grid, x)
+    else:
+        raise ValueError(f"unknown initial condition: '{variant}'")
 
 
 def make_finite_volume(
@@ -164,18 +169,27 @@ def main(
     )
     step = timestepping.step(method, u0, tfinal=tfinal)
 
-    from pyshocks import IterationTimer
+    from pyshocks import IterationTimer, norm
 
     timer = IterationTimer(name="burgers")
+
+    times = []
+    norm_energy = []
+    norm_tv = []
 
     try:
         while True:
             with timer.tick():
                 event = next(step)
 
+            times.append(event.t)
+            norm_energy.append(norm(grid, event.u, p=2, weighted=True))
+            norm_tv.append(norm(grid, event.u, p="tvd"))
+
             if verbose:
-                umax = jnp.max(jnp.abs(event.u[s]))
-                logger.info("%s umax %.5e", event, umax)
+                logger.info(
+                    "%s energy %.5e tv(u) %.5e", event, norm_energy[-1], norm_tv[-1]
+                )
 
             if interactive:
                 if isinstance(scheme, burgers.SSMUSCL):
@@ -211,16 +225,45 @@ def main(
 
     if visualize:
         fig = plt.figure()
-        ax = fig.gca()
 
+        t = jnp.array(times)  # type: ignore[no-untyped-call]
+        energy = jnp.array(norm_energy)  # type: ignore[no-untyped-call]
+        tv = jnp.array(norm_tv)  # type: ignore[no-untyped-call]
+
+        # {{{ plot solution
+
+        ax = fig.gca()
         ax.plot(grid.x[s], event.u[s])
         ax.plot(grid.x[s], uhat[s])
         ax.set_xlim([grid.a, grid.b])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
         fig.savefig(outdir / f"burgers_{scheme.name}_{n:05d}")
+        fig.clf()
+
+        # {{{ plot total variation differences
+
+        ax = fig.gca()
+        ax.semilogy(t[1:], jnp.abs(jnp.diff(tv)))
+        ax.set_xlabel("$t$")
+        ax.set_ylabel("$TV(u)$")
+        fig.savefig(outdir / f"burgers_{scheme.name}_{n:05d}_norm_tv")
+        fig.clf()
+
+        # }}}
+
+        # {{{ plot energy
+
+        ax = fig.gca()
+        ax.plot(t, energy)
+        ax.set_xlabel("$t$")
+        ax.set_ylabel(r"$\|u\|_{2, h}$")
+        fig.savefig(outdir / f"burgers_{scheme.name}_{n:05d}_norm_energy")
+        fig.clf()
+
+        # }}}
+
         plt.close(fig)
 
     # }}}
