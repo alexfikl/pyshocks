@@ -53,7 +53,7 @@ from typing import ClassVar, Optional
 
 import jax.numpy as jnp
 
-from pyshocks.grid import Grid
+from pyshocks.grid import Grid, UniformGrid
 from pyshocks.schemes import (
     ConservationLawScheme,
     flux,
@@ -62,7 +62,7 @@ from pyshocks.schemes import (
     apply_boundary,
     evaluate_boundary,
 )
-from pyshocks.tools import TemporalFunction, VectorFunction
+from pyshocks.tools import TemporalFunction, VectorFunction, SpatialFunction
 
 
 # {{{ fluxes
@@ -118,6 +118,58 @@ def scalar_flux_upwind(
 
 
 # {{{ Rusanov (aka Local Lax-Friedrichs)
+
+
+def lax_friedrichs_initial_condition_correction(
+    grid: UniformGrid,
+    func: SpatialFunction,
+    *,
+    order: Optional[int] = None,
+) -> jnp.ndarray:
+    """Implements a correction to the initial condition that ensures local
+    total variation preservation with the Lax-Friedrichs scheme.
+
+    This correction is described in Algorithm 3.1 from [Breuss2004]. Note that
+    in [Breuss2004] the authors also recommend modified boundary conditions,
+    which are not implemented here.
+
+    .. [Breuss2004] M. Breuß, *The Correct Use of the Lax–Friedrichs Method*,
+        ESAIM: Mathematical Modelling and Numerical Analysis, Vol. 38,
+        pp. 519--540, 2004,
+        `DOI <http://dx.doi.org/10.1051/m2an:2004027>`__.
+
+    :arg order: if not *None*, cell averages are computed, otherwise point
+        values are used.
+    """
+    if grid.x.size % 2 != 0 and grid.nghosts % 2 == 0:
+        raise ValueError("only grids with even number of cells are supported")
+
+    half_grid = type(grid)(
+        a=grid.a,
+        b=grid.b,
+        nghosts=grid.nghosts // 2,
+        x=grid.x[::2],
+        dx=grid.dx[::2],
+        # NOTE: these are not actually used anywhere below
+        f=grid.f,
+        df=grid.df,
+        dx_min=grid.dx_min,
+        dx_max=grid.dx_max,
+    )
+
+    if order is None:
+        half_u0 = func(half_grid.x)
+    else:
+        from pyshocks.grid import make_leggauss_quadrature, cell_average
+
+        # evaluate cell averages on the half-grid
+        quad = make_leggauss_quadrature(half_grid, order=order)
+        half_u0 = cell_average(quad, func)
+
+    u0 = jnp.tile(half_u0.reshape(-1, 1), 2).reshape(-1)
+    assert u0.shape == grid.x.shape
+
+    return u0
 
 
 def scalar_flux_rusanov(
