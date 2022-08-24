@@ -166,7 +166,7 @@ def lax_friedrichs_initial_condition_correction(
         quad = make_leggauss_quadrature(half_grid, order=order)
         half_u0 = cell_average(quad, func)
 
-    u0 = jnp.tile(half_u0.reshape(-1, 1), 2).reshape(-1)
+    u0 = jnp.tile(half_u0.reshape(-1, 1), 2).reshape(-1)  # type: ignore
     assert u0.shape == grid.x.shape
 
     return u0
