@@ -717,8 +717,8 @@ def make_sbp_42_second_derivative_r_matrix(
     B34, B44 = make_sbp_42_second_derivative_b_matrices(bc, b)
     D34 = make_sbp_matrix_from_stencil(bc, n, d34, weight=1 / dx**3)
     D44 = make_sbp_matrix_from_stencil(bc, n, d44, weight=1 / dx**4)
-    C34 = make_sbp_matrix_from_stencil(bc, n, c34)
-    C44 = make_sbp_matrix_from_stencil(bc, n, c44)
+    C34 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c34))  # type: ignore
+    C44 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c44))  # type: ignore
 
     return (
         dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
@@ -802,33 +802,33 @@ def make_sbp_42_second_derivative_c_stencils(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
-    c34_i = jnp.array([1], dtype=dtype)  # type: ignore[no-untyped-call]
+    c34_i = jnp.array(1, dtype=dtype)  # type: ignore[no-untyped-call]
     c34_l = c34_r = None
 
-    c44_i = jnp.array([1], dtype=dtype)  # type: ignore[no-untyped-call]
+    c44_i = jnp.array(1, dtype=dtype)  # type: ignore[no-untyped-call]
     c44_l = c44_r = None
 
     if bc == BoundaryType.Periodic:
         pass
     else:
         c34_l = jnp.array(  # type: ignore[no-untyped-call]
-            [[0, 0, 163928591571 / 53268010936, 189284 / 185893, 1, 0]],
+            [0, 0, 163_928_591_571 / 53_268_010_936, 189_284 / 185_893, 1, 0],
             dtype=dtype,
         )
         c34_r = jnp.array(  # type: ignore[no-untyped-call]
-            [[1, 1189284 / 185893, 0, 63928591571 / 53268010936, 0, 0]],
+            [1, 1_189_284 / 185_893, 0, 63_928_591_571 / 53_268_010_936, 0, 0],
             dtype=dtype,
         )
 
         c44_l = jnp.array(  # type: ignore[no-untyped-call]
-            [[0, 0, 1644330 / 301051, 156114 / 181507, 1]],
+            [0, 0, 1_644_330 / 301_051, 156_114 / 181_507, 1],
             dtype=dtype,
         )
-        c44_r = c44_l[::-1, ::-1]
+        c44_r = c44_l[::-1]
 
     return (
-        Stencil(int=c34_i, left=c34_l, right=c34_r),
-        Stencil(int=c44_i, left=c44_l, right=c44_r),
+        Stencil(int=c34_i, left=c34_l, right=c34_r, is_diagonal=True),
+        Stencil(int=c44_i, left=c44_l, right=c44_r, is_diagonal=True),
     )
 
 
@@ -854,11 +854,11 @@ def make_sbp_42_second_derivative_d_stencils(
                 [-1, 3, -3, 1, 0, 0],
                 [
                     -185_893 / 301_051,
-                    79_000_249_461 / 54642863857,
-                    -33235054191 / 54642863857,
-                    -36887526683 / 54642863857,
-                    26183621850 / 54642863857,
-                    -4386 / 181507,
+                    +79_000_249_461 / 54_642_863_857,
+                    -33_235_054_191 / 54_642_863_857,
+                    -36_887_526_683 / 54_642_863_857,
+                    +26_183_621_850 / 54_642_863_857,
+                    -4_386 / 181_507,
                 ],
             ],
             dtype=dtype,
