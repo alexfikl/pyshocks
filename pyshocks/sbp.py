@@ -343,6 +343,7 @@ def make_sbp_mattsson2012_second_derivative(
         Bbar = Bbar.at[-1, -1].set(b[-1])
         BS = Bbar @ S
     else:
+        assert S is None
         BS = 0
 
     # put it all together ([Mattsson2012] Definition 2.4)
@@ -497,7 +498,7 @@ def make_sbp_21_second_derivative_r_matrix(
 
     n = b.size
     (B22,) = make_sbp_21_second_derivative_b_matrices(bc, b)
-    D22 = make_sbp_matrix_from_stencil(bc, n, d22)
+    D22 = make_sbp_matrix_from_stencil(bc, n, d22, weight=1.0 / dx**2)
     C22 = make_sbp_matrix_from_stencil(bc, n, c22)
 
     return dx**3 / 4 * D22.T @ C22 @ B22 @ D22
@@ -714,8 +715,8 @@ def make_sbp_42_second_derivative_r_matrix(
 
     n = b.size
     B34, B44 = make_sbp_42_second_derivative_b_matrices(bc, b)
-    D34 = make_sbp_matrix_from_stencil(bc, n, d34)
-    D44 = make_sbp_matrix_from_stencil(bc, n, d44)
+    D34 = make_sbp_matrix_from_stencil(bc, n, d34, weight=1 / dx**3)
+    D44 = make_sbp_matrix_from_stencil(bc, n, d44, weight=1 / dx**4)
     C34 = make_sbp_matrix_from_stencil(bc, n, c34)
     C44 = make_sbp_matrix_from_stencil(bc, n, c44)
 

@@ -156,8 +156,10 @@ def evolve(
             energy[m] = case.norm(scheme, grid, event.u, p=2) ** 2
             tvd[m] = case.norm(scheme, grid, event.u, p="tvd")
 
+    assert abs(event.t - tfinal) / tfinal < 1.0e-12
+
     # exact solution
-    uhat = case.evaluate(grid, tfinal, grid.x)
+    uhat = case.evaluate(grid, event.t, grid.x)
 
     t = jnp.array(t, dtype=u0.dtype)  # type: ignore[no-untyped-call]
     energy = jnp.array(energy, dtype=u0.dtype)  # type: ignore[no-untyped-call]
@@ -475,7 +477,7 @@ class DiffusionTestCase(FiniteVolumeTestCase):
 @dataclass(frozen=True)
 class SATDiffusionTestCase(FiniteDifferenceTestCase):
     sbp_name: str
-    d: float = 0.1
+    d: float = 0.01
 
     def __str__(self) -> str:
         return f"diffusion_{self.scheme_name}_{self.sbp_name}"
@@ -500,6 +502,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
         return funcs.diffusion_expansion(grid, t, x, diffusivity=self.d)
+        # return funcs.diffusion_tophat(grid, t, x, diffusivity=self.d)
 
     def norm(
         self,
@@ -524,9 +527,9 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
     ("case", "order", "resolutions"),
     [
         (DiffusionTestCase("centered"), 2, list(range(80, 160 + 1, 16))),
-        # NOTE: these schemes have order 2 p - 1
-        (SATDiffusionTestCase("sbp", "sbp21"), 1, list(range(80, 160 + 1, 16))),
-        (SATDiffusionTestCase("sbp", "sbp42"), 3, list(range(80, 160 + 1, 16))),
+        # NOTE: these are only order 2p if `make_diffusion_sat_boundary` is used
+        (SATDiffusionTestCase("sbp", "sbp21"), 2, list(range(80, 160 + 1, 16))),
+        (SATDiffusionTestCase("sbp", "sbp42"), 4, list(range(80, 160 + 1, 16))),
     ],
 )
 def test_diffusion_convergence(
@@ -542,7 +545,7 @@ def test_diffusion_convergence(
     from pyshocks import EOCRecorder
 
     eoc = EOCRecorder(name=str(case))
-    dt = 0.25 * predict_timestep_from_resolutions(a, b, resolutions, umax=1.0, p=2)
+    dt = 0.25 * predict_timestep_from_resolutions(a, b, resolutions, umax=case.d, p=2)
 
     if visualize:
         import matplotlib.pyplot as mp
