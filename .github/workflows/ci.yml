@@ -59,6 +59,7 @@ jobs:
       matrix:
         python-version: ['3.8', '3.x']
         jax_default_bits: [32, 64]
+      fail-fast: false
     steps:
     - uses: actions/checkout@v2
     -

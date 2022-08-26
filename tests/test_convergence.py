@@ -157,8 +157,7 @@ def evolve(
             tvd[m] = case.norm(scheme, grid, event.u, p="tvd")
 
     # exact solution
-    # NOTE: not using tfinal here because there's some discrepancy
-    uhat = case.evaluate(grid, event.t, grid.x)
+    uhat = case.evaluate(grid, tfinal, grid.x)
 
     t = jnp.array(t, dtype=u0.dtype)  # type: ignore[no-untyped-call]
     energy = jnp.array(energy, dtype=u0.dtype)  # type: ignore[no-untyped-call]
