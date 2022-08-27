@@ -100,6 +100,8 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
     logger.info("D1")
 
     D1 = sbp.sbp_first_derivative_matrix(op, grid, bc)
+    D1.block_until_ready()
+
     assert D1.shape == (n, n)
     assert D1.dtype == dtype
 
@@ -164,6 +166,8 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
     logger.info("D2")
 
     D2 = sbp.sbp_second_derivative_matrix(op, grid, bc, 1.0)
+    D2.block_until_ready()
+
     assert D2.shape == (n, n)
     assert D2.dtype == dtype
 
@@ -176,12 +180,12 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
         error = abs(
             dotp(v, D2 @ v)
             + dotp(D2 @ v, v)
-            + 2 * dotp(D1 @ v, D1 @ v)
-            - 2 * v @ (BS @ v)
+            - 2 * dotp(D1 @ v, D1 @ v)
+            + 2 * v @ (BS @ v)
         )
 
     logger.info("sbp error: %.12e", error)
-    # assert error < 1.0e-6
+    assert error < 1.0e-6
 
     # check eigenvalues: should all be negative
     s, _ = jnp.linalg.eig(D2)  # type: ignore[no-untyped-call]
@@ -233,8 +237,7 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
 
     from pyshocks import sbp
 
-    bc_type = BoundaryType.Periodic
-    q = sbp.make_sbp_21_first_derivative_q_stencil(bc_type, dtype=grid.dtype)
+    q = sbp.make_sbp_21_first_derivative_q_stencil(dtype=grid.dtype)
 
     # check constant
     u = jnp.full_like(grid.x, 1.0)  # type: ignore
@@ -258,14 +261,14 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
     assert error < 1.0e-15
 
 
-@pytest.mark.parametrize("bc_type", [BoundaryType.Periodic])
-def test_ss_weno_burgers_two_point_flux(bc_type: BoundaryType) -> None:
+@pytest.mark.parametrize("bc", [BoundaryType.Periodic])
+def test_ss_weno_burgers_two_point_flux(bc: BoundaryType) -> None:
     grid = make_uniform_point_grid(a=-1.0, b=1.0, n=64, nghosts=0)
 
     from pyshocks import sbp
 
-    q = sbp.make_sbp_42_first_derivative_q_stencil(bc_type, dtype=grid.dtype)
-    Q = sbp.make_sbp_banded_matrix(grid.n, q)
+    q = sbp.make_sbp_42_first_derivative_q_stencil(dtype=grid.dtype)
+    Q = sbp.make_sbp_matrix_from_stencil(bc, grid.n, q)
 
     def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
         return (ul * ul + ul * ur + ur * ur) / 6

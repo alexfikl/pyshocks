@@ -108,9 +108,7 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 
     object.__setattr__(scheme, "nu", 1.0e-3)
 
-    q = sbp.make_sbp_42_first_derivative_q_stencil(
-        BoundaryType.Periodic, dtype=grid.dtype
-    )
+    q = sbp.make_sbp_42_first_derivative_q_stencil(dtype=grid.dtype)
 
     P = sbp.sbp_norm_matrix(scheme.sbp, grid, bc.boundary_type)
     D2 = sbp.sbp_second_derivative_matrix(scheme.sbp, grid, bc.boundary_type, scheme.nu)

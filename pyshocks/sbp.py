@@ -43,6 +43,10 @@ the boundary. Second-, fourth- and sixth-order operators are provided in
     Journal of Scientific Computing, Vol. 51, pp. 650--682, 2012,
     `DOI <http://dx.doi.org/10.1007/s10915-011-9525-z>`__.
 
+.. [Parisi2010] K. M. a. F. Parisi, *Stable and Accurate Second-Order
+    Formulation of the Shifted Wave Equation*,
+    Communications in Computational Physics, Vol. 7, pp. 103--137, 2010,
+    `DOI <http://dx.doi.org/10.4208/cicp.2009.08.135>`__.
 
 Interface
 ^^^^^^^^^
@@ -51,6 +55,7 @@ An SBP operator must implement the following interface, which relies on the
 :func:`~functools.singledispatch` functionality.
 
 .. autoclass:: Stencil
+.. autoclass:: SecondDerivativeType
 .. autoclass:: SBPOperator
 
 .. autofunction:: sbp_norm_matrix
@@ -100,7 +105,8 @@ SBP 6-4
 .. autofunction:: make_sbp_64_first_derivative_q_stencil
 """
 
-from dataclasses import dataclass
+import enum
+from dataclasses import dataclass, replace
 from functools import singledispatch
 from typing import Any, Dict, Optional, Tuple, Type
 
@@ -246,6 +252,11 @@ def make_sbp_matrix_from_stencil(
     bc: BoundaryType, n: int, s: Stencil, *, weight: float = 1.0
 ) -> jnp.ndarray:
     if s.is_diagonal:
+        if bc == BoundaryType.Periodic:
+            # NOTE: this is just here so we can remove some if statements below
+            # when constructing the stencils
+            s = replace(s, left=None, right=None)
+
         mat = make_sbp_diagonal_matrix(n, s, weight=weight)
     else:
         if bc == BoundaryType.Periodic:
@@ -260,6 +271,18 @@ def make_sbp_matrix_from_stencil(
 
 
 # {{{ SBP class
+
+
+@enum.unique
+class SecondDerivativeType(enum.Enum):
+    #: A second derivative that is compatible with the first derivative in
+    # the sense described by [Mattsson2012]_.
+    Compatible = enum.auto()
+    #: A second derivative that is compatible with the first derivative
+    # in the sense described by [Parisi2010]_.
+    FullyCompatible = enum.auto()
+    #: A narrow-stencil second-order derivative.
+    Narrow = enum.auto()
 
 
 @dataclass(frozen=True)
@@ -292,6 +315,14 @@ class SBPOperator:
     def boundary_order(self) -> int:
         raise NotImplementedError
 
+    def _make_wide_second_derivative_matrices(
+        self,
+        grid: UniformGrid,
+        bc: BoundaryType,
+        b: jnp.ndarray,
+    ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        raise NotImplementedError
+
 
 def sbp_matrix_from_name(
     op: SBPOperator, grid: UniformGrid, bc: BoundaryType, name: str
@@ -322,13 +353,9 @@ def make_sbp_mattsson2012_second_derivative(
     grid: UniformGrid,
     bc: BoundaryType,
     b: jnp.ndarray,
-    R: jnp.ndarray,
-    S: Optional[jnp.ndarray] = None,
+    M: Optional[jnp.ndarray] = None,
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
-    n = grid.n
-    dtype = grid.dtype
-
     # get lower order operators
     P = sbp_norm_matrix(op, grid, bc)
     D = sbp_first_derivative_matrix(op, grid, bc)
@@ -336,19 +363,23 @@ def make_sbp_mattsson2012_second_derivative(
     invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
     P = jnp.diag(P)  # type: ignore[no-untyped-call]
 
+    # put it all together ([Mattsson2012] Definition 2.4)
+    R, S = op._make_wide_second_derivative_matrices(grid, bc, b)
+
     # get Bbar matrix ([Mattsson2012] Definition 2.3)
-    if bc != BoundaryType.Periodic:
-        Bbar = jnp.zeros((n, n), dtype=dtype)  # type: ignore[no-untyped-call]
+    if bc == BoundaryType.Periodic:
+        assert S is None
+        BS = 0
+    else:
+        assert S is not None
+        Bbar = jnp.zeros(S.shape, dtype=S.dtype)  # type: ignore[no-untyped-call]
         Bbar = Bbar.at[0, 0].set(-b[0])
         Bbar = Bbar.at[-1, -1].set(b[-1])
         BS = Bbar @ S
-    else:
-        assert S is None
-        BS = 0
 
-    # put it all together ([Mattsson2012] Definition 2.4)
-    B = jnp.diag(b)  # type: ignore[no-untyped-call]
-    M = D.T @ P @ B @ D + R
+    if M is None:
+        B = jnp.diag(b)  # type: ignore[no-untyped-call]
+        M = D.T @ P @ B @ D + R
 
     return invP @ (-M + BS)
 
@@ -373,8 +404,8 @@ def sbp_first_derivative_matrix(
 def sbp_second_derivative_matrix(
     op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
 ) -> jnp.ndarray:
-    """Construct a second derivative :math:`D_2` operator satisfying the
-    SBP properties.
+    """Construct a wide-stencil second derivative :math:`D_2` operator
+    that is compatible with :func:`sbp_first_derivative_matrix`.
     """
     raise NotImplementedError(type(op).__name__)
 
@@ -409,7 +440,14 @@ class SBP21(SBPOperator):
     first-order accurate at the boundary.
 
     For details, see Appendix A.1 in [Mattsson2012]_.
+
+    .. attribute:: second_derivative
+
+        A :class:`SecondDerivativeType` describing the construction of the
+        second derivative.
     """
+
+    second_derivative: SecondDerivativeType
 
     @property
     def order(self) -> int:
@@ -419,6 +457,27 @@ class SBP21(SBPOperator):
     def boundary_order(self) -> int:
         return 1
 
+    def _make_wide_second_derivative_matrices(
+        self,
+        grid: UniformGrid,
+        bc: BoundaryType,
+        b: jnp.ndarray,
+    ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        n = grid.n
+
+        # get S matrix
+        S = None
+        if bc != BoundaryType.Periodic:
+            s = make_sbp_21_second_derivative_s_stencil(
+                self.second_derivative, dtype=grid.dtype
+            )
+            S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
+
+        # get R matrix ([Mattsson2012] Equation 8)
+        R = make_sbp_21_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
+
+        return S, R
+
 
 # {{{ interface
 
@@ -427,7 +486,7 @@ class SBP21(SBPOperator):
 def _sbp_21_norm_matrix(op: SBP21, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    p = make_sbp_21_norm_stencil(bc, dtype=grid.dtype)
+    p = make_sbp_21_norm_stencil(dtype=grid.dtype)
     return make_sbp_matrix_from_stencil(bc, grid.n, p, weight=grid.dx_min)
 
 
@@ -437,7 +496,7 @@ def _sbp_21_first_derivative_matrix(
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    q = make_sbp_21_first_derivative_q_stencil(bc, dtype=grid.dtype)
+    q = make_sbp_21_first_derivative_q_stencil(dtype=grid.dtype)
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
@@ -450,30 +509,22 @@ def _sbp_21_second_derivative_matrix(
 ) -> jnp.ndarray:
     from numbers import Number
 
-    assert isinstance(grid, UniformGrid)
-    n = grid.n
-    dtype = grid.dtype
-
     if isinstance(b, jnp.ndarray):
         pass
     elif isinstance(b, Number):
-        b = jnp.full_like(grid.x, b, dtype=dtype)  # type: ignore[no-untyped-call]
+        b = jnp.full_like(grid.x, b, dtype=grid.dtype)  # type: ignore[no-untyped-call]
     else:
         raise TypeError(f"unknown coefficient type: '{type(b).__name__}'")
 
+    assert isinstance(grid, UniformGrid)
     assert b.shape == (grid.n,)
 
-    # get R matrix ([Mattsson2012] Equation 8)
-    R = make_sbp_21_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
-
-    # get S matrix
-    if bc == BoundaryType.Periodic:
-        S = None
+    if op.second_derivative == SecondDerivativeType.Narrow:
+        M = make_sbp_21_second_derivative_m_matrix(bc, b, grid.dx_min)
     else:
-        s = make_sbp_21_second_derivative_s_stencil(bc, dtype=dtype)
-        S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
+        M = None
 
-    return make_sbp_mattsson2012_second_derivative(op, grid, bc, b, R, S)
+    return make_sbp_mattsson2012_second_derivative(op, grid, bc, b, M=M)
 
 
 # }}}
@@ -493,8 +544,8 @@ def make_sbp_21_second_derivative_r_matrix(
     bc: BoundaryType, b: jnp.ndarray, dx: float
 ) -> jnp.ndarray:
     dtype = b.dtype
-    (d22,) = make_sbp_21_second_derivative_d_stencils(bc, dtype=dtype)
-    (c22,) = make_sbp_21_second_derivative_c_stencils(bc, dtype=dtype)
+    (d22,) = make_sbp_21_second_derivative_d_stencils(dtype=dtype)
+    (c22,) = make_sbp_21_second_derivative_c_stencils(dtype=dtype)
 
     n = b.size
     (B22,) = make_sbp_21_second_derivative_b_matrices(bc, b)
@@ -504,97 +555,116 @@ def make_sbp_21_second_derivative_r_matrix(
     return dx**3 / 4 * D22.T @ C22 @ B22 @ D22
 
 
-def make_sbp_21_norm_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
-) -> Stencil:
+def make_sbp_21_second_derivative_m_matrix(
+    bc: BoundaryType, b: jnp.ndarray, dx: float
+) -> jnp.ndarray:
+    def make_boundary(
+        b1: jnp.ndarray, b2: jnp.ndarray, b3: jnp.ndarray, b4: jnp.ndarray
+    ) -> jnp.ndarray:
+        return jnp.array(  # type: ignore[no-untyped-call]
+            [
+                [b1 / 2 + b2 / 2, -b1 / 2 - b2 / 2, 0],
+                [-b1 / 2 - b2 / 2, b1 / 2 + b2 + b3 / 2, -b2 / 2 - b3 / 2],
+                [0, -b2 / 2 - b3 / 2, b2 / 2 + b3 + b4 / 2],
+            ],
+            dtype=b.dtype,
+        )
+
+    mb_l = make_boundary(*b[:4])
+    mb_r = make_boundary(*b[-4:][::-1])[::-1, ::-1]
+
+    M = (
+        jnp.diag(-b[:-1] / 2 - b[1:] / 2, k=-1)  # type: ignore
+        + jnp.diag(jnp.pad(b[:-2] / 2 + b[1:-1] + b[2:] / 2, 1), k=0)  # type: ignore
+        + jnp.diag(-b[:-1] / 2 - b[1:] / 2, k=+1)  # type: ignore
+    )
+
+    n, m = mb_l.shape
+    M = M.at[:n, :m].set(mb_l)
+    M = M.at[-n:, -m:].set(mb_r)
+
+    return M / dx
+
+
+def make_sbp_21_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
     pi = jnp.array(dtype.type(1.0))  # type: ignore[no-untyped-call]
-    pi_l = pi_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        pi_l = jnp.array([0.5], dtype=dtype)  # type: ignore[no-untyped-call]
+    pb_l = jnp.array([0.5], dtype=dtype)  # type: ignore[no-untyped-call]
+    pb_r = pb_l
 
-    return Stencil(int=pi, left=pi_l, right=pi_r, is_diagonal=True)
+    return Stencil(int=pi, left=pb_l, right=pb_r, is_diagonal=True)
 
 
 def make_sbp_21_first_derivative_q_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
     qi = jnp.array([-0.5, 0.0, 0.5], dtype=dtype)  # type: ignore[no-untyped-call]
-    qi_l = qi_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        qi_l = jnp.array([[-0.5, 0.5]], dtype=dtype)  # type: ignore[no-untyped-call]
+    qb_l = jnp.array([[-0.5, 0.5]], dtype=dtype)  # type: ignore[no-untyped-call]
+    qb_r = -qb_l[::-1, ::-1]
 
-    return Stencil(int=qi, left=qi_l, right=qi_r)
+    return Stencil(int=qi, left=qb_l, right=qb_r)
 
 
 def make_sbp_21_second_derivative_s_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    sd: SecondDerivativeType,
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
     si = jnp.array([1], dtype=dtype)  # type: ignore[no-untyped-call]
-    sb_l = sb_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
+    if sd == SecondDerivativeType.FullyCompatible:
+        # NOTE: this matches the stencil of H^{-1} Q at the boundary
+        sb_l = jnp.array([[-1, 1]], dtype=dtype)  # type: ignore
+        sb_r = -sb_l[::-1, ::-1]
     else:
         sb_l = jnp.array([[3 / 2, -2, 1 / 2]], dtype=dtype)  # type: ignore
+        sb_r = -sb_l[::-1, ::-1]
 
     return Stencil(int=si, left=sb_l, right=sb_r)
 
 
 def make_sbp_21_second_derivative_c_stencils(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
     c22_i = jnp.array([1], dtype=dtype)  # type: ignore[no-untyped-call]
-    c22_l = c22_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        c22_l = jnp.array([[0]], dtype=dtype)  # type: ignore[no-untyped-call]
+    c22_l = jnp.array([[0]], dtype=dtype)  # type: ignore[no-untyped-call]
+    c22_r = -c22_l[::-1, ::-1]
 
     return (Stencil(int=c22_i, left=c22_l, right=c22_r),)
 
 
 def make_sbp_21_second_derivative_d_stencils(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
     d22_i = jnp.array([1, -2, 1], dtype=dtype)  # type: ignore[no-untyped-call]
-    d22_l = d22_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        d22_l = jnp.array(  # type: ignore[no-untyped-call]
-            [[1, -2, 1], [1, -2, 1]], dtype=dtype
-        )
-        d22_r = jnp.array(  # type: ignore[no-untyped-call]
-            [[1, -2, 1], [1, -2, 1]], dtype=dtype
-        )
+    d22_l = jnp.array(  # type: ignore[no-untyped-call]
+        [[1, -2, 1], [1, -2, 1]], dtype=dtype
+    )
+    d22_r = jnp.array(  # type: ignore[no-untyped-call]
+        [[1, -2, 1], [1, -2, 1]], dtype=dtype
+    )
 
     return (Stencil(int=d22_i, left=d22_l, right=d22_r),)
 
@@ -613,7 +683,14 @@ class SBP42(SBPOperator):
     second-order accurate at the boundary.
 
     For details, see Appendix A.2 in [Mattsson2012]_.
+
+    .. attribute:: second_derivative
+
+        A :class:`SecondDerivativeType` describing the construction of the
+        second derivative.
     """
+
+    second_derivative: SecondDerivativeType
 
     @property
     def order(self) -> int:
@@ -623,6 +700,27 @@ class SBP42(SBPOperator):
     def boundary_order(self) -> int:
         return 2
 
+    def _make_wide_second_derivative_matrices(
+        self,
+        grid: UniformGrid,
+        bc: BoundaryType,
+        b: jnp.ndarray,
+    ) -> Tuple[jnp.ndarray, jnp.ndarray]:
+        n = grid.n
+
+        # get S matrix
+        S = None
+        if bc != BoundaryType.Periodic:
+            s = make_sbp_42_second_derivative_s_stencil(
+                self.second_derivative, dtype=grid.dtype
+            )
+            S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
+
+        # get R matrix ([Mattsson2012] Equation 8)
+        R = make_sbp_42_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
+
+        return S, R
+
 
 # {{{ interface
 
@@ -631,7 +729,7 @@ class SBP42(SBPOperator):
 def _sbp_42_norm_matrix(op: SBP42, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    p = make_sbp_42_norm_stencil(bc, dtype=grid.dtype)
+    p = make_sbp_42_norm_stencil(dtype=grid.dtype)
     return make_sbp_matrix_from_stencil(bc, grid.n, p, weight=grid.dx_min)
 
 
@@ -641,7 +739,7 @@ def _sbp_42_first_derivative_matrix(
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    q = make_sbp_42_first_derivative_q_stencil(bc, dtype=grid.dtype)
+    q = make_sbp_42_first_derivative_q_stencil(dtype=grid.dtype)
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
@@ -654,30 +752,22 @@ def _sbp_42_second_derivative_matrix(
 ) -> jnp.ndarray:
     from numbers import Number
 
-    assert isinstance(grid, UniformGrid)
-    n = grid.n
-    dtype = grid.dtype
-
     if isinstance(b, jnp.ndarray):
         pass
     elif isinstance(b, Number):
-        b = jnp.full_like(grid.x, b)  # type: ignore[no-untyped-call]
+        b = jnp.full_like(grid.x, b, dtype=grid.dtype)  # type: ignore[no-untyped-call]
     else:
         raise TypeError(f"unknown diffusivity coefficient: '{type(b).__name__}'")
 
+    assert isinstance(grid, UniformGrid)
     assert b.shape == (grid.n,)
 
-    # get R matrix ([Mattsson2012] Equation 8)
-    R = make_sbp_42_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
-
-    # get S matrix
-    if bc == BoundaryType.Periodic:
-        S = None
+    if op.second_derivative == SecondDerivativeType.Narrow:
+        M = make_sbp_42_second_derivative_m_matrix(bc, b, grid.dx_min)
     else:
-        s = make_sbp_42_second_derivative_s_stencil(bc, dtype=dtype)
-        S = make_sbp_matrix_from_stencil(bc, n, s, weight=1.0 / grid.dx_min)
+        M = None
 
-    return make_sbp_mattsson2012_second_derivative(op, grid, bc, b, R, S)
+    return make_sbp_mattsson2012_second_derivative(op, grid, bc, b, M=M)
 
 
 # }}}
@@ -710,8 +800,8 @@ def make_sbp_42_second_derivative_r_matrix(
     bc: BoundaryType, b: jnp.ndarray, dx: float
 ) -> jnp.ndarray:
     dtype = b.dtype
-    (d34, d44) = make_sbp_42_second_derivative_d_stencils(bc, dtype=dtype)
-    (c34, c44) = make_sbp_42_second_derivative_c_stencils(bc, dtype=dtype)
+    (d34, d44) = make_sbp_42_second_derivative_d_stencils(dtype=dtype)
+    (c34, c44) = make_sbp_42_second_derivative_c_stencils(dtype=dtype)
 
     n = b.size
     B34, B44 = make_sbp_42_second_derivative_b_matrices(bc, b)
@@ -725,28 +815,232 @@ def make_sbp_42_second_derivative_r_matrix(
     )
 
 
-def make_sbp_42_norm_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+def make_sbp_42_second_derivative_m_matrix(
+    bc: BoundaryType, b: jnp.ndarray, dx: float
 ) -> jnp.ndarray:
+    def make_boundary(
+        b1: jnp.ndarray,
+        b2: jnp.ndarray,
+        b3: jnp.ndarray,
+        b4: jnp.ndarray,
+        b5: jnp.ndarray,
+        b6: jnp.ndarray,
+        b7: jnp.ndarray,
+        b8: jnp.ndarray,
+    ) -> jnp.ndarray:
+        # NOTE: M is 0-indexed to write out the transpose easier
+        # NOTE: b is 1-indexed to match the notation in [Mattsson2012]
+        m0 = jnp.array(  # type: ignore[no-untyped-call]
+            [
+                # M_00
+                12 / 17 * b1
+                + 59 / 192 * b2
+                + 27010400129 / 345067064608 * b3
+                + 69462376031 / 2070402387648 * b4,
+                # M_01
+                -59 / 68 * b1
+                - 6025413881 / 21126554976 * b3
+                - 537416663 / 7042184992 * b4,
+                # M_02
+                2 / 17 * b1
+                - 59 / 192 * b2
+                + 213318005 / 16049630912 * b4
+                + 2083938599 / 8024815456 * b3,
+                # M_03
+                3 / 68 * b1
+                - 1244724001 / 21126554976 * b3
+                + 752806667 / 21126554976 * b4,
+                # M_04
+                49579087 / 10149031312 * b3 - 49579087 / 10149031312 * b4,
+                # M_05
+                -1 / 784 * b4 + 1 / 784 * b3,
+            ],
+            dtype=b.dtype,
+        )
+        m1 = jnp.array(  # type: ignore[no-untyped-call]
+            [
+                # M_10
+                m0[1],
+                # M_11
+                3481 / 3264 * b1
+                + 9258282831623875 / 7669235228057664 * b3
+                + 7669235228057664 / 7669235228057664 * b4,
+                # M_12
+                -59 / 408 * b1
+                - 29294615794607 / 29725717938208 * b3
+                - 2944673881023 / 2944673881023 * b4,
+                # M_13
+                -59 / 1088 * b1
+                + 260297319232891 / 2556411742685888 * b3
+                - 60834186813841 / 60834186813841 * b4,
+                # M_14
+                -1328188692663 / 37594290333616 * b3
+                + 1328188692663 / 37594290333616 * b4,
+                # M_15
+                -8673 / 2904112 * b3 + 8673 / 2904112 * b4,
+            ],
+            dtype=b.dtype,
+        )
+        m2 = jnp.array(  # type: ignore[no-untyped-call]
+            [
+                # M_20
+                m0[2],
+                # M_21
+                m1[2],
+                # M_22
+                1 / 51 * b1
+                + 59 / 192 * b2
+                + 13777050223300597 / 26218083221499456 * b4
+                + 564461 / 13384296 * b5
+                + 378288882302546512209 / 270764341349677687456 * b3,
+                # M_23
+                1 / 136 * b1
+                - 125059 / 743572 * b5
+                - 4836340090442187227 / 5525802884687299744 * b3
+                - 17220493277981 / 89177153814624 * b4,
+                # M_24
+                -10532412077335 / 42840005263888 * b4
+                + 1613976761032884305 / 7963657098519931984 * b3
+                + 564461 / 4461432 * b5,
+                # M_25
+                -960119 / 1280713392 * b4
+                - 3391 / 6692148 * b5
+                + 33235054191 / 26452850508784 * b3,
+            ],
+            dtype=b.dtype,
+        )
+        m3 = jnp.array(  # type: ignore[no-untyped-call]
+            [
+                # M_30
+                m0[3],
+                # M_31
+                m1[3],
+                # M_32
+                m2[3],
+                # M_33
+                3 / 1088 * b1
+                + 507284006600757858213 / 475219048083107777984 * b3
+                + 1869103 / 2230716 * b5
+                + 1 / 24 * b6
+                + 1950062198436997 / 3834617614028832 * b4,
+                # M_34
+                -4959271814984644613 / 20965546238960637264 * b3
+                - 1 / 6 * b6
+                - 15998714909649 / 37594290333616 * b4
+                - 375177 / 743572 * b5,
+                # M_35
+                -368395 / 2230716 * b5
+                + 752806667 / 539854092016 * b3
+                + 1063649 / 8712336 * b4
+                + 1 / 8 * b6,
+            ],
+            dtype=b.dtype,
+        )
+        m4 = jnp.array(  # type: ignore[no-untyped-call]
+            [
+                # M_40
+                m0[4],
+                # M_41
+                m1[4],
+                # M_42
+                m2[4],
+                # M_43
+                m3[4],
+                # M_44
+                8386761355510099813 / 128413970713633903242 * b3
+                + 2224717261773437 / 2763180339520776 * b4
+                + 5 / 6 * b6
+                + 1 / 24 * b7
+                + 280535 / 371786 * b5,
+                # M_45
+                -35039615 / 213452232 * b4
+                - 1 / 6 * b7
+                - 13091810925 / 13226425254392 * b3
+                - 1118749 / 2230716 * b5
+                - 1 / 2 * b6,
+            ],
+            dtype=b.dtype,
+        )
+        m5 = jnp.array(  # type: ignore[no-untyped-call]
+            [
+                # M_50
+                m0[5],
+                # M_51
+                m1[5],
+                # M_52
+                m2[5],
+                # M_53
+                m3[5],
+                # M_54
+                m4[5],
+                # M_55
+                3290636 / 80044587 * b4
+                + 5580181 / 6692148 * b5
+                + 5 / 6 * b7
+                + 1 / 24 * b8
+                + 660204843 / 13226425254392 * b3
+                + 3 / 4 * b6,
+            ],
+            dtype=b.dtype,
+        )
+
+        return jnp.stack([m0, m1, m2, m3, m4, m5])
+
+    mb_l = make_boundary(*b[:8])
+    mb_r = make_boundary(*b[-8:][::-1])[::-1, ::-1]
+
+    M = (
+        jnp.diag(-b[:-2] / 8 + b[1:-1] / 6 - b[2:] / 8, k=-2)  # type: ignore
+        + jnp.diag(  # type: ignore[no-untyped-call]
+            jnp.pad(  # type: ignore[no-untyped-call]
+                b[:-3] / 6 + b[1:-2] / 2 + b[2:-1] / 2 + b[3:] / 6, 1
+            ),
+            k=-1,
+        )
+        + jnp.diag(  # type: ignore[no-untyped-call]
+            jnp.pad(  # type: ignore[no-untyped-call]
+                -b[:-4] / 24
+                - 5 * b[1:-3] / 6
+                - 3 * b[2:-2] / 4
+                - 5 * b[3:-1] / 6
+                - b[4:] / 24,
+                2,
+            ),
+            k=0,
+        )
+        + jnp.diag(
+            jnp.pad(  # type: ignore[no-untyped-call]
+                b[:-3] / 6 + b[1:-2] / 2 + b[2:-1] / 2 + b[3:] / 6, 1
+            ),
+            k=+1,
+        )
+        + jnp.diag(-b[:-2] / 8 + b[1:-1] / 6 - b[2:] / 8, k=+2)  # type: ignore
+    )
+
+    n, m = mb_l.shape
+    M = M.at[:n, :m].set(mb_l)
+    M = M.at[-n:, -m:].set(mb_r)
+
+    return M / dx
+
+
+def make_sbp_42_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
     pi = jnp.array(dtype.type(1.0))  # type: ignore[no-untyped-call]
-    pi_l = pi_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        pi_l = jnp.array(  # type: ignore[no-untyped-call]
-            [17 / 48, 59 / 48, 43 / 48, 49 / 48], dtype=dtype
-        )
+    pb_l = jnp.array(  # type: ignore[no-untyped-call]
+        [17 / 48, 59 / 48, 43 / 48, 49 / 48], dtype=dtype
+    )
+    pb_r = pb_l[::-1]
 
-    return Stencil(int=pi, left=pi_l, right=pi_r, is_diagonal=True)
+    return Stencil(int=pi, left=pb_l, right=pb_r, is_diagonal=True)
 
 
 def make_sbp_42_first_derivative_q_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
@@ -757,74 +1051,72 @@ def make_sbp_42_first_derivative_q_stencil(
     qi = jnp.array(  # type: ignore[no-untyped-call]
         [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype
     )
-    qi_l = qi_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        qi_l = jnp.array(  # type: ignore[no-untyped-call]
-            [
-                [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
-                [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
-                [1 / 12, -59 / 96, 0.0, 59 / 96, -1 / 12, 0.0],
-                [1 / 32, 0.0, -59 / 96, 0.0, 2 / 3, -1 / 12],
-            ],
-            dtype=dtype,
-        )
+    qb_l = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
+            [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
+            [1 / 12, -59 / 96, 0.0, 59 / 96, -1 / 12, 0.0],
+            [1 / 32, 0.0, -59 / 96, 0.0, 2 / 3, -1 / 12],
+        ],
+        dtype=dtype,
+    )
+    qb_r = -qb_l[::-1, ::-1]
 
-    return Stencil(int=qi, left=qi_l, right=qi_r)
+    return Stencil(int=qi, left=qb_l, right=qb_r)
 
 
 def make_sbp_42_second_derivative_s_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    sd: SecondDerivativeType,
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
     si = jnp.array([0], dtype=dtype)  # type: ignore[no-untyped-call]
-    sb_l = sb_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
+    if sd == SecondDerivativeType.FullyCompatible:
+        # NOTE: this matches the stencil of H^{-1} Q at the boundary
+        sb_l = jnp.array(  # type: ignore[no-untyped-call]
+            [[-1 / 2, 59 / 96, -1 / 12, -1 / 32]], dtype=dtype
+        )
+        sb_r = -sb_l[::-1, ::-1]
     else:
         sb_l = jnp.array(  # type: ignore[no-untyped-call]
             [[11 / 6, -3, 3 / 2, -1 / 3]], dtype=dtype
         )
+        sb_r = -sb_l[::-1, ::-1]
 
     return Stencil(int=si, left=sb_l, right=sb_r)
 
 
 def make_sbp_42_second_derivative_c_stencils(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
     c34_i = jnp.array(1, dtype=dtype)  # type: ignore[no-untyped-call]
-    c34_l = c34_r = None
 
+    c34_l = jnp.array(  # type: ignore[no-untyped-call]
+        [0, 0, 163_928_591_571 / 53_268_010_936, 189_284 / 185_893, 1, 0],
+        dtype=dtype,
+    )
+    c34_r = jnp.array(  # type: ignore[no-untyped-call]
+        [1, 1_189_284 / 185_893, 0, 63_928_591_571 / 53_268_010_936, 0, 0],
+        dtype=dtype,
+    )
+
+    # [Mattsson2012] Appendix A.2
     c44_i = jnp.array(1, dtype=dtype)  # type: ignore[no-untyped-call]
-    c44_l = c44_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        c34_l = jnp.array(  # type: ignore[no-untyped-call]
-            [0, 0, 163_928_591_571 / 53_268_010_936, 189_284 / 185_893, 1, 0],
-            dtype=dtype,
-        )
-        c34_r = jnp.array(  # type: ignore[no-untyped-call]
-            [1, 1_189_284 / 185_893, 0, 63_928_591_571 / 53_268_010_936, 0, 0],
-            dtype=dtype,
-        )
-
-        c44_l = jnp.array(  # type: ignore[no-untyped-call]
-            [0, 0, 1_644_330 / 301_051, 156_114 / 181_507, 1],
-            dtype=dtype,
-        )
-        c44_r = c44_l[::-1]
+    c44_l = jnp.array(  # type: ignore[no-untyped-call]
+        [0, 0, 1_644_330 / 301_051, 156_114 / 181_507, 1],
+        dtype=dtype,
+    )
+    c44_r = c44_l[::-1]
 
     return (
         Stencil(int=c34_i, left=c34_l, right=c34_r, is_diagonal=True),
@@ -833,46 +1125,42 @@ def make_sbp_42_second_derivative_c_stencils(
 
 
 def make_sbp_42_second_derivative_d_stencils(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
+
     d34_i = jnp.array([-1, 3, -3, 1], dtype=dtype)  # type: ignore[no-untyped-call]
-    d34_l = d34_r = None
+
+    d34_l = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            [-1, 3, -3, 1, 0, 0],
+            [-1, 3, -3, 1, 0, 0],
+            [
+                -185_893 / 301_051,
+                +79_000_249_461 / 54_642_863_857,
+                -33_235_054_191 / 54_642_863_857,
+                -36_887_526_683 / 54_642_863_857,
+                +26_183_621_850 / 54_642_863_857,
+                -4_386 / 181_507,
+            ],
+        ],
+        dtype=dtype,
+    )
+    d34_r = -d34_l[::-1, ::-1]
 
     d44_i = jnp.array([1, -4, 6, -4, 1], dtype=dtype)  # type: ignore[no-untyped-call]
-    d44_l = d44_r = None
-
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        d34_l = jnp.array(  # type: ignore[no-untyped-call]
-            [
-                [-1, 3, -3, 1, 0, 0],
-                [-1, 3, -3, 1, 0, 0],
-                [
-                    -185_893 / 301_051,
-                    +79_000_249_461 / 54_642_863_857,
-                    -33_235_054_191 / 54_642_863_857,
-                    -36_887_526_683 / 54_642_863_857,
-                    +26_183_621_850 / 54_642_863_857,
-                    -4_386 / 181_507,
-                ],
-            ],
-            dtype=dtype,
-        )
-
-        d44_l = jnp.array(  # type: ignore[no-untyped-call]
-            [
-                [1, -4, 6, -4, 1],
-                [1, -4, 6, -4, 1],
-                [1, -4, 6, -4, 1],
-            ],
-            dtype=dtype,
-        )
-        d44_r = d44_l
+    d44_l = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            [1, -4, 6, -4, 1],
+            [1, -4, 6, -4, 1],
+            [1, -4, 6, -4, 1],
+        ],
+        dtype=dtype,
+    )
+    d44_r = d44_l
 
     return (
         Stencil(int=d34_i, left=d34_l, right=d34_r),
@@ -912,7 +1200,7 @@ class SBP64(SBPOperator):
 def _sbp_64_norm_matrix(op: SBP64, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    p = make_sbp_64_norm_stencil(bc, dtype=grid.dtype)
+    p = make_sbp_64_norm_stencil(dtype=grid.dtype)
     return make_sbp_matrix_from_stencil(bc, grid.n, p, weight=grid.dx_min)
 
 
@@ -922,7 +1210,7 @@ def _sbp_64_first_derivative_matrix(
 ) -> jnp.ndarray:
     assert isinstance(grid, UniformGrid)
 
-    q = make_sbp_64_first_derivative_q_stencil(bc, dtype=grid.dtype)
+    q = make_sbp_64_first_derivative_q_stencil(dtype=grid.dtype)
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
@@ -935,36 +1223,31 @@ def _sbp_64_first_derivative_matrix(
 # {{{ stencils
 
 
-def make_sbp_64_norm_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
-) -> jnp.ndarray:
+def make_sbp_64_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.3
     pi = jnp.array(dtype.type(1.0))  # type: ignore[no-untyped-call]
-    pi_l = pi_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        pi_l = jnp.array(  # type: ignore[no-untyped-call]
-            [
-                13649 / 43200,
-                12013 / 8640,
-                2711 / 4320,
-                5359 / 4320,
-                7877 / 8640,
-                43801 / 43200,
-            ],
-            dtype=dtype,
-        )
+    pb_l = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            13649 / 43200,
+            12013 / 8640,
+            2711 / 4320,
+            5359 / 4320,
+            7877 / 8640,
+            43801 / 43200,
+        ],
+        dtype=dtype,
+    )
+    pb_r = pb_l[::-1]
 
-    return Stencil(int=pi, left=pi_l, right=pi_r, is_diagonal=True)
+    return Stencil(int=pi, left=pb_l, right=pb_r, is_diagonal=True)
 
 
 def make_sbp_64_first_derivative_q_stencil(
-    bc: BoundaryType, *, dtype: Optional["jnp.dtype[Any]"] = None
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
@@ -972,22 +1255,19 @@ def make_sbp_64_first_derivative_q_stencil(
     qi = jnp.array(  # type: ignore[no-untyped-call]
         [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype
     )
-    qi_l = qi_r = None
 
-    if bc == BoundaryType.Periodic:
-        pass
-    else:
-        qi_l = jnp.array(  # type: ignore[no-untyped-call]
-            [
-                [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
-                [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
-                [1 / 12, -59 / 96, 0.0, 59 / 96, -1 / 12, 0.0],
-                [1 / 32, 0.0, -59 / 96, 0.0, 2 / 3, -1 / 12],
-            ],
-            dtype=dtype,
-        )
+    qb_l = jnp.array(  # type: ignore[no-untyped-call]
+        [
+            [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
+            [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
+            [1 / 12, -59 / 96, 0.0, 59 / 96, -1 / 12, 0.0],
+            [1 / 32, 0.0, -59 / 96, 0.0, 2 / 3, -1 / 12],
+        ],
+        dtype=dtype,
+    )
+    qb_r = -qb_l[::-1, ::-1]
 
-    return Stencil(int=qi, left=qi_l, right=qi_r)
+    return Stencil(int=qi, left=qb_l, right=qb_r)
 
 
 # }}}
@@ -1021,6 +1301,9 @@ def make_operator_from_name(name: str, **kwargs: Any) -> SBPOperator:
         raise ValueError(f"scheme '{name}' not found; try one of {operator_ids()}")
 
     from dataclasses import fields
+
+    if "second_derivative" not in kwargs:
+        kwargs["second_derivative"] = SecondDerivativeType.Narrow
 
     return cls(**{f.name: kwargs[f.name] for f in fields(cls) if f.name in kwargs})
 
