@@ -489,10 +489,12 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
-        from pyshocks.sbp import make_operator_from_name
+        from pyshocks.sbp import SecondDerivativeType, make_operator_from_name
 
         diffusivity = jnp.full_like(grid.x, self.d)  # type: ignore[no-untyped-call]
-        op = make_operator_from_name(self.sbp_name)
+        op = make_operator_from_name(
+            self.sbp_name, second_derivative=SecondDerivativeType.Narrow
+        )
 
         return diffusion.make_scheme_from_name(
             self.scheme_name, rec=None, op=op, diffusivity=diffusivity
