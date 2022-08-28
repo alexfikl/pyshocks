@@ -154,7 +154,7 @@ def estimate_gliding_order_of_convergence(
     return jnp.array(  # type: ignore[no-untyped-call]
         [
             estimate_order_of_convergence(
-                x[i : i + gliding_mean], y[i : i + gliding_mean]
+                x[i : i + gliding_mean], y[i : i + gliding_mean] + 1.0e-16
             )
             for i in range(npoints)
         ]
