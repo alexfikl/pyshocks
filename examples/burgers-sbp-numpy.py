@@ -1,38 +1,33 @@
-# type: ignore
-
 # SPDX-FileCopyrightText: Daniel J. Bodony <bodony@illinois.edu>
 # SPDX-License-Identifier: MIT
 
+from typing import Any, Tuple
+
 import numpy as np
+
+# FIXME: should probably use np.ndarray[Any, np.float64] or something
+Array = Any
+Matrix = Any
 
 
 # {{{ initial conditions
 
 
-def ic_riemann(x, ul: float, ur: float):
+def ic_riemann(x: Array, ul: float, ur: float) -> Array:
     L = x[-1] - x[0]
-
     x0 = x[0] + 0.25 * L
-    u0 = np.zeros_like(x)
 
-    for i in range(x.size):
-        if x[i] < x0:
-            u0[i] = ul
-        else:
-            u0[i] = ur
-
-    return u0
+    H = np.array(x < x0, dtype=x.dtype)
+    return ur + (ul - ur) * H
 
 
-def ic_tanh(x, ul: float, ur: float):
+def ic_tanh(x: Array, ul: float, ur: float) -> Array:
     L = x[-1] - x[0]
 
     x0 = x[0] + 0.25 * L
     delta = L / 20
 
-    u0 = ul + 0.5 * (ur - ul) * (1.0 + np.tanh((x - x0) / delta))
-
-    return u0
+    return ul + 0.5 * (ur - ul) * (1.0 + np.tanh((x - x0) / delta))
 
 
 # }}}
@@ -40,7 +35,7 @@ def ic_tanh(x, ul: float, ur: float):
 # {{{ SBP operators
 
 
-def norm_matrix(dx, nx: int):
+def norm_matrix(dx: Array, nx: int) -> Matrix:
     mat = dx * np.eye(nx + 1)
     mat[0, 0] = 0.5 * dx
     mat[-1, -1] = 0.5 * dx
@@ -48,7 +43,7 @@ def norm_matrix(dx, nx: int):
     return mat
 
 
-def first_derivative_matrix(invH):
+def first_derivative_matrix(invH: Matrix) -> Matrix:
     nx = invH.shape[0] - 1
 
     diagv = np.zeros(nx + 1)
@@ -64,7 +59,13 @@ def first_derivative_matrix(invH):
     return invH @ mat
 
 
-def second_derivative_matrix(dx, H, invH, D1, nu: float):
+def second_derivative_matrix(
+    dx: Array,
+    H: Matrix,
+    invH: Matrix,
+    D1: Matrix,
+    nu: float,
+) -> Matrix:
     nx = H.shape[0] - 1
 
     # S-matrix
@@ -110,11 +111,11 @@ def second_derivative_matrix(dx, H, invH, D1, nu: float):
 # {{{ MUSCL
 
 
-def slope_limiter(r):
+def slope_limiter(r: Array) -> Array:
     return np.maximum(0.0, np.minimum(1, r))
 
 
-def artificial_dissipation_muscl(invH, u):
+def artificial_dissipation_muscl(invH: Matrix, u: Array) -> Array:
     nx = invH.shape[0] - 1
 
     # D1hat-matrix
@@ -166,7 +167,7 @@ def artificial_dissipation_muscl(invH, u):
 # {{{ Roe
 
 
-def artificial_dissipation_roe(invH, u):
+def artificial_dissipation_roe(invH: Matrix, u: Array) -> Array:
     nx = invH.shape[0] - 1
 
     # D1hat-matrix
@@ -191,7 +192,9 @@ def artificial_dissipation_roe(invH, u):
     return -(invH @ (D1hat.T @ (BM @ (D1hat @ u))))
 
 
-def artificial_dissipation_roe_logarithmic_entropy_variables(invH, u):
+def artificial_dissipation_roe_logarithmic_entropy_variables(
+    invH: Matrix, u: Array
+) -> Array:
     nx = invH.shape[0] - 1
     w = 1 / u
 
@@ -219,7 +222,16 @@ def artificial_dissipation_roe_logarithmic_entropy_variables(invH, u):
 # }}}
 
 
-def burgers_rhs(t, u, e0, invH, D1, D2, ul: float, tau: float = 1.0 / 3.0):
+def burgers_rhs(
+    t: float,
+    u: Array,
+    e0: Array,
+    invH: Matrix,
+    D1: Matrix,
+    D2: Matrix,
+    ul: float,
+    tau: float = 1.0 / 3.0,
+) -> Array:
     A = np.diag(u)
     E = invH @ (np.outer(e0, e0) @ A)
 
@@ -301,17 +313,15 @@ def main(
     ax.plot(x, u0, color="r", marker="o", linewidth=2)
 
     # prepare for animated lines
-    (line,) = ax.plot(
-        x, np.ma.array(x, mask=True), color="b", linestyle="-", linewidth=2, marker="*"
-    )
+    (line,) = ax.plot(x, x, color="b", linestyle="-", linewidth=2, marker="*")
 
-    def animate(n):
+    def animate(n: int) -> Tuple[Any, ...]:
         line.set_ydata(sol.y[:, n])
         return (line,)
 
     # Init only required for blitting to give a clean slate.
-    def init():
-        line.set_ydata(np.ma.array(x, mask=True))
+    def init() -> Tuple[Any, ...]:
+        line.set_ydata(x)
         return (line,)
 
     from matplotlib import animation
