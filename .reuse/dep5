@@ -3,7 +3,7 @@ Upstream-Name: pyshocks
 Upstream-Contact: Alexandru Fikl <alexfikl@gmail.com>
 Source: https://github.com/alexfikl/pyshocks
 
-Files: docs/* *.md *.rst *.cfg *Makefile
+Files: docs/* *.md *.rst *.cfg requirements.txt *Makefile
 Copyright: 2022 Alexandru Fikl <alexfikl@gmail.com>
 License: CC0-1.0
 
