@@ -32,15 +32,20 @@ reuse:
 
 # {{{ testing
 
+pin:
+	$(PYTHON) -m piptools compile \
+		--extra dev --extra pyweno --upgrade \
+		-o requirements.txt setup.cfg
+
 pip-install:
 	$(PYTHON) -m pip install --upgrade pip numpy
-	$(PYTHON) -m pip install -e '.[dev,pyweno]'
+	$(PYTHON) -m pip install -r requirements.txt -e .
 
 docs:
 	(cd docs; rm -rf _build; make html SPHINXOPTS="-W --keep-going -n")
 
 test:
-	$(PYTHON) -m pytest -rswx -v -s --durations=25
+	$(PYTHON) -m pytest -rswx --durations=25 -v -s
 
 run-examples:
 	@for ex in $$(find examples -name "*.py"); do \
