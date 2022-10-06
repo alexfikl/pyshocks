@@ -363,7 +363,7 @@ def test_weno_smooth_reconstruction_order_point_values(
     order: int,
     resolutions: List[int],
     func_name: str,
-    visualize: bool = True,
+    visualize: bool = False,
 ) -> None:
     from pyshocks import EOCRecorder, rnorm
 
