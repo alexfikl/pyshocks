@@ -186,8 +186,8 @@ class EOCRecorder:
 
     def add_data_point(self, h: jnp.ndarray, error: jnp.ndarray) -> None:
         """
-        :param h: abscissa, a value representative of the "grid size"
-        :param error: error at given *h*.
+        :arg h: abscissa, a value representative of the "grid size".
+        :arg error: error at given *h*.
         """
         self.history.append((h, error))
 
@@ -206,17 +206,28 @@ class EOCRecorder:
     def max_error(self) -> jnp.ndarray:
         return max(error for _, error in self.history)
 
-    def satisfied(self, order: float, atol: float = 1.0e-12) -> bool:
+    def satisfied(
+        self, order: float, atol: float = 1.0e-12, *, slack: float = 0
+    ) -> bool:
+        """
+        :arg order: expected order of convergence of the data.
+        :arg atol: expected maximum error.
+        :arg slack: additional allowable slack in the order of convergence.
+
+        :returns: *True* if the expected order or the maximum order are hit
+            and *False* otherwise.
+        """
+
         if not self.history:
             return True
 
         _, error = jnp.array(self.history).T
-        return bool(self.estimated_order >= order or jnp.max(error) < atol)
+        return bool(self.estimated_order >= (order - slack) or jnp.max(error) < atol)
 
     def as_table(self) -> str:
         """
-        :return: a table representation of the errors and estimated order
-            of convergence of the current data.
+        :return: a table representation (Github Markdown Flavor) of the errors
+            and estimated order of convergence of the current data.
         """
         import numpy as np
 
