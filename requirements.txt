@@ -4,11 +4,11 @@
 #
 #    pip-compile --extra=dev --extra=pyweno --output-file=requirements.txt setup.cfg
 #
-absl-py==1.2.0
+absl-py==1.3.0
     # via
     #   jax
     #   jaxlib
-astroid==2.12.10
+astroid==2.12.11
     # via pylint
 attrs==22.1.0
     # via
@@ -37,15 +37,15 @@ flake8-comprehensions==3.10.0
     # via pyshocks (setup.cfg)
 flake8-quotes==3.3.1
     # via pyshocks (setup.cfg)
-importlib-resources==5.9.0
+importlib-resources==5.10.0
     # via etils
 iniconfig==1.1.1
     # via pytest
 isort==5.10.1
     # via pylint
-jax==0.3.21
+jax==0.3.23
     # via pyshocks (setup.cfg)
-jaxlib==0.3.20
+jaxlib==0.3.22
     # via pyshocks (setup.cfg)
 lazy-object-proxy==1.7.1
     # via astroid
@@ -59,7 +59,7 @@ mypy==0.982
     # via pyshocks (setup.cfg)
 mypy-extensions==0.4.3
     # via mypy
-numpy==1.23.3
+numpy==1.23.4
     # via
     #   jax
     #   jaxlib
@@ -90,7 +90,7 @@ pyflakes==2.5.0
     # via flake8
 pygments==2.13.0
     # via rich
-pylint==2.15.3
+pylint==2.15.4
     # via pyshocks (setup.cfg)
 pyparsing==3.0.9
     # via packaging
@@ -100,7 +100,7 @@ pyweno @ git+https://github.com/memmett/PyWENO.git
     # via pyshocks (setup.cfg)
 rich==12.6.0
     # via pyshocks (setup.cfg)
-scipy==1.9.1
+scipy==1.9.2
     # via
     #   jax
     #   jaxlib
@@ -116,7 +116,7 @@ tomlkit==0.11.5
     # via pylint
 types-dataclasses==0.6.6
     # via pyshocks (setup.cfg)
-typing-extensions==4.3.0
+typing-extensions==4.4.0
     # via
     #   etils
     #   jax
@@ -125,7 +125,7 @@ wheel==0.37.1
     # via pip-tools
 wrapt==1.14.1
     # via astroid
-zipp==3.8.1
+zipp==3.9.0
     # via etils
 
 # The following packages are considered to be unsafe in a requirements file:
