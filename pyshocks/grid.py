@@ -342,6 +342,10 @@ def make_leggauss_quadrature(grid: Grid, order: int) -> Quadrature:
     if order < 1:
         raise ValueError(f"invalid order: '{order}'")
 
+    return make_leggauss_quadrature_from_points(grid.f, order)
+
+
+def make_leggauss_quadrature_from_points(x: jnp.ndarray, order: int) -> Quadrature:
     # get Gauss-Legendre quadrature nodes and weights
     from numpy.polynomial.legendre import leggauss
 
@@ -350,14 +354,15 @@ def make_leggauss_quadrature(grid: Grid, order: int) -> Quadrature:
     wi = jax.device_put(wi).reshape(-1, 1)
 
     # get grid sizes
-    dx = 0.5 * grid.dx.reshape(1, -1)
-    xm = grid.x.reshape(1, -1)
+    dx = jnp.diff(x)
+    dxm = 0.5 * dx.reshape(1, -1)
+    xm = 0.5 * (x[1:] + x[:-1]).reshape(1, -1)
 
     # translate
-    xi = xm + dx * xi
-    wi = dx * wi
+    xi = xm + dxm * xi
+    wi = dxm * wi
 
-    return Quadrature(order=order, x=xi, w=wi, dx=grid.dx)
+    return Quadrature(order=order, x=xi, w=wi, dx=dx)
 
 
 def cell_average(quad: Quadrature, fn: SpatialFunction) -> jnp.ndarray:
