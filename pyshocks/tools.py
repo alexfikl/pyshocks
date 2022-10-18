@@ -516,32 +516,6 @@ class Color:
 
 # {{{ logging
 
-# https://misc.flogisoft.com/bash/tip_colors_and_formatting
-LOG_BOLD = "\033[1m"
-LOG_RESET = "\033[0m"
-LOGLEVEL_TO_COLOR = {
-    "WARNING": "\033[1;33m",  # yellow
-    "INFO": "\033[1;36m",  # cyan
-    "DEBUG": "\033[1;37m",  # light gray
-    "CRITICAL": "\033[1;33m",  # yellow
-    "ERROR": "\033[1;31m",  # red
-}
-
-PYSHOCKS_LOG_FORMAT = (
-    f"[{LOG_BOLD}%(name)s{LOG_RESET}][%(levelname)s] "
-    f"{LOG_BOLD}%(filename)s:%(lineno)-4d{LOG_RESET} :: %(message)s "
-)
-
-
-class ColoredFormatter(logging.Formatter):
-    def format(self, record: Any) -> Any:
-        levelname = record.levelname
-
-        if levelname in LOGLEVEL_TO_COLOR:
-            record.levelname = f"{LOGLEVEL_TO_COLOR[levelname]}{levelname}{LOG_RESET}"
-
-        return super().format(record)
-
 
 def get_logger(
     module: str,
@@ -559,12 +533,18 @@ def get_logger(
     logger.propagate = False
     logger.setLevel(level)
 
-    if not logger.hasHandlers():
-        formatter = ColoredFormatter(PYSHOCKS_LOG_FORMAT)
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
+    try:
+        from rich.logging import RichHandler
 
-        logger.addHandler(handler)
+        logger.addHandler(RichHandler())
+    except ImportError:
+        # NOTE: rich is vendored by pip since November 2021
+        try:
+            from pip._vendor.rich.logging import RichHandler  # type: ignore
+
+            logger.addHandler(RichHandler())
+        except ImportError:
+            logger.addHandler(logging.StreamHandler())
 
     return logger
 
