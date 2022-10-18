@@ -164,11 +164,11 @@ def apply_operator(
     where :math:`\mathbf{A}` is the nonlinear differential operator (in general)
     computed by this function.
 
-    :param scheme: scheme used to approximated the operator.
-    :param grid: grid on which to evaluate the operator.
-    :param bc: boundary conditions for *u*.
-    :param t: time at which to evaluate the operator.
-    :param u: variable value at *t* used to evaluate the operator, whose size
+    :arg scheme: scheme used to approximated the operator.
+    :arg grid: grid on which to evaluate the operator.
+    :arg bc: boundary conditions for *u*.
+    :arg t: time at which to evaluate the operator.
+    :arg u: variable value at *t* used to evaluate the operator, whose size
         must match the number of cells in *grid* (including ghost cells).
 
     :returns: the numerical operator approximation at cell centers, i.e.
@@ -192,10 +192,10 @@ def predict_timestep(
     where the maximum allowable value of :math:`\theta` for stability very
     much depends on the time integrator that is used.
 
-    :param scheme: scheme for which to compute the (numerical) flux.
-    :param grid: grid on which to evaluate the flux.
-    :param t: time at which to evaluate the flux.
-    :param u: variable values at which to evaluate the flux, whose size must
+    :arg scheme: scheme for which to compute the (numerical) flux.
+    :arg grid: grid on which to evaluate the flux.
+    :arg t: time at which to evaluate the flux.
+    :arg u: variable values at which to evaluate the flux, whose size must
         match the number of cells in the *grid* (including ghost cells).
     """
     raise NotImplementedError(type(scheme).__name__)
@@ -315,11 +315,11 @@ class ConservationLawScheme(FiniteVolumeSchemeBase):
 def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
     """Evaluate the physical flux at the given parameters.
 
-    :param scheme: scheme for which to compute the (physical) flux. The
+    :arg scheme: scheme for which to compute the (physical) flux. The
         scheme also identifies the type of equations we are solving.
-    :param t: time at which to evaluate the flux.
-    :param x: coordinates at which to evaluate the flux.
-    :param u: variable values at which to evaluate the flux, whose size must
+    :arg t: time at which to evaluate the flux.
+    :arg x: coordinates at which to evaluate the flux.
+    :arg u: variable values at which to evaluate the flux, whose size must
         match that of *x*.
 
     :returns: an array the size of *u* with the flux.
@@ -333,10 +333,10 @@ def numerical_flux(
 ) -> jnp.ndarray:
     """Approximate the flux at each cell-cell interface.
 
-    :param scheme: scheme for which to compute the (numerical) flux.
-    :param grid: grid on which to evaluate the flux.
-    :param t: time at which to evaluate the flux.
-    :param u: variable values at which to evaluate the flux, whose size must
+    :arg scheme: scheme for which to compute the (numerical) flux.
+    :arg grid: grid on which to evaluate the flux.
+    :arg t: time at which to evaluate the flux.
+    :arg u: variable values at which to evaluate the flux, whose size must
         match the number of cells in the *grid* (including ghost cells).
 
     :returns: the numerical flux at each face in the mesh, i.e. matches the
@@ -442,10 +442,10 @@ class Boundary:
 def apply_boundary(bc: Boundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.ndarray:
     """Apply boundary conditions in place in the solution *u*.
 
-    :param bc: boundary condition description.
-    :param grid:
-    :param t: time at which to evaluate the boundary condition.
-    :param u: solution at the given time *t* of a size that matches
+    :arg bc: boundary condition description.
+    :arg grid:
+    :arg t: time at which to evaluate the boundary condition.
+    :arg u: solution at the given time *t* of a size that matches
         :attr:`Grid.x`.
     :return: a copy of *u* with boundary conditions set in the ghost layer.
     """

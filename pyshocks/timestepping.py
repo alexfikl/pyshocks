@@ -108,11 +108,11 @@ def step(
         for event in step(stepper, u0, tfinal=1.0):
             # process event if desired
 
-    :param stepper: time stepper description and source term.
-    :param u0: initial condition at *tstart*.
-    :param maxit: maximum number of iteration, by default taken to be infinity.
-    :param tstart: initial time at which to start the ODE.
-    :param tfinal: final time.
+    :arg stepper: time stepper description and source term.
+    :arg u0: initial condition at *tstart*.
+    :arg maxit: maximum number of iteration, by default taken to be infinity.
+    :arg tstart: initial time at which to start the ODE.
+    :arg tfinal: final time.
 
     :returns: a :class:`StepCompleted` at the end of each taken time step.
     """
@@ -217,10 +217,10 @@ def advance(stepper: Stepper, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarra
 
         u^{n + 1} = \mathrm{advance}(u^{n + 1}, u^n, \dots).
 
-    :param stepper: time stepping method description and source term.
-    :param dt: time step to advance by.
-    :param t: time at the beginning of the time step.
-    :param u: variable value at the beginning of the time step.
+    :arg stepper: time stepping method description and source term.
+    :arg dt: time step to advance by.
+    :arg t: time at the beginning of the time step.
+    :arg u: variable value at the beginning of the time step.
 
     :returns: approximated value of *u* at :math:`t + \Delta t`.
     """

@@ -372,7 +372,7 @@ def cell_average(quad: Quadrature, fn: SpatialFunction) -> jnp.ndarray:
 
         f_i = \frac{1}{|\Omega_i|} \int_{\Omega_i} f(x) \,\mathrm{d}x.
 
-    :param fn: a callable taking an array of size ``(npoints, ncells)``.
+    :arg fn: a callable taking an array of size ``(npoints, ncells)``.
     """
     return quad(fn, axis=0) / quad.dx
 
