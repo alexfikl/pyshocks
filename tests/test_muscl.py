@@ -230,7 +230,7 @@ def test_tvd_slope_limiter_burgers(
         tvd = tvd_next
         assert jnp.isfinite(tvd), event
 
-    tvd_increase = jnp.array(tvd_increase, dtype=u0.dtype)  # type: ignore
+    tvd_increase = jnp.array(tvd_increase, dtype=u0.dtype)
 
     if fail_count:
         logger.info(

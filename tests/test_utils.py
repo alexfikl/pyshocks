@@ -69,7 +69,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
     logger.info("error(r): %.12e", error)
     assert error < 1.0e-6
 
-    s, _ = jnp.linalg.eig(R)  # type: ignore[no-untyped-call]
+    s, _ = jnp.linalg.eig(R)
     if visualize:
         import matplotlib.pyplot as mp
 
@@ -147,7 +147,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
             assert error_i > 1.0e-8
 
     # check eigenvalues: should all be imaginary
-    s, _ = jnp.linalg.eig(D1)  # type: ignore[no-untyped-call]
+    s, _ = jnp.linalg.eig(D1)
     if visualize:
         ax = fig.gca()
 
@@ -198,7 +198,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
         # assert error < 1.0e-6
 
     # check eigenvalues: should all be negative
-    s, _ = jnp.linalg.eig(D2)  # type: ignore[no-untyped-call]
+    s, _ = jnp.linalg.eig(D2)
     if visualize:
         ax = fig.gca()
         ax.plot(jnp.real(s), jnp.imag(s), "o")

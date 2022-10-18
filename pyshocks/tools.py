@@ -151,7 +151,7 @@ def estimate_gliding_order_of_convergence(
         gliding_mean = x.size
 
     npoints = x.size - gliding_mean + 1
-    return jnp.array(  # type: ignore[no-untyped-call]
+    return jnp.array(
         [
             estimate_order_of_convergence(
                 x[i : i + gliding_mean], y[i : i + gliding_mean] + 1.0e-16
@@ -210,7 +210,7 @@ class EOCRecorder:
         if not self.history:
             return True
 
-        _, error = jnp.array(self.history).T  # type: ignore[no-untyped-call]
+        _, error = jnp.array(self.history).T
         return bool(self.estimated_order >= order or jnp.max(error) < atol)
 
     def as_table(self) -> str:
@@ -280,7 +280,7 @@ def visualize_eoc(
 
     # {{{ plot eoc
 
-    h, error = jnp.array(eoc.history).T  # type: ignore[no-untyped-call]
+    h, error = jnp.array(eoc.history).T
     ax.loglog(h, error, "o-", label=ylabel)
 
     # }}}
@@ -429,7 +429,7 @@ class IterationTimer:
         :returns: a :class:`tuple` of ``(total, mean, std)``.
         """
 
-        t_deltas = jnp.array(self.t_deltas)  # type: ignore[no-untyped-call]
+        t_deltas = jnp.array(self.t_deltas)
 
         # NOTE: skipping the first few iterations because they mostly measure
         # the jit warming up, so they'll skew the standard deviation

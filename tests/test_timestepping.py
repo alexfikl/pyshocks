@@ -31,10 +31,10 @@ def test_time_convergence(
 
     @jax.jit
     def source(t: float, u: jnp.ndarray) -> jnp.ndarray:
-        return jnp.array([jnp.exp(-t)])  # type: ignore[no-untyped-call]
+        return jnp.array([jnp.exp(-t)])
 
     def solution(t: float) -> jnp.ndarray:
-        return -source(t, jnp.array([0.0]))  # type: ignore[no-untyped-call]
+        return -source(t, jnp.array([0.0]))
 
     tfinal = 4.0
     u0 = solution(0.0)
@@ -68,8 +68,8 @@ def test_time_convergence(
             u.append(event.u[0])
             t.append(event.t)
 
-        u = jnp.array(u)  # type: ignore[no-untyped-call]
-        t = jnp.array(t)  # type: ignore[no-untyped-call]
+        u = jnp.array(u)
+        t = jnp.array(t)
 
         if visualize:
             ax.plot(t, u)

@@ -162,8 +162,8 @@ def weno_js_32_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
     # so that they can be directly used with jnp.convolve for vectorization
 
     # smoothness indicator coefficients ([Shu1998] Equation 2.62)
-    a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
-    b = jnp.array(  # type: ignore[no-untyped-call]
+    a = jnp.array([1.0], dtype=dtype)
+    b = jnp.array(
         [
             # i + 1, i, i - 1
             [[0.0, 1.0, -1.0]],
@@ -173,14 +173,12 @@ def weno_js_32_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
     )
 
     # stencil coefficients ([Shu1998] Table 2.1)
-    c = jnp.array(  # type: ignore[no-untyped-call]
+    c = jnp.array(
         [[0.0, 3.0 / 2.0, -1.0 / 2.0], [1.0 / 2.0, 1.0 / 2.0, 0.0]], dtype=dtype
     )
 
     # weights coefficients ([Shu1998] Equation 2.54)
-    d = jnp.array(  # type: ignore[no-untyped-call]
-        [[1.0 / 3.0, 2.0 / 3.0]], dtype=dtype
-    ).T
+    d = jnp.array([[1.0 / 3.0, 2.0 / 3.0]], dtype=dtype).T
 
     return Stencil(a=a, b=b, c=c, d=d)
 
@@ -197,10 +195,8 @@ def weno_js_53_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
         dtype = jnp.dtype(jnp.float64)
 
     # smoothness indicator (Equation 2.17 [Shu2009])
-    a = jnp.array(  # type: ignore[no-untyped-call]
-        [13.0 / 12.0, 1.0 / 4.0], dtype=dtype
-    )
-    b = jnp.array(  # type: ignore[no-untyped-call]
+    a = jnp.array([13.0 / 12.0, 1.0 / 4.0], dtype=dtype)
+    b = jnp.array(
         [
             # i + 2, i + 1, i, i - 1, i - 2
             [[0.0, 0.0, 1.0, -2.0, 1.0], [0.0, 0.0, 3.0, -4.0, 1.0]],
@@ -211,7 +207,7 @@ def weno_js_53_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
     )
 
     # stencil coefficients (Equation 2.11, 2.12, 2.13 [Shu2009])
-    c = jnp.array(  # type: ignore[no-untyped-call]
+    c = jnp.array(
         [
             # i + 2, i + 1, i, i - 1, i - 2
             [0.0, 0.0, 11.0 / 6.0, -7.0 / 6.0, 2.0 / 6.0],
@@ -222,9 +218,7 @@ def weno_js_53_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
     )
 
     # weights coefficients (Equation 2.15 [Shu2009])
-    d = jnp.array(  # type: ignore[no-untyped-call]
-        [[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=dtype
-    ).T
+    d = jnp.array([[1.0 / 10.0, 6.0 / 10.0, 3.0 / 10.0]], dtype=dtype).T
 
     return Stencil(a=a, b=b, c=c, d=d)
 
@@ -337,8 +331,8 @@ def ss_weno_242_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
         dtype = jnp.dtype(jnp.float64)
 
     # smoothness indicator coefficients ([Fisher2011] Equation 71)
-    a = jnp.array([1.0], dtype=dtype)  # type: ignore[no-untyped-call]
-    b = jnp.array(  # type: ignore[no-untyped-call]
+    a = jnp.array([1.0], dtype=dtype)
+    b = jnp.array(
         [
             # i + 2, i + 1, i, i - 1, i - 2
             [[0.0, 0.0, 1.0, -1.0, 0.0]],  # L
@@ -349,7 +343,7 @@ def ss_weno_242_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
     )
 
     # stencil coefficients ([Fisher2011] Equation 77)
-    c = jnp.array(  # type: ignore[no-untyped-call]
+    c = jnp.array(
         [
             # i + 2, i + 1, i, i - 1, i - 2
             [0.0, 0.0, 3.0 / 2.0, -1.0 / 2.0, 0.0],  # L
@@ -360,9 +354,7 @@ def ss_weno_242_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
     )
 
     # weights coefficients ([Fisher2011] Equation 78)
-    d = jnp.array(  # type: ignore[no-untyped-call]
-        [[1.0 / 6.0, 2.0 / 3.0, 1.0 / 6.0]], dtype=dtype
-    ).T
+    d = jnp.array([[1.0 / 6.0, 2.0 / 3.0, 1.0 / 6.0]], dtype=dtype).T
 
     return Stencil(a=a, b=b, c=c, d=d)
 
@@ -374,7 +366,7 @@ def ss_weno_242_boundary_coefficients(
         dtype = jnp.dtype(jnp.float64)
 
     # boundary stencils ([Fisher2011] Equation 77)
-    c = jnp.array(  # type: ignore[no-untyped-call]
+    c = jnp.array(
         [
             [  # I_L
                 [
@@ -423,7 +415,7 @@ def ss_weno_242_boundary_coefficients(
     )
 
     # weights coefficients ([Fisher2011] Equation 78)
-    d = jnp.array(  # type: ignore[no-untyped-call]
+    d = jnp.array(
         [
             [0, 0, 1, 0, 0],
             [0, 0, 24 / 31, 1013 / 4898, 3 / 158],

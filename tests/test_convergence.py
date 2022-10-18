@@ -159,9 +159,9 @@ def evolve(
     # exact solution
     uhat = case.evaluate(grid, tfinal, grid.x)
 
-    t = jnp.array(t, dtype=u0.dtype)  # type: ignore[no-untyped-call]
-    energy = jnp.array(energy, dtype=u0.dtype)  # type: ignore[no-untyped-call]
-    tvd = jnp.array(tvd, dtype=u0.dtype)  # type: ignore[no-untyped-call]
+    t = jnp.array(t, dtype=u0.dtype)
+    energy = jnp.array(energy, dtype=u0.dtype)
+    tvd = jnp.array(tvd, dtype=u0.dtype)
 
     # }}}
 

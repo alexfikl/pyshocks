@@ -228,9 +228,9 @@ def main(
     if visualize:
         fig = plt.figure()
 
-        t = jnp.array(times)  # type: ignore[no-untyped-call]
-        energy = jnp.array(norm_energy)  # type: ignore[no-untyped-call]
-        tv = jnp.array(norm_tv)  # type: ignore[no-untyped-call]
+        t = jnp.array(times)
+        energy = jnp.array(norm_energy)
+        tv = jnp.array(norm_tv)
 
         # {{{ plot solution
 

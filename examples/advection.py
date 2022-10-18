@@ -249,9 +249,7 @@ def convergence(
     # All of this seems to be solved if we compute the cell averages to higher
     # order, likely because it actually averages something.
 
-    ncells = 3 + jnp.array(  # type: ignore[no-untyped-call]
-        [64, 128, 256, 512, 1024, 2048]
-    )
+    ncells = 3 + jnp.array([64, 128, 256, 512, 1024, 2048])
     for n in ncells:
         x, u, uhat = main(
             scheme,

@@ -140,8 +140,8 @@ def main(
         plt.close(fig)
 
     if visualize:
-        l2_norm = jnp.array(l2_norm, dtype=u0.dtype)  # type: ignore
-        tv_norm = jnp.array(tv_norm, dtype=u0.dtype)  # type: ignore
+        l2_norm = jnp.array(l2_norm, dtype=u0.dtype)
+        tv_norm = jnp.array(tv_norm, dtype=u0.dtype)
 
         fig = plt.figure()
         ax = fig.gca()

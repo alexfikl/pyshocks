@@ -565,7 +565,7 @@ def make_sbp_21_second_derivative_m_matrix(
     def make_boundary(
         b1: jnp.ndarray, b2: jnp.ndarray, b3: jnp.ndarray, b4: jnp.ndarray
     ) -> jnp.ndarray:
-        return jnp.array(  # type: ignore[no-untyped-call]
+        return jnp.array(
             [
                 [(b1 + b2) / 2, -(b1 + b2) / 2, 0, 0],
                 [-(b1 + b2) / 2, (b1 + 2 * b2 + b3) / 2, -(b2 + b3) / 2, 0],
@@ -602,9 +602,9 @@ def make_sbp_21_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    pi = jnp.array(dtype.type(1.0))  # type: ignore[no-untyped-call]
+    pi = jnp.array(dtype.type(1.0))
 
-    pb_l = jnp.array([0.5], dtype=dtype)  # type: ignore[no-untyped-call]
+    pb_l = jnp.array([0.5], dtype=dtype)
     pb_r = pb_l
 
     return Stencil(int=pi, left=pb_l, right=pb_r, is_diagonal=True)
@@ -617,9 +617,9 @@ def make_sbp_21_first_derivative_q_stencil(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    qi = jnp.array([-0.5, 0.0, 0.5], dtype=dtype)  # type: ignore[no-untyped-call]
+    qi = jnp.array([-0.5, 0.0, 0.5], dtype=dtype)
 
-    qb_l = jnp.array([[-0.5, 0.5]], dtype=dtype)  # type: ignore[no-untyped-call]
+    qb_l = jnp.array([[-0.5, 0.5]], dtype=dtype)
     qb_r = -qb_l[::-1, ::-1]
 
     return Stencil(int=qi, left=qb_l, right=qb_r)
@@ -633,14 +633,14 @@ def make_sbp_21_second_derivative_s_stencil(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    si = jnp.array([1], dtype=dtype)  # type: ignore[no-untyped-call]
+    si = jnp.array([1], dtype=dtype)
 
     if sd == SecondDerivativeType.FullyCompatible:
         # NOTE: this matches the stencil of H^{-1} Q at the boundary
-        sb_l = jnp.array([[-1, 1]], dtype=dtype)  # type: ignore
+        sb_l = jnp.array([[-1, 1]], dtype=dtype)
         sb_r = -sb_l[::-1, ::-1]
     else:
-        sb_l = jnp.array([[-3 / 2, 2, -1 / 2]], dtype=dtype)  # type: ignore
+        sb_l = jnp.array([[-3 / 2, 2, -1 / 2]], dtype=dtype)
         sb_r = -sb_l[::-1, ::-1]
 
     return Stencil(int=si, left=sb_l, right=sb_r)
@@ -653,9 +653,9 @@ def make_sbp_21_second_derivative_c_stencils(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    c22_i = jnp.array([1], dtype=dtype)  # type: ignore[no-untyped-call]
+    c22_i = jnp.array([1], dtype=dtype)
 
-    c22_l = jnp.array([[0]], dtype=dtype)  # type: ignore[no-untyped-call]
+    c22_l = jnp.array([[0]], dtype=dtype)
     c22_r = -c22_l[::-1, ::-1]
 
     return (Stencil(int=c22_i, left=c22_l, right=c22_r),)
@@ -668,14 +668,10 @@ def make_sbp_21_second_derivative_d_stencils(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    d22_i = jnp.array([1, -2, 1], dtype=dtype)  # type: ignore[no-untyped-call]
+    d22_i = jnp.array([1, -2, 1], dtype=dtype)
 
-    d22_l = jnp.array(  # type: ignore[no-untyped-call]
-        [[1, -2, 1], [1, -2, 1]], dtype=dtype
-    )
-    d22_r = jnp.array(  # type: ignore[no-untyped-call]
-        [[1, -2, 1], [1, -2, 1]], dtype=dtype
-    )
+    d22_l = jnp.array([[1, -2, 1], [1, -2, 1]], dtype=dtype)
+    d22_r = jnp.array([[1, -2, 1], [1, -2, 1]], dtype=dtype)
 
     return (Stencil(int=d22_i, left=d22_l, right=d22_r),)
 
@@ -830,7 +826,7 @@ def make_sbp_42_second_derivative_m_matrix(
     ) -> jnp.ndarray:
         # NOTE: M is 0-indexed to write out the transpose easier
         # NOTE: b is 1-indexed to match the notation in [Mattsson2012]
-        m0 = jnp.array(  # type: ignore[no-untyped-call]
+        m0 = jnp.array(
             [
                 # M_00
                 12 / 17 * b1
@@ -861,7 +857,7 @@ def make_sbp_42_second_derivative_m_matrix(
             ],
             dtype=b.dtype,
         )
-        m1 = jnp.array(  # type: ignore[no-untyped-call]
+        m1 = jnp.array(
             [
                 # M_10
                 m0[1],
@@ -889,7 +885,7 @@ def make_sbp_42_second_derivative_m_matrix(
             ],
             dtype=b.dtype,
         )
-        m2 = jnp.array(  # type: ignore[no-untyped-call]
+        m2 = jnp.array(
             [
                 # M_20
                 m0[2],
@@ -921,7 +917,7 @@ def make_sbp_42_second_derivative_m_matrix(
             ],
             dtype=b.dtype,
         )
-        m3 = jnp.array(  # type: ignore[no-untyped-call]
+        m3 = jnp.array(
             [
                 # M_30
                 m0[3],
@@ -952,7 +948,7 @@ def make_sbp_42_second_derivative_m_matrix(
             ],
             dtype=b.dtype,
         )
-        m4 = jnp.array(  # type: ignore[no-untyped-call]
+        m4 = jnp.array(
             [
                 # M_40
                 m0[4],
@@ -981,7 +977,7 @@ def make_sbp_42_second_derivative_m_matrix(
             ],
             dtype=b.dtype,
         )
-        m5 = jnp.array(  # type: ignore[no-untyped-call]
+        m5 = jnp.array(
             [
                 # M_50
                 m0[5],
@@ -1082,11 +1078,9 @@ def make_sbp_42_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.nd
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
-    pi = jnp.array(dtype.type(1.0))  # type: ignore[no-untyped-call]
+    pi = jnp.array(dtype.type(1.0))
 
-    pb_l = jnp.array(  # type: ignore[no-untyped-call]
-        [17 / 48, 59 / 48, 43 / 48, 49 / 48], dtype=dtype
-    )
+    pb_l = jnp.array([17 / 48, 59 / 48, 43 / 48, 49 / 48], dtype=dtype)
     pb_r = pb_l[::-1]
 
     return Stencil(int=pi, left=pb_l, right=pb_r, is_diagonal=True)
@@ -1101,11 +1095,9 @@ def make_sbp_42_first_derivative_q_stencil(
     # [Fisher2013] Appendix A, Equation A.1
     # [Fisher2013] Appendix A, Equation A.2 boundary
 
-    qi = jnp.array(  # type: ignore[no-untyped-call]
-        [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype
-    )
+    qi = jnp.array([1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype)
 
-    qb_l = jnp.array(  # type: ignore[no-untyped-call]
+    qb_l = jnp.array(
         [
             [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
             [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
@@ -1127,18 +1119,14 @@ def make_sbp_42_second_derivative_s_stencil(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
-    si = jnp.array([0], dtype=dtype)  # type: ignore[no-untyped-call]
+    si = jnp.array([0], dtype=dtype)
 
     if sd == SecondDerivativeType.FullyCompatible:
         # NOTE: this matches the stencil of H^{-1} Q at the boundary
-        sb_l = jnp.array(  # type: ignore[no-untyped-call]
-            [[-1 / 2, 59 / 96, -1 / 12, -1 / 32]], dtype=dtype
-        )
+        sb_l = jnp.array([[-1 / 2, 59 / 96, -1 / 12, -1 / 32]], dtype=dtype)
         sb_r = -sb_l[::-1, ::-1]
     else:
-        sb_l = jnp.array(  # type: ignore[no-untyped-call]
-            [[11 / 6, -3, 3 / 2, -1 / 3]], dtype=dtype
-        )
+        sb_l = jnp.array([[11 / 6, -3, 3 / 2, -1 / 3]], dtype=dtype)
 
         if sd == SecondDerivativeType.Narrow:
             # NOTE: this is a copy pasting difference between the various
@@ -1157,21 +1145,21 @@ def make_sbp_42_second_derivative_c_stencils(
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
-    c34_i = jnp.array(1, dtype=dtype)  # type: ignore[no-untyped-call]
+    c34_i = jnp.array(1, dtype=dtype)
 
-    c34_l = jnp.array(  # type: ignore[no-untyped-call]
+    c34_l = jnp.array(
         [0, 0, 163_928_591_571 / 53_268_010_936, 189_284 / 185_893, 1, 0],
         dtype=dtype,
     )
-    c34_r = jnp.array(  # type: ignore[no-untyped-call]
+    c34_r = jnp.array(
         [1, 1_189_284 / 185_893, 0, 63_928_591_571 / 53_268_010_936, 0, 0],
         dtype=dtype,
     )
 
     # [Mattsson2012] Appendix A.2
-    c44_i = jnp.array(1, dtype=dtype)  # type: ignore[no-untyped-call]
+    c44_i = jnp.array(1, dtype=dtype)
 
-    c44_l = jnp.array(  # type: ignore[no-untyped-call]
+    c44_l = jnp.array(
         [0, 0, 1_644_330 / 301_051, 156_114 / 181_507, 1],
         dtype=dtype,
     )
@@ -1191,9 +1179,9 @@ def make_sbp_42_second_derivative_d_stencils(
 
     # [Mattsson2012] Appendix A.2
 
-    d34_i = jnp.array([-1, 3, -3, 1], dtype=dtype)  # type: ignore[no-untyped-call]
+    d34_i = jnp.array([-1, 3, -3, 1], dtype=dtype)
 
-    d34_l = jnp.array(  # type: ignore[no-untyped-call]
+    d34_l = jnp.array(
         [
             [-1, 3, -3, 1, 0, 0],
             [-1, 3, -3, 1, 0, 0],
@@ -1210,8 +1198,8 @@ def make_sbp_42_second_derivative_d_stencils(
     )
     d34_r = -d34_l[::-1, ::-1]
 
-    d44_i = jnp.array([1, -4, 6, -4, 1], dtype=dtype)  # type: ignore[no-untyped-call]
-    d44_l = jnp.array(  # type: ignore[no-untyped-call]
+    d44_i = jnp.array([1, -4, 6, -4, 1], dtype=dtype)
+    d44_l = jnp.array(
         [
             [1, -4, 6, -4, 1],
             [1, -4, 6, -4, 1],
@@ -1287,9 +1275,9 @@ def make_sbp_64_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.nd
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.3
-    pi = jnp.array(dtype.type(1.0))  # type: ignore[no-untyped-call]
+    pi = jnp.array(dtype.type(1.0))
 
-    pb_l = jnp.array(  # type: ignore[no-untyped-call]
+    pb_l = jnp.array(
         [
             13649 / 43200,
             12013 / 8640,
@@ -1311,11 +1299,9 @@ def make_sbp_64_first_derivative_q_stencil(
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
-    qi = jnp.array(  # type: ignore[no-untyped-call]
-        [1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype
-    )
+    qi = jnp.array([1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype)
 
-    qb_l = jnp.array(  # type: ignore[no-untyped-call]
+    qb_l = jnp.array(
         [
             [-1 / 2, 59 / 96, -1 / 12, -1 / 32, 0.0, 0.0],
             [-59 / 96, 0.0, 59 / 96, 0.0, 0.0, 0.0],
