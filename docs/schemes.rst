@@ -13,4 +13,6 @@ Spatial Discretization
 
 .. automodule:: pyshocks.sbp
 
+.. automodule:: pyshocks.finitedifference
+
 .. automodule:: pyshocks.scalar

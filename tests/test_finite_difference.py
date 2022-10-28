@@ -3,15 +3,17 @@
 
 from functools import partial
 
-import numpy as np
-
 import jax
 import jax.numpy as jnp
 import jax.random
 
+from pyshocks import get_logger, set_recommended_matplotlib
 from pyshocks import advection, continuity
 
 import pytest
+
+logger = get_logger("test_finite_difference")
+set_recommended_matplotlib()
 
 
 # {{{ test advection vs continuity
@@ -77,8 +79,8 @@ def test_advection_vs_continuity(
     aop = jax.jit(partial(apply_operator, ascheme, grid, boundary, 0.0))
     cop = jax.jit(partial(apply_operator, cscheme, grid, boundary, 0.0))
 
-    u = jnp.sin(2.0 * np.pi * grid.x)
-    v = jnp.sin(2.0 * np.pi * grid.x)
+    u = jnp.sin(2.0 * jnp.pi * grid.x)
+    v = jnp.sin(2.0 * jnp.pi * grid.x)
 
     error = abs(dot(u, aop(v)) - dot(cop(u), v))
     print(f"error: {error:.5e}")
@@ -145,7 +147,7 @@ def test_advection_finite_difference_jacobian(
         raise ValueError(f"unknown 'bc_type': {bc_type}")
 
     key = jax.random.PRNGKey(42)
-    velocity = jax.random.normal(key, grid.x.shape, dtype=np.float64)
+    velocity = jax.random.normal(key, grid.x.shape, dtype=jnp.float64)
     scheme = advection.Godunov(rec=rec, velocity=velocity)
 
     # }}}
@@ -159,7 +161,7 @@ def test_advection_finite_difference_jacobian(
     op = jax.jit(partial(apply_operator, scheme, grid, boundary, 0.0))
 
     _, subkey = jax.random.split(key)
-    u = jax.random.normal(subkey, grid.x.shape, dtype=np.float64)
+    u = jax.random.normal(subkey, grid.x.shape, dtype=jnp.float64)
 
     eps = 1.0e-3
     fddjac = []
@@ -204,6 +206,64 @@ def test_advection_finite_difference_jacobian(
 
     fig.savefig(f"finite_jacfwd_error_{type(scheme).__name__}_{bc_type}")
     plt.close(fig)
+
+
+# }}}
+
+
+# {{{ test_finite_difference_taylor
+
+
+def test_finite_difference_taylor_stencil() -> None:
+    from pyshocks.finitedifference import make_taylor_approximation
+
+    stencils = [
+        (
+            make_taylor_approximation(1, (-2, 2)),
+            [1 / 12, -8 / 12, 0.0, 8 / 12, -1 / 12],
+            4,
+            -1 / 30,
+        ),
+        (
+            make_taylor_approximation(1, (-2, 1)),
+            [1 / 6, -6 / 6, 3 / 6, 2 / 6],
+            3,
+            1 / 12,
+        ),
+        (make_taylor_approximation(2, (-2, 1)), [0.0, 1.0, -2.0, 1.0], 2, 1 / 12),
+        (
+            make_taylor_approximation(2, (-2, 2)),
+            [-1 / 12, 16 / 12, -30 / 12, 16 / 12, -1 / 12],
+            4,
+            -1 / 90,
+        ),
+        (
+            make_taylor_approximation(3, (-2, 2)),
+            [-1 / 2, 2 / 2, 0.0, -2 / 2, 1 / 2],
+            2,
+            1 / 4,
+        ),
+        (make_taylor_approximation(4, (-2, 2)), [1.0, -4.0, 6.0, -4.0, 1.0], 2, 1 / 6),
+    ]
+
+    for s, a, order, coefficient in stencils:
+        logger.info("stencil:\n%r", s)
+
+        assert jnp.allclose(jnp.sum(s.coeffs), 0.0)
+        assert jnp.allclose(s.coeffs, jnp.array(a))
+        assert jnp.allclose(s.trunc, coefficient)
+        assert s.order == order
+
+    from pyshocks.finitedifference import determine_stencil_truncation_error
+
+    a = jnp.array(
+        [-0.02651995, 0.18941314, -0.79926643, 0.0, 0.79926643, -0.18941314, 0.02651995]
+    )
+    indices = jnp.arange(-3, 4)
+
+    order, c = determine_stencil_truncation_error(1, a, indices, atol=1.0e-6)
+    assert order == 4
+    assert jnp.allclose(c, 0.01970656333333333)
 
 
 # }}}
