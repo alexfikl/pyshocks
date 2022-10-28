@@ -7,8 +7,9 @@ import jax
 import jax.numpy as jnp
 import jax.random
 
-from pyshocks import get_logger, set_recommended_matplotlib
+from pyshocks import EOCRecorder, get_logger, set_recommended_matplotlib
 from pyshocks import advection, continuity
+from pyshocks.finitedifference import Stencil
 
 import pytest
 
@@ -214,6 +215,26 @@ def test_advection_finite_difference_jacobian(
 # {{{ test_finite_difference_taylor
 
 
+def finite_difference_convergence(d: Stencil) -> EOCRecorder:
+    eoc = EOCRecorder()
+
+    s = jnp.s_[abs(d.indices[0]) + 1 : -abs(d.indices[-1]) - 1]
+    for n in [32, 64, 128, 256, 512]:
+        theta = jnp.linspace(0.0, 2.0 * jnp.pi, n)
+        h = theta[1] - theta[0]
+
+        f = jnp.sin(theta)
+        num_df_dx = jnp.convolve(f, d.padded_coeffs, mode="same") / h**d.derivative
+
+        df = jnp.cos(theta) if d.derivative % 2 == 1 else jnp.sin(theta)
+        df_dx = (-1.0) ** ((d.derivative - 1) // 2 + 1) * df
+
+        error = jnp.linalg.norm(df_dx[s] - num_df_dx[s]) / jnp.linalg.norm(df_dx[s])
+        eoc.add_data_point(h, error)
+
+    return eoc
+
+
 def test_finite_difference_taylor_stencil() -> None:
     from pyshocks.finitedifference import make_taylor_approximation
 
@@ -253,6 +274,10 @@ def test_finite_difference_taylor_stencil() -> None:
         assert jnp.allclose(s.coeffs, jnp.array(a))
         assert jnp.allclose(s.trunc, coefficient)
         assert s.order == order
+
+        eoc = finite_difference_convergence(s)
+        logger.info("\n%s", eoc)
+        assert eoc.estimated_order >= order - 0.25
 
     from pyshocks.finitedifference import determine_stencil_truncation_error
 

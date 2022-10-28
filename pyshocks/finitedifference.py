@@ -12,7 +12,7 @@ Finite Difference Approximations
 
 import math
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Any, Optional, Tuple
 
 import jax.numpy as jnp
 
@@ -27,7 +27,7 @@ class Stencil:
     .. math::
 
         \frac{\mathrm{d}^n\, f}{\mathrm{d}\, x^n}
-        \approx \sum_{i \in \text{indices}} a_i f_i
+        \approx \sum_{i \in \text{indices}} \frac{a_i}{h^n} f_i
 
     where :math:`a_i` are the given coefficients :attr:`coeffs` and :math:`f_i`
     are the point function evaluations. The approximation is to an order of
@@ -38,6 +38,8 @@ class Stencil:
     .. attribute:: coeffs
     .. attribute:: indices
     .. attribute:: trunc
+
+    .. attribute:: padded_coeffs
     """
 
     derivative: int
@@ -46,19 +48,27 @@ class Stencil:
     indices: jnp.ndarray
     trunc: float
 
-    def __str__(self) -> str:
-        from fractions import Fraction
+    @property
+    def padded_coeffs(self) -> jnp.ndarray:
+        n = jnp.max(jnp.abs(self.indices))
 
-        return ", ".join([str(Fraction(a).limit_denominator()) for a in self.coeffs])
+        c = jnp.zeros(2 * n + 1, dtype=self.coeffs.dtype)  # type: ignore
+        c = c.at[n + self.indices].set(self.coeffs)
+
+        return c
+
+    def __str__(self) -> str:
+        return repr(self)
 
     def __repr__(self) -> str:
+        import jax
         from fractions import Fraction
 
+        coeffs = jax.device_get(self.coeffs)
+        indices = jax.device_get(self.indices)
+
         a = ", ".join(
-            [
-                f"{i}: {Fraction(a).limit_denominator()}"
-                for a, i in zip(self.coeffs, self.indices)
-            ]
+            [f"{i}: {Fraction(a).limit_denominator()}" for a, i in zip(coeffs, indices)]
         )
 
         return (
@@ -81,7 +91,7 @@ def determine_stencil_truncation_error(
     .. math::
 
         \frac{\mathrm{d}^n\, f}{\mathrm{d}\, x^n}
-        - \sum_{i \in \text{indices}} a_i f_i
+        - \sum_{i \in \text{indices}} \frac{a_i}{h^n} f_i
         = c \frac{\mathrm{d}^p\, f}{\mathrm{d}\, x^p},
 
     where :math:`c` is the expected truncation error coefficient and :math:`p`
@@ -104,7 +114,11 @@ def determine_stencil_truncation_error(
 
 
 def make_taylor_approximation(
-    derivative: int, stencil: Tuple[int, int], *, atol: float = 1.0e-6
+    derivative: int,
+    stencil: Tuple[int, int],
+    *,
+    atol: float = 1.0e-6,
+    dtype: Optional["jnp.dtype[Any]"] = None,
 ) -> Stencil:
     r"""
     :arg derivative: integer order of the approximated derivative, e.g. ``1`` for
@@ -119,10 +133,15 @@ def make_taylor_approximation(
     assert stencil[0] < stencil[1]
     assert derivative > 0
 
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+
     # set up
     indices = jnp.arange(stencil[0], stencil[1] + 1)
-    A = jnp.array([indices**i / math.factorial(i) for i in range(indices.size)])
-    b = jnp.zeros(indices.shape)  # type: ignore[no-untyped-call]
+    A = jnp.array(
+        [indices**i / math.factorial(i) for i in range(indices.size)], dtype=dtype
+    )
+    b = jnp.zeros(indices.shape, dtype=dtype)  # type: ignore[no-untyped-call]
     b = b.at[derivative].set(1)
 
     # determine coefficients
