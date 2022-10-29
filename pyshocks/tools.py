@@ -32,12 +32,15 @@ Convergence
 Timing and Profiling
 --------------------
 
+.. autoclass:: TimeResult
+    :no-show-inheritance:
 .. autoclass:: BlockTimer
     :no-show-inheritance:
 .. autoclass:: IterationTimer
     :no-show-inheritance:
 
 .. autofunction:: timeit
+.. autofunction:: repeatit
 .. autofunction:: profileit
 """
 
@@ -393,6 +396,42 @@ class BlockTimer:
         )
 
 
+@dataclass(frozen=True)
+class TimeResult:
+    """
+    .. attribute:: walltime
+
+        Smallest value of the walltime for all the runs.
+
+    .. attribute:: mean
+
+       Mean value for the walltime.
+
+    .. attribute:: std
+
+        Standard deviation for the walltime.
+    """
+
+    __slots__ = {"walltime", "mean", "std"}
+
+    walltime: float
+    mean: float
+    std: float
+
+    def __str__(self) -> str:
+        return f"wall {self.walltime:.3e}s mean {self.mean:.3e}s ± {self.std:.3e}"
+
+    @classmethod
+    def from_measurements(cls, deltas: jnp.ndarray, *, skip: int = 5) -> "TimeResult":
+        # NOTE: skipping the first few iterations because they mostly measure
+        # the jit warming up, so they'll skew the standard deviation
+        return TimeResult(
+            walltime=jnp.sum(deltas),
+            mean=jnp.mean(deltas[skip:]),
+            std=jnp.std(deltas[skip:], ddof=1),
+        )
+
+
 @dataclass
 class IterationTimer:
     """A manager for timing blocks of code in an iterative algorithm.
@@ -439,12 +478,7 @@ class IterationTimer:
 
         :returns: a :class:`tuple` of ``(total, mean, std)``.
         """
-
-        t_deltas = jnp.array(self.t_deltas)
-
-        # NOTE: skipping the first few iterations because they mostly measure
-        # the jit warming up, so they'll skew the standard deviation
-        return (jnp.sum(t_deltas), jnp.mean(t_deltas[5:-1]), jnp.std(t_deltas[5:-1]))
+        return TimeResult.from_measurements(jnp.array(self.t_deltas), skip=5)
 
 
 def timeit(func: Callable[P, T]) -> Callable[P, T]:
@@ -477,6 +511,24 @@ def profileit(func: Callable[P, T]) -> Callable[P, T]:
         return retval
 
     return wrapper
+
+
+def repeatit(
+    stmt: Union[str, Callable[[], Any]],
+    *,
+    setup: Union[str, Callable[[], Any]] = "pass",
+    repeat: int = 16,
+    number: int = 1,
+) -> TimeResult:
+    """Run *stmt* using :func:`timeit.repeat`.
+
+    :returns: a :class:`TimeResult` with statistics about the runs.
+    """
+
+    import timeit as _timeit
+
+    r = _timeit.repeat(stmt=stmt, setup=setup, repeat=repeat + 1, number=number)
+    return TimeResult.from_measurements(jnp.array(r), skip=3)
 
 
 # }}}
