@@ -5,24 +5,24 @@ all: flake8 pylint
 # {{{ linting
 
 black:
-	$(PYTHON) -m black --safe --target-version py38 pyshocks tests examples
+	$(PYTHON) -m black --safe --target-version py38 pyshocks tests examples drivers
 
 flake8:
-	$(PYTHON) -m flake8 pyshocks examples tests docs
+	$(PYTHON) -m flake8 pyshocks examples drivers tests docs
 	@echo -e "\e[1;32mflake8 clean!\e[0m"
 
 pylint:
-	PYTHONWARNINGS=ignore $(PYTHON) -m pylint pyshocks examples/*.py tests/*.py
+	PYTHONWARNINGS=ignore $(PYTHON) -m pylint pyshocks examples/*.py drivers/*.py tests/*.py
 	@echo -e "\e[1;32mpylint clean!\e[0m"
 
 mypy:
-	$(PYTHON) -m mypy --strict --show-error-codes pyshocks tests examples
+	$(PYTHON) -m mypy --strict --show-error-codes pyshocks tests examples drivers
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 
 codespell:
 	@codespell --summary \
 		--ignore-words .codespell-ignore \
-		pyshocks tests examples
+		pyshocks tests examples drivers
 
 reuse:
 	@reuse lint
@@ -49,6 +49,13 @@ test:
 
 run-examples:
 	@for ex in $$(find examples -name "*.py"); do \
+		echo -e "\x1b[1;32m===> \x1b[97mRunning $${ex}\x1b[0m"; \
+		$(PYTHON) "$${ex}"; \
+		sleep 1; \
+	done
+
+run-drivers:
+	@for ex in $$(find drivers -name "*.py"); do \
 		echo -e "\x1b[1;32m===> \x1b[97mRunning $${ex}\x1b[0m"; \
 		$(PYTHON) "$${ex}"; \
 		sleep 1; \

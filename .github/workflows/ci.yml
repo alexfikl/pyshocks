@@ -86,5 +86,6 @@ jobs:
       run: |
         make pip-install
         make run-examples
+        make run-drivers
 
 # vim: set ts=2 sw=2 et:
