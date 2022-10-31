@@ -171,7 +171,7 @@ class ESWENO32(FiniteVolumeScheme):
 
 
 @numerical_flux.register(ESWENO32)
-def _apply_derivative_burgers_esweno32(
+def _numerical_flux_advection_esweno32(
     scheme: ESWENO32, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from pyshocks.weno import es_weno_weights
@@ -223,7 +223,7 @@ class FluxSplitGodunov(FiniteDifferenceScheme):
 
 
 @bind.register(FluxSplitGodunov)
-def _bind_advection_flux_split_lf(  # type: ignore[misc]
+def _bind_advection_flux_split_godunov(  # type: ignore[misc]
     scheme: FluxSplitGodunov, grid: UniformGrid, bc: Boundary
 ) -> FluxSplitGodunov:
     assert isinstance(grid, UniformGrid)
@@ -234,7 +234,9 @@ def _bind_advection_flux_split_lf(  # type: ignore[misc]
     kp = scheme.order
 
     sm = fd.make_taylor_approximation(1, (-km, kp))
+    assert sm.order >= scheme.sorder, (scheme.sorder, sm)
     sp = fd.make_taylor_approximation(1, (-kp, km))
+    assert sp.order >= scheme.sorder, (scheme.sorder, sp)
 
     object.__setattr__(scheme, "sm", sm)
     object.__setattr__(scheme, "sp", sp)
@@ -243,7 +245,7 @@ def _bind_advection_flux_split_lf(  # type: ignore[misc]
 
 
 @apply_operator.register(FluxSplitGodunov)
-def _apply_operator_flux_split_lf(
+def _apply_operator_flux_split_godunov(
     scheme: FluxSplitGodunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.velocity is not None
@@ -251,12 +253,13 @@ def _apply_operator_flux_split_lf(
     from pyshocks import apply_boundary
 
     u = apply_boundary(bc, grid, t, u)
-    cond = scheme.velocity > 0
+    cond = scheme.velocity < 0
 
-    dup = fd.apply_stencil(scheme.sp, jnp.where(cond, u, 0), grid.dx)  # type: ignore
-    dum = fd.apply_stencil(scheme.sm, jnp.where(cond, 0, u), grid.dx)  # type: ignore
+    dup = fd.apply_derivative(scheme.sp, jnp.where(cond, u, 0), grid.dx)  # type: ignore
+    dum = fd.apply_derivative(scheme.sm, jnp.where(cond, 0, u), grid.dx)  # type: ignore
 
-    return -scheme.velocity * (dup + dum)
+    # FIXME: why is this not `-velocity * du`?
+    return scheme.velocity * (dup + dum)
 
 
 # }}}
