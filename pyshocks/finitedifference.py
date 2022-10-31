@@ -213,7 +213,7 @@ def make_fornberg_approximation(
 
     # {{{ determine coefficients
 
-    c = jnp.zeros((x.size, derivative + 1), dtype=dtype)
+    c = jnp.zeros((x.size, derivative + 1), dtype=dtype)  # type: ignore
     c = c.at[0, 0].set(1.0)
 
     c1, c4 = 1, x[0] - xd
@@ -231,9 +231,10 @@ def make_fornberg_approximation(
 
     # only need the last derivative
     c = c[:, -1]
+    x = x.astype(jnp.int64)
 
     n = max(abs(stencil[0]), abs(stencil[1]))
-    padded_c = jnp.zeros(2 * n + 1, dtype=x.dtype)  # type: ignore[no-untyped-call]
+    padded_c = jnp.zeros(2 * n + 1, dtype=c.dtype)  # type: ignore[no-untyped-call]
     padded_c = padded_c.at[n + x].set(c)
 
     # }}}
@@ -246,10 +247,26 @@ def make_fornberg_approximation(
         derivative=derivative,
         order=order,
         coeffs=c,
-        indices=x.astype(jnp.int64),
+        indices=x,
         trunc=trunc,
         padded_coeffs=padded_c,
     )
+
+
+# }}}
+
+
+# {{{ wavenumber
+
+
+def modified_wavenumber(st: Stencil, k: jnp.ndarray) -> jnp.ndarray:
+    km = jnp.empty(k.shape, dtype=jnp.complex128)  # type: ignore[no-untyped-call]
+
+    for n in range(k.shape[0]):
+        exp = jnp.exp(1.0j * st.indices * k[n])
+        km = km.at[n].set(jnp.sum(st.coeffs * exp))
+
+    return km
 
 
 # }}}

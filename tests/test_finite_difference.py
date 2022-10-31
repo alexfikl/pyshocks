@@ -216,6 +216,8 @@ def test_advection_finite_difference_jacobian(
 
 
 def finite_difference_convergence(d: Stencil) -> EOCRecorder:
+    from pyshocks.finitedifference import apply_stencil
+
     eoc = EOCRecorder()
 
     s = jnp.s_[abs(d.indices[0]) + 1 : -abs(d.indices[-1]) - 1]
@@ -224,7 +226,7 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
         h = theta[1] - theta[0]
 
         f = jnp.sin(theta)
-        num_df_dx = jnp.convolve(f, d.padded_coeffs, mode="same") / h**d.derivative
+        num_df_dx = apply_stencil(d, f, h)
 
         df = jnp.cos(theta) if d.derivative % 2 == 1 else jnp.sin(theta)
         df_dx = (-1.0) ** ((d.derivative - 1) // 2 + 1) * df
@@ -235,10 +237,25 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
     return eoc
 
 
-def test_finite_difference_taylor_stencil() -> None:
-    from pyshocks.finitedifference import make_taylor_approximation
+def test_finite_difference_taylor_stencil(visualize: bool = True) -> None:
+    if visualize:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            visualize = False
+
+    from pyshocks.finitedifference import (
+        make_taylor_approximation,
+        make_fornberg_approximation,
+    )
 
     stencils = [
+        (
+            make_fornberg_approximation(1, (-2, 2)),
+            [1 / 12, -8 / 12, 0.0, 8 / 12, -1 / 12],
+            4,
+            -1 / 30,
+        ),
         (
             make_taylor_approximation(1, (-2, 2)),
             [1 / 12, -8 / 12, 0.0, 8 / 12, -1 / 12],
@@ -250,6 +267,12 @@ def test_finite_difference_taylor_stencil() -> None:
             [1 / 6, -6 / 6, 3 / 6, 2 / 6],
             3,
             1 / 12,
+        ),
+        (
+            make_taylor_approximation(1, (-1, 2)),
+            [-2 / 6, -3 / 6, 6 / 6, -1 / 6],
+            3,
+            -1 / 12,
         ),
         (make_taylor_approximation(2, (-2, 1)), [0.0, 1.0, -2.0, 1.0], 2, 1 / 12),
         (
@@ -267,6 +290,9 @@ def test_finite_difference_taylor_stencil() -> None:
         (make_taylor_approximation(4, (-2, 2)), [1.0, -4.0, 6.0, -4.0, 1.0], 2, 1 / 6),
     ]
 
+    if visualize:
+        fig = plt.figure()
+
     for s, a, order, coefficient in stencils:
         logger.info("stencil:\n%r", s)
 
@@ -278,6 +304,30 @@ def test_finite_difference_taylor_stencil() -> None:
         eoc = finite_difference_convergence(s)
         logger.info("\n%s", eoc)
         assert eoc.estimated_order >= order - 0.25
+
+        if visualize:
+            part = jnp.real if s.derivative % 2 == 0 else jnp.imag
+
+            from pyshocks.finitedifference import modified_wavenumber
+
+            k = jnp.linspace(0.0, jnp.pi, 128)
+            km = part(modified_wavenumber(s, k))
+            sign = part(1.0j**s.derivative)
+
+            ax = fig.gca()
+            ax.plot(k, km)
+            ax.plot(k, sign * k**s.derivative, "k--")
+
+            ax.set_xlabel("$k h$")
+            ax.set_ylabel(r"$\tilde{k} h$")
+            ax.set_xlim([0.0, jnp.pi])
+            ax.set_ylim([0.0, sign * jnp.pi**s.derivative])
+
+            fig.savefig(f"finite_difference_wavenumber_{s.derivative}_{s.order}")
+            fig.clf()
+
+    if visualize:
+        plt.close(fig)
 
     from pyshocks.finitedifference import determine_stencil_truncation_error
 

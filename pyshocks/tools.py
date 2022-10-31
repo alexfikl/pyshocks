@@ -473,11 +473,8 @@ class IterationTimer:
     def total(self) -> jnp.ndarray:
         return jnp.sum(self.t_deltas)
 
-    def stats(self) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-        """Compute statistics across all the iterations.
-
-        :returns: a :class:`tuple` of ``(total, mean, std)``.
-        """
+    def stats(self) -> TimeResult:
+        """Compute statistics across all the iterations."""
         return TimeResult.from_measurements(jnp.array(self.t_deltas), skip=5)
 
 
