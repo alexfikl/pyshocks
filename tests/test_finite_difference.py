@@ -99,7 +99,6 @@ def test_advection_vs_continuity(
     ax.plot(grid.x[i], cop(u)[i], label="CON")
 
     ax.set_xlabel("$x$")
-    ax.grid(True)
     fig.savefig(f"finite_comparison_{type(ascheme).__name__}_{bc_type}")
     plt.close(fig)
 
@@ -222,7 +221,7 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
 
     s = jnp.s_[abs(d.indices[0]) + 1 : -abs(d.indices[-1]) - 1]
     for n in [32, 64, 128, 256, 512]:
-        theta = jnp.linspace(0.0, 2.0 * jnp.pi, n)
+        theta = jnp.linspace(0.0, 2.0 * jnp.pi, n, dtype=d.coeffs.dtype)
         h = theta[1] - theta[0]
 
         f = jnp.sin(theta)
@@ -237,7 +236,7 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
     return eoc
 
 
-def test_finite_difference_taylor_stencil(visualize: bool = True) -> None:
+def test_finite_difference_taylor_stencil(visualize: bool = False) -> None:
     if visualize:
         try:
             import matplotlib.pyplot as plt
@@ -297,7 +296,7 @@ def test_finite_difference_taylor_stencil(visualize: bool = True) -> None:
         logger.info("stencil:\n%r", s)
 
         assert jnp.allclose(jnp.sum(s.coeffs), 0.0)
-        assert jnp.allclose(s.coeffs, jnp.array(a))
+        assert jnp.allclose(s.coeffs, jnp.array(a, dtype=s.coeffs.dtype))
         assert jnp.allclose(s.trunc, coefficient)
         assert s.order == order
 
