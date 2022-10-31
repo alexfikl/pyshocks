@@ -44,6 +44,7 @@ from pyshocks.advection.schemes import (
     Godunov,
     ESWENO32,
     SBPSAT,
+    FluxSplitGodunov,
 )
 
 # NOTE: just providing an alias for common usage
@@ -57,6 +58,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "upwind": Godunov,
     "esweno32": ESWENO32,
     "sbp": SBPSAT,
+    "splitgodunov": FluxSplitGodunov,
 }
 
 
@@ -96,6 +98,7 @@ __all__ = (
     "Upwind",
     "ESWENO32",
     "SBPSAT",
+    "FluxSplitGodunov",
     "scheme_ids",
     "make_scheme_from_name",
 )

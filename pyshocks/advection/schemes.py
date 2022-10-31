@@ -22,6 +22,7 @@ from pyshocks import (
     evaluate_boundary,
 )
 from pyshocks import sbp
+import pyshocks.finitedifference as fd
 
 
 # {{{ base
@@ -54,7 +55,7 @@ class Scheme(SchemeBase):
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_advection(
-    scheme: Scheme, grid: Grid, t: float, u: jnp.ndarray
+    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     assert scheme.velocity is not None
 
@@ -197,6 +198,65 @@ def _apply_derivative_burgers_esweno32(
         gnum = 0.0
 
     return esweno_lf_flux(scheme, grid, bc, u) + gnum
+
+
+# }}}
+
+
+# {{{ biased splitting
+
+
+@dataclass(frozen=True)
+class FluxSplitGodunov(FiniteDifferenceScheme):
+    sorder: int
+
+    sp: ClassVar[fd.Stencil]
+    sm: ClassVar[fd.Stencil]
+
+    @property
+    def order(self) -> int:
+        return self.sorder
+
+    @property
+    def stencil_width(self) -> int:
+        return self.sorder
+
+
+@bind.register(FluxSplitGodunov)
+def _bind_advection_flux_split_lf(  # type: ignore[misc]
+    scheme: FluxSplitGodunov, grid: UniformGrid, bc: Boundary
+) -> FluxSplitGodunov:
+    assert isinstance(grid, UniformGrid)
+    assert scheme.velocity is not None
+    assert scheme.order % 2 == 1
+
+    km = (scheme.order - 2) if scheme.order > 1 else 0
+    kp = scheme.order
+
+    sm = fd.make_taylor_approximation(1, (-km, kp))
+    sp = fd.make_taylor_approximation(1, (-kp, km))
+
+    object.__setattr__(scheme, "sm", sm)
+    object.__setattr__(scheme, "sp", sp)
+
+    return scheme
+
+
+@apply_operator.register(FluxSplitGodunov)
+def _apply_operator_flux_split_lf(
+    scheme: FluxSplitGodunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    assert scheme.velocity is not None
+
+    from pyshocks import apply_boundary
+
+    u = apply_boundary(bc, grid, t, u)
+    cond = scheme.velocity > 0
+
+    dup = fd.apply_stencil(scheme.sp, jnp.where(cond, u, 0), grid.dx)  # type: ignore
+    dum = fd.apply_stencil(scheme.sm, jnp.where(cond, 0, u), grid.dx)  # type: ignore
+
+    return -scheme.velocity * (dup + dum)
 
 
 # }}}

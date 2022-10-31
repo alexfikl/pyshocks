@@ -191,8 +191,7 @@ def main(
     # {{{ visualize
 
     if verbose:
-        t_total, t_mean, t_std = timer.stats()
-        logger.info("total %.3fs iteration %.3fs ± %g", t_total, t_mean, t_std)
+        logger.info("%s", timer.stats())
 
     from pyshocks import rnorm
 
