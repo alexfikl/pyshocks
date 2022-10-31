@@ -101,7 +101,7 @@ def determine_stencil_truncation_error(
     return i - derivative, c
 
 
-def apply_stencil(d: Stencil, f: jnp.ndarray, h: float) -> jnp.ndarray:
+def apply_derivative(d: Stencil, f: jnp.ndarray, h: float) -> jnp.ndarray:
     return jnp.convolve(f, d.padded_coeffs, mode="same") / h**d.derivative
 
 
