@@ -44,6 +44,7 @@ from pyshocks.burgers.schemes import (
     EngquistOsher,
     ESWENO32,
     SSMUSCL,
+    FluxSplitRusanov,
 )
 from pyshocks.burgers.ssweno import SSWENO242
 
@@ -59,6 +60,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
     "esweno32": ESWENO32,
     "ssmuscl": SSMUSCL,
     "ssweno242": SSWENO242,
+    "splitrusanov": FluxSplitRusanov,
 }
 
 
@@ -98,6 +100,7 @@ __all__ = (
     "ESWENO32",
     "SSMUSCL",
     "SSWENO242",
+    "FluxSplitRusanov",
     "scheme_ids",
     "make_scheme_from_name",
 )

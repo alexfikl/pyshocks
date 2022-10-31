@@ -216,7 +216,7 @@ def test_advection_finite_difference_jacobian(
 
 
 def finite_difference_convergence(d: Stencil) -> EOCRecorder:
-    from pyshocks.finitedifference import apply_stencil
+    from pyshocks.finitedifference import apply_derivative
 
     eoc = EOCRecorder()
 
@@ -226,7 +226,7 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
         h = theta[1] - theta[0]
 
         f = jnp.sin(theta)
-        num_df_dx = apply_stencil(d, f, h)
+        num_df_dx = apply_derivative(d, f, h)
 
         df = jnp.cos(theta) if d.derivative % 2 == 1 else jnp.sin(theta)
         df_dx = (-1.0) ** ((d.derivative - 1) // 2 + 1) * df

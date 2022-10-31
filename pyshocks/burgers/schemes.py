@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass, field, replace
+from typing import ClassVar
 
 import jax.numpy as jnp
 
 from pyshocks import (
     Grid,
+    UniformGrid,
     Boundary,
     SchemeBase,
     FiniteDifferenceSchemeBase,
@@ -16,10 +18,11 @@ from pyshocks import reconstruction
 from pyshocks import (
     bind,
     flux,
+    apply_operator,
     numerical_flux,
     predict_timestep,
 )
-
+import pyshocks.finitedifference as fd
 
 # {{{ base
 
@@ -202,6 +205,7 @@ def _numerical_flux_burgers_engquist_osher(
 
 # }}}
 
+
 # {{{ ESWENO32
 
 
@@ -347,5 +351,62 @@ def _numerical_flux_burgers_ssmuscl(
 
 # }}}
 
+
+# {{{ flux splitting Rusanov
+
+
+@dataclass(frozen=True)
+class FluxSplitRusanov(FiniteDifferenceScheme):
+    sorder: int
+
+    sp: ClassVar[fd.Stencil]
+    sm: ClassVar[fd.Stencil]
+
+    @property
+    def order(self) -> int:
+        return self.sorder
+
+    @property
+    def stencil_width(self) -> int:
+        return self.sorder
+
+
+@bind.register(FluxSplitRusanov)
+def _bind_advection_flux_split_rusanov(  # type: ignore[misc]
+    scheme: FluxSplitRusanov, grid: UniformGrid, bc: Boundary
+) -> FluxSplitRusanov:
+    assert isinstance(grid, UniformGrid)
+    assert scheme.order % 2 == 1
+
+    km = (scheme.order - 2) if scheme.order > 1 else 0
+    kp = scheme.order
+
+    sm = fd.make_taylor_approximation(1, (-km, kp))
+    sp = fd.make_taylor_approximation(1, (-kp, km))
+
+    object.__setattr__(scheme, "sm", sm)
+    object.__setattr__(scheme, "sp", sp)
+
+    return scheme
+
+
+@apply_operator.register(FluxSplitRusanov)
+def _apply_operator_flux_split_rusanov(
+    scheme: FluxSplitRusanov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
+) -> jnp.ndarray:
+    from pyshocks import apply_boundary
+
+    u = apply_boundary(bc, grid, t, u)
+    f = flux(scheme, t, grid.x, u)
+    a = jnp.abs(u)
+
+    dfp = fd.apply_derivative(scheme.sm, (f + a * u) / 2, grid.dx)
+    dfm = fd.apply_derivative(scheme.sp, (f - a * u) / 2, grid.dx)
+
+    # FIXME: why isn't this `-dflux`?
+    return dfp + dfm
+
+
+# }}}
 
 # vim: fdm=marker
