@@ -49,14 +49,7 @@ class Stencil:
     indices: jnp.ndarray
     trunc: float
 
-    @property
-    def padded_coeffs(self) -> jnp.ndarray:
-        n = jnp.max(jnp.abs(self.indices))
-
-        c = jnp.zeros(2 * n + 1, dtype=self.coeffs.dtype)  # type: ignore
-        c = c.at[n + self.indices].set(self.coeffs)
-
-        return c
+    padded_coeffs: jnp.ndarray
 
     def __str__(self) -> str:
         return repr(self)
@@ -108,8 +101,8 @@ def determine_stencil_truncation_error(
     return i - derivative, c
 
 
-def apply_stencil(d: Stencil, f: jnp.ndarray) -> jnp.ndarray:
-    pass
+def apply_stencil(d: Stencil, f: jnp.ndarray, h: float) -> jnp.ndarray:
+    return jnp.convolve(f, d.padded_coeffs, mode="same") / h**d.derivative
 
 
 # }}}
@@ -156,12 +149,21 @@ def make_taylor_approximation(
     x = jnp.linalg.solve(A, b)
     assert jnp.allclose(jnp.sum(x), 0.0)
 
+    n = max(abs(stencil[0]), abs(stencil[1]))
+    padded_x = jnp.zeros(2 * n + 1, dtype=x.dtype)  # type: ignore[no-untyped-call]
+    padded_x = padded_x.at[n + indices].set(x)
+
     # determine order
     # FIXME: we can probably figure this out without a while loop
     order, c = determine_stencil_truncation_error(derivative, x, indices)
 
     return Stencil(
-        derivative=derivative, order=order, coeffs=x, indices=indices, trunc=c
+        derivative=derivative,
+        order=order,
+        coeffs=x,
+        indices=indices,
+        trunc=c,
+        padded_coeffs=padded_x,
     )
 
 
@@ -230,6 +232,10 @@ def make_fornberg_approximation(
     # only need the last derivative
     c = c[:, -1]
 
+    n = max(abs(stencil[0]), abs(stencil[1]))
+    padded_c = jnp.zeros(2 * n + 1, dtype=x.dtype)  # type: ignore[no-untyped-call]
+    padded_c = padded_c.at[n + x].set(c)
+
     # }}}
 
     # determine order
@@ -242,6 +248,7 @@ def make_fornberg_approximation(
         coeffs=c,
         indices=x.astype(jnp.int64),
         trunc=trunc,
+        padded_coeffs=padded_c,
     )
 
 
