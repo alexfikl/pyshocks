@@ -54,7 +54,7 @@ def main(
     )
 
     # set up user data
-    velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
+    velocity = jnp.full_like(grid.x, -2.0)  # type: ignore[no-untyped-call]
     func = partial(sine_wave, k=1)
     u0 = func(0.0, grid.x)
 
@@ -81,7 +81,7 @@ def main(
         ax = fig.gca()
         plt.ion()
 
-        _, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
+        ln0, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
         ax.set_xlim([grid.a, grid.b])
         ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
@@ -119,6 +119,8 @@ def main(
             logger.info("%s umax %.5e usqr %.5e", event, umax, usqr)
 
         if interactive:
+            u = func(0.0, grid.x[s] - velocity[0] * event.t)
+            ln0.set_ydata(u)
             ln1.set_ydata(event.u[s])
             plt.pause(0.01)
 
