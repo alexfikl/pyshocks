@@ -44,6 +44,7 @@ Timing and Profiling
 .. autofunction:: profileit
 """
 
+import os
 from dataclasses import dataclass, field
 from functools import wraps
 from typing import (
@@ -615,6 +616,32 @@ def get_logger(
 # {{{ matplotlib
 
 
+def check_usetex(s: bool) -> bool:
+    try:
+        import matplotlib
+    except ImportError:
+        return False
+
+    if matplotlib.__version__ < "3.6.0":
+        return matplotlib.checkdep_usetex(s)
+
+    # NOTE: simplified version from matplotlib
+    # https://github.com/matplotlib/matplotlib/blob/ec85e725b4b117d2729c9c4f720f31cf8739211f/lib/matplotlib/__init__.py#L439=L456
+
+    import shutil
+
+    if not shutil.which("tex"):
+        return False
+
+    if not shutil.which("dvipng"):
+        return False
+
+    if not shutil.which("gs"):
+        return False
+
+    return True
+
+
 def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
     try:
         import matplotlib.pyplot as mp
@@ -622,12 +649,7 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
         return
 
     if use_tex is None:
-        import os
-        import matplotlib
-
-        use_tex = not os.environ.get(
-            "GITHUB_REPOSITORY"
-        ) and matplotlib.checkdep_usetex(True)
+        use_tex = "GITHUB_REPOSITORY" not in os.environ and check_usetex(True)
 
     defaults = {
         "figure": {"figsize": (8, 8), "dpi": 300, "constrained_layout": {"use": True}},
