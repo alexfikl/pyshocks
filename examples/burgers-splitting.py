@@ -26,10 +26,10 @@ def main(
     outdir: pathlib.Path,
     a: float = -1.0,
     b: float = +1.0,
-    n: int = 512,
+    n: int = 128,
     tfinal: float = 0.5,
     theta: float = 0.5,
-    is_periodic: bool = True,
+    is_periodic: bool = False,
     interactive: bool = False,
     visualize: bool = True,
     verbose: bool = True,
@@ -50,7 +50,7 @@ def main(
     )
 
     # set up user data
-    func = partial(funcs.burgers_tophat, grid)
+    func = partial(funcs.burgers_linear_shock, grid, ul=2.0, ur=-1.0)
     u0 = func(0.0, grid.x)
 
     # set up boundary conditions
@@ -76,7 +76,7 @@ def main(
         ax = fig.gca()
         plt.ion()
 
-        _, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
+        ln0, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
         ax.set_xlim([grid.a, grid.b])
         ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
@@ -114,6 +114,7 @@ def main(
             logger.info("%s umax %.5e usqr %.5e", event, umax, usqr)
 
         if interactive:
+            ln0.set_ydata(func(event.t, grid.x[s]))
             ln1.set_ydata(event.u[s])
             plt.pause(0.01)
 

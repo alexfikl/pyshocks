@@ -366,14 +366,57 @@ def burgers_linear_shock(
 
     .. math::
 
-        u(t, x) =
+        u(0, x) =
         \begin{cases}
         u_L, & \quad x \le x_a, \\
         u_L + (u_R - u_L) \frac{x - x_a}{x_b - x_a}, & \quad x_a < x < x_b \\
         u_R & \quad x \ge x_b,
         \end{cases}
     """
-    raise NotImplementedError
+    xm = (grid.b + grid.a) / 2
+    dx = grid.b - grid.a
+
+    if xa is None:
+        xa = xm - 0.125 * dx
+
+    if xb is None:
+        xb = xm + 0.125 * dx
+
+    if xa >= xb:
+        raise ValueError("invalid sides (must be xa < xb)")
+
+    if not grid.a < xa < grid.b:
+        raise ValueError("xa must be in the domain [a, b]")
+
+    if not grid.a < xb < grid.b:
+        raise ValueError("xb must be in the domain [a, b]")
+
+    if ul <= ur:
+        raise NotImplementedError
+
+    # line is given by `a * x + b`
+    a = (ul - ur) / (xb - xa)
+    b = ul + xa * a
+
+    # time at which the strong solution breaks down
+    tmax = 1 / a
+
+    # strong solutions valid for t < tmax
+    xt = (b - a * x) / (1 - a * t)
+    s0 = (
+        ul * (x < xa + ul * t)
+        + xt * jnp.logical_and(xa + ul * t < x, xb + ur * t > x)
+        + ur * (x > xb + ur * t)
+    )
+
+    # weak solution valid for t > tmax
+    s = (ul + ur) / 2
+    x0 = xb + ur * tmax
+    h = (x < (x0 + s * (t - tmax))).astype(x.dtype)
+    s1 = ul * h + ur * (1 - h)
+
+    h = t < tmax
+    return s0 * h + (1 - h) * s1
 
 
 def burgers_tophat(
