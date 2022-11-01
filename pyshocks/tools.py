@@ -623,7 +623,7 @@ def check_usetex(s: bool) -> bool:
         return False
 
     if matplotlib.__version__ < "3.6.0":
-        return matplotlib.checkdep_usetex(s)
+        return bool(matplotlib.checkdep_usetex(s))
 
     # NOTE: simplified version from matplotlib
     # https://github.com/matplotlib/matplotlib/blob/ec85e725b4b117d2729c9c4f720f31cf8739211f/lib/matplotlib/__init__.py#L439=L456

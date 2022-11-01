@@ -338,7 +338,7 @@ def burgers_riemann(
 
     if ul <= ur:
         x_t = (x - x0) / (t + 1.0e-15)
-        return (
+        r = (
             ul * (x < x0 + ul * t)
             + x_t * jnp.logical_and(x0 + ul * t < x, x0 + ur * t > x)
             + ur * (x0 + ur * t < x)
@@ -349,7 +349,9 @@ def burgers_riemann(
         # Heaviside indicator for left / right
         h = (x < (x0 + s * t)).astype(x.dtype)
 
-        return h * ul + (1 - h) * ur
+        r = h * ul + (1 - h) * ur
+
+    return r
 
 
 def burgers_linear_shock(

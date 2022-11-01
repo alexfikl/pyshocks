@@ -217,8 +217,8 @@ class BurgersTestCase(FiniteVolumeTestCase):
         from pyshocks.scalar import make_dirichlet_boundary
 
         return make_dirichlet_boundary(
-            ga=lambda t, x: funcs.burgers_shock(grid, t, x),
-            gb=lambda t, x: funcs.burgers_shock(grid, t, x),
+            ga=lambda t, x: funcs.burgers_riemann(grid, t, x),
+            gb=lambda t, x: funcs.burgers_riemann(grid, t, x),
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
@@ -226,7 +226,7 @@ class BurgersTestCase(FiniteVolumeTestCase):
         return burgers.make_scheme_from_name(self.scheme_name, rec=rec, alpha=0.98)
 
     def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
-        return self.cell_average(grid, partial(funcs.burgers_shock, grid, t))
+        return self.cell_average(grid, partial(funcs.burgers_riemann, grid, t))
 
 
 @pytest.mark.parametrize(
