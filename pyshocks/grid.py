@@ -133,11 +133,7 @@ class Grid:
     @property
     def gi_(self) -> Tuple[None, slice, slice]:
         g = self.nghosts
-        return (
-            None,
-            jnp.s_[self.x.size - 2 * g - 1 : self.x.size - g - 1],
-            jnp.s_[g + 1 : 2 * g + 1],
-        )
+        return (None, jnp.s_[self.x.size - 2 * g : self.x.size - g], jnp.s_[g : 2 * g])
 
 
 @dataclass(frozen=True)
@@ -237,9 +233,19 @@ def make_uniform_point_grid(
 
     dx0 = (b - a) / (n - 1)
 
-    if is_periodic and nghosts == 0:
-        x = jnp.linspace(a, b, n - 1, endpoint=False, dtype=dtype)
-        f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])  # type: ignore
+    if is_periodic:
+        if nghosts == 0:
+            x = jnp.linspace(a, b, n - 1, endpoint=False, dtype=dtype)
+            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])  # type: ignore
+        else:
+            x = jnp.linspace(
+                a - nghosts * dx0,
+                b + nghosts * dx0,
+                n + 2 * nghosts - 1,
+                endpoint=False,
+                dtype=dtype,
+            )
+            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])  # type: ignore
     else:
         x = jnp.linspace(
             a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=dtype
