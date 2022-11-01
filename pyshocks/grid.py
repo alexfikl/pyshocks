@@ -133,7 +133,11 @@ class Grid:
     @property
     def gi_(self) -> Tuple[None, slice, slice]:
         g = self.nghosts
-        return (None, jnp.s_[self.x.size - 2 * g : self.x.size - g], jnp.s_[g : 2 * g])
+        return (
+            None,
+            jnp.s_[self.x.size - 2 * g - 1 : self.x.size - g - 1],
+            jnp.s_[g + 1 : 2 * g + 1],
+        )
 
 
 @dataclass(frozen=True)
