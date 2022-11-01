@@ -27,7 +27,7 @@ Diffusion Equation Solutions
 Inviscid Burgers' Equation Solutions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: burgers_shock
+.. autofunction:: burgers_riemann
 .. autofunction:: burgers_linear_shock
 .. autofunction:: burgers_tophat
 
@@ -304,7 +304,7 @@ def diffusion_tophat(
 # {{{ burgers
 
 
-def burgers_shock(
+def burgers_riemann(
     grid: Grid,
     t: float,
     x: jnp.ndarray,
@@ -313,38 +313,43 @@ def burgers_shock(
     ur: float = 0.0,
     x0: Optional[float] = None,
 ) -> jnp.ndarray:
-    r"""Construct a pure shock exact solution of the form
+    r"""Construct a solution for the pure Burgers Riemann problem.
 
     .. math::
 
         u(t, x) =
         \begin{cases}
-        u_L, & \quad x < x_0 + s t, \\
-        u_R, & x \ge x_0 + s t,
+        u_L, & \quad x < x_0, \\
+        u_R, & \quad x \ge x_0,
         \end{cases}
 
-    where :math:`s` is the shock velocity.
+    where :math:`x_0` is a given point in :math:`[a, b]`. If :math:`u_L > u_R`,
+    we have a shock solutions and otherwise a rarefaction.
 
     :arg ul: left state value.
     :arg ur: right state value.
     :arg x0: initial location of the shock.
     """
-
-    if ul <= ur:
-        raise ValueError("ul > ur is required for a shock")
-
     if x0 is None:
         x0 = 0.5 * (grid.a + grid.b)
 
     if not grid.a < x0 < grid.b:
         raise ValueError("x0 must be in the domain [a, b]")
 
-    # shock velocity
-    s = (ul + ur) / 2.0
-    # Heaviside indicator for left / right
-    h = (x < (x0 + s * t)).astype(x.dtype)
+    if ul <= ur:
+        x_t = (x - x0) / (t + 1.0e-15)
+        return (
+            ul * (x < x0 + ul * t)
+            + x_t * jnp.logical_and(x0 + ul * t < x, x0 + ur * t > x)
+            + ur * (x0 + ur * t < x)
+        )
+    else:
+        # shock velocity
+        s = (ul + ur) / 2.0
+        # Heaviside indicator for left / right
+        h = (x < (x0 + s * t)).astype(x.dtype)
 
-    return h * ul + (1 - h) * ur
+        return h * ul + (1 - h) * ur
 
 
 def burgers_linear_shock(
@@ -391,9 +396,6 @@ def burgers_tophat(
         u_S, & \quad \text{otherwise},
         \end{cases}
     """
-    if uc <= us:
-        raise ValueError("uc should be larger for a right shock solution")
-
     xm = (grid.b + grid.a) / 2
     dx = grid.b - grid.a
 
@@ -411,6 +413,9 @@ def burgers_tophat(
 
     if not grid.a < xb < grid.b:
         raise ValueError("xb must be in the domain [a, b]")
+
+    if uc <= us:
+        raise NotImplementedError
 
     # shock velocity
     s = (uc + us) / 2
