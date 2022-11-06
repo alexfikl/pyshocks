@@ -102,11 +102,9 @@ def _numerical_flux_continuity_godunov(
     al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, scheme.velocity)
 
     aavg = (ar[:-1] + al[1:]) / 2
-    fnum = jnp.where(
-        aavg > 0, ar[:-1] * ur[:-1], al[1:] * ul[1:]  # type: ignore[no-untyped-call]
-    )
+    fnum = jnp.where(aavg > 0, ar[:-1] * ur[:-1], al[1:] * ul[1:])
 
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 # }}}

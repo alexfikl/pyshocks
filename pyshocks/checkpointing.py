@@ -246,7 +246,7 @@ def _load_npz(
     if not filename.exists():
         raise KeyError(f"cannot find checkpoint at index '{idx}'")
 
-    values = jnp.load(filename, allow_pickle=False)  # type: ignore[no-untyped-call]
+    values = jnp.load(filename, allow_pickle=False)
     if include is None:
         return dict(values)
 

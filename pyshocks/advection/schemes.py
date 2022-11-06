@@ -115,9 +115,9 @@ def upwind_flux(
     al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, scheme.velocity)
 
     aavg = (ar[:-1] + al[1:]) / 2
-    fnum = jnp.where(aavg > 0, ur[:-1], ul[1:])  # type: ignore[no-untyped-call]
+    fnum = jnp.where(aavg > 0, ur[:-1], ul[1:])
 
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 @dataclass(frozen=True)
@@ -156,7 +156,7 @@ def esweno_lf_flux(
 
     a = jnp.max(jnp.abs(scheme.velocity))
     fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * (ul[1:] - ur[:-1])
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 @dataclass(frozen=True)
@@ -191,7 +191,7 @@ def _numerical_flux_advection_esweno32(
         # NOTE: see Equation  in [Yamaleev2009] for flux expression
         gnum = -(mu + (omega1[1:] - omega1[:-1]) / 8.0) * (u[1:] - u[:-1])
 
-        gnum = jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
+        gnum = jnp.pad(gnum, 1)
 
         # }}}
     else:
@@ -255,8 +255,8 @@ def _apply_operator_flux_split_godunov(
     u = apply_boundary(bc, grid, t, u)
     cond = scheme.velocity < 0
 
-    dup = fd.apply_derivative(scheme.sp, jnp.where(cond, u, 0), grid.dx)  # type: ignore
-    dum = fd.apply_derivative(scheme.sm, jnp.where(cond, 0, u), grid.dx)  # type: ignore
+    dup = fd.apply_derivative(scheme.sp, jnp.where(cond, u, 0), grid.dx)
+    dum = fd.apply_derivative(scheme.sm, jnp.where(cond, 0, u), grid.dx)
 
     # FIXME: why is this not `-velocity * du`?
     return scheme.velocity * (dup + dum)

@@ -306,7 +306,7 @@ def two_point_entropy_flux_21(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
         return (ul * ul + ul * ur + ur * ur) / 6
 
     qr = qi[qi.size // 2 + 1 :]
-    fss = jnp.zeros(u.size + 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
+    fss = jnp.zeros(u.size + 1, dtype=u.dtype)
 
     i = 1
     fss = fss.at[i].set(2 * qr[1] * fs(u[i - 1], u[i]))
@@ -327,7 +327,7 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
     q = sbp.make_sbp_21_first_derivative_q_stencil(dtype=grid.dtype)
 
     # check constant
-    u = jnp.full_like(grid.x, 1.0)  # type: ignore
+    u = jnp.full_like(grid.x, 1.0)
 
     fs_ref = (u[1:] * u[1:] + u[1:] * u[:-1] + u[:-1] * u[:-1]) / 6
     fs = two_point_entropy_flux_21(q.int, u)

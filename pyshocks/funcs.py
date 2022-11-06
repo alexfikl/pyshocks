@@ -59,7 +59,7 @@ def ic_constant(grid: Grid, x: jnp.ndarray, *, c: float = 1.0) -> jnp.ndarray:
 
         g(x) = c.
     """
-    return jnp.full_like(x, c)  # type: ignore[no-untyped-call]
+    return jnp.full_like(x, c)
 
 
 def ic_rarefaction(
@@ -170,8 +170,8 @@ def ic_cut_sine(
     if not grid.a < xb < grid.b:
         raise ValueError("xb must be in the domain [a, b]")
 
-    return jnp.where(  # type: ignore[no-untyped-call]
-        jnp.logical_and(xa < x, x < xb),
+    return jnp.where(
+        jnp.logical_and(xa < x, x < xb),  # type: ignore[no-untyped-call]
         1.0 + jnp.sin(2.0 * jnp.pi * (x - xa) / (xb - xa)),
         us,
     )
@@ -267,7 +267,7 @@ def diffusion_expansion(
             * jnp.exp(-diffusivity * (n * jnp.pi / L) ** 2 * t)
             for a, n in zip(amplitudes, modes)
         ],
-        jnp.zeros_like(x),  # type: ignore[no-untyped-call]
+        jnp.zeros_like(x),
     )
 
 
@@ -295,7 +295,7 @@ def diffusion_tophat(
     from jax.scipy.special import erf
 
     td = 4 * jnp.sqrt(diffusivity * t) + 1.0e-15
-    return (erf((1 - 2 * x) / td) + erf((1 + 2 * x) / td)) / 2  # type: ignore
+    return (erf((1 - 2 * x) / td) + erf((1 + 2 * x) / td)) / 2
 
 
 # }}}
@@ -340,7 +340,7 @@ def burgers_riemann(
         x_t = (x - x0) / (t + 1.0e-15)
         r = (
             ul * (x < x0 + ul * t)
-            + x_t * jnp.logical_and(x0 + ul * t < x, x0 + ur * t > x)
+            + x_t * jnp.logical_and(x0 + ul * t < x, x0 + ur * t > x)  # type: ignore
             + ur * (x0 + ur * t < x)
         )
     else:
@@ -407,7 +407,7 @@ def burgers_linear_shock(
     xt = (b - a * x) / (1 - a * t)
     s0 = (
         ul * (x < xa + ul * t)
-        + xt * jnp.logical_and(xa + ul * t < x, xb + ur * t > x)
+        + xt * jnp.logical_and(xa + ul * t < x, xb + ur * t > x)  # type: ignore
         + ur * (x > xb + ur * t)
     )
 
@@ -467,8 +467,10 @@ def burgers_tophat(
 
     return (
         us * (x < xa + us * t)
-        + (x - xa) / (t + 1.0e-15) * jnp.logical_and(xa + us * t < x, x < xa + uc * t)
-        + uc * jnp.logical_and(xa + uc * t < x, x < xb + s * t)
+        + (x - xa)
+        / (t + 1.0e-15)
+        * jnp.logical_and(xa + us * t < x, x < xa + uc * t)  # type: ignore
+        + uc * jnp.logical_and(xa + uc * t < x, x < xb + s * t)  # type: ignore
         + us * (x > xb + s * t)
     )
 

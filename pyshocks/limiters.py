@@ -90,9 +90,7 @@ def flux_limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     :arg lm: an object that describes how to limit the variable.
     :arg u: variable with cell-centered values
     """
-    return jnp.pad(  # type: ignore[no-untyped-call]
-        evaluate(lm, local_slope_ratio(u)), 1
-    )
+    return jnp.pad(evaluate(lm, local_slope_ratio(u)), 1)
 
 
 @singledispatch
@@ -114,8 +112,10 @@ def local_slope_ratio(u: jnp.ndarray, *, atol: float = 1.0e-12) -> jnp.ndarray:
     sl = u[1:-1] - u[:-2]
     sr = u[2:] - u[1:-1]
 
-    return jnp.where(  # type: ignore[no-untyped-call]
-        jnp.logical_or(jnp.abs(sl) < atol, jnp.abs(sr) < atol), 0.0, sl / sr
+    return jnp.where(
+        jnp.logical_or(jnp.abs(sl) < atol, jnp.abs(sr) < atol),  # type: ignore
+        0.0,
+        sl / sr,
     )
 
 
@@ -131,23 +131,21 @@ class UnlimitedLimiter(Limiter):
 
 @evaluate.register(UnlimitedLimiter)
 def _evaluate_unlimited(lm: UnlimitedLimiter, r: jnp.ndarray) -> jnp.ndarray:
-    return jnp.ones_like(r)  # type: ignore[no-untyped-call]
+    return jnp.ones_like(r)
 
 
 @flux_limit.register(UnlimitedLimiter)
 def _flux_limit_unlimited(
     lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray
 ) -> jnp.ndarray:
-    return jnp.ones_like(u)  # type: ignore[no-untyped-call]
+    return jnp.ones_like(u)
 
 
 @slope_limit.register(UnlimitedLimiter)
 def _slope_limit_unlimited(
     lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray
 ) -> jnp.ndarray:
-    return jnp.pad(  # type: ignore[no-untyped-call]
-        (u[2:] + u[:-2]) / (grid.x[2:] - grid.x[:-2]), 1
-    )
+    return jnp.pad((u[2:] + u[:-2]) / (grid.x[2:] - grid.x[:-2]), 1)
 
 
 # }}}
@@ -157,10 +155,10 @@ def _slope_limit_unlimited(
 
 
 def minmod(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
-    return jnp.where(  # type: ignore[no-untyped-call]
+    return jnp.where(
         a * b < 0.0,
         0.0,
-        jnp.where(jnp.abs(a) < jnp.abs(b), a, b),  # type: ignore[no-untyped-call]
+        jnp.where(jnp.abs(a) < jnp.abs(b), a, b),
     )
 
 
@@ -203,7 +201,7 @@ def _slope_limit_minmod(lm: MINMODLimiter, grid: Grid, u: jnp.ndarray) -> jnp.nd
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
-    return jnp.pad(minmod(sl, sr), 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(minmod(sl, sr), 1)
 
 
 # }}}
@@ -241,7 +239,7 @@ def _slope_limit_monotonized_central(
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
     sc = (u[2:] - u[:-2]) / (grid.x[2:] - grid.x[:-2])
 
-    return jnp.pad(minmod(minmod(sl, sr), sc), 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(minmod(minmod(sl, sr), sc), 1)
 
 
 # }}}
@@ -276,9 +274,7 @@ def _slope_limit_superbee(
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
-    return jnp.pad(  # type: ignore[no-untyped-call]
-        jnp.maximum(minmod(sl, 2 * sr), minmod(2 * sl, sr)), 1
-    )
+    return jnp.pad(jnp.maximum(minmod(sl, 2 * sr), minmod(2 * sl, sr)), 1)
 
 
 # }}}
@@ -336,15 +332,11 @@ def _slope_limit_van_albada(
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
     if lm.variant == 1:
-        s = jnp.where(  # type: ignore[no-untyped-call]
-            sl * sr <= 0.0, 0.0, sl * sr * (sl + sr) / (sl**2 + sr**2)
-        )
+        s = jnp.where(sl * sr <= 0.0, 0.0, sl * sr * (sl + sr) / (sl**2 + sr**2))
     else:
-        s = jnp.where(  # type: ignore[no-untyped-call]
-            sl * sr <= 0.0, 0.0, 2.0 * sl * sr / (sl**2 + sr**2)
-        )
+        s = jnp.where(sl * sr <= 0.0, 0.0, 2.0 * sl * sr / (sl**2 + sr**2))
 
-    return jnp.pad(s, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(s, 1)
 
 
 # }}}
@@ -380,11 +372,9 @@ def _slope_limit_van_leer(
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
-    s = jnp.where(  # type: ignore[no-untyped-call]
-        sl * sr <= 0.0, 0.0, 2.0 * sl * sr / (sl + sr)
-    )
+    s = jnp.where(sl * sr <= 0.0, 0.0, 2.0 * sl * sr / (sl + sr))
 
-    return jnp.pad(s, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(s, 1)
 
 
 # }}}

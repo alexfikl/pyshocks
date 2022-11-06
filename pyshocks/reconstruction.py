@@ -204,26 +204,18 @@ def _reconstruct_muscl(
 
     from pyshocks.limiters import evaluate, local_slope_ratio
 
-    r = jnp.pad(local_slope_ratio(u, atol=rec.atol), 1)  # type: ignore[no-untyped-call]
+    r = jnp.pad(local_slope_ratio(u, atol=rec.atol), 1)
     phi_r = evaluate(rec.lm, r)
 
     # FIXME: the symmetric case has some more simplifications; worth it?
     if rec.lm.is_symmetric:
-        phi_inv_r = jnp.where(  # type: ignore[no-untyped-call]
-            jnp.abs(r) < rec.atol, 0.0, phi_r / r
-        )
+        phi_inv_r = jnp.where(jnp.abs(r) < rec.atol, 0.0, phi_r / r)
     else:
-        inv_r = jnp.where(  # type: ignore[no-untyped-call]
-            jnp.abs(r) < rec.atol, rec.atol, 1 / r
-        )
+        inv_r = jnp.where(jnp.abs(r) < rec.atol, rec.atol, 1 / r)
         phi_inv_r = evaluate(rec.lm, inv_r)
 
-    ur = jnp.pad(  # type: ignore[no-untyped-call]
-        u[:-1] + 0.5 * phi_r[:-1] * (u[1:] - u[:-1]), (0, 1)
-    )
-    ul = jnp.pad(  # type: ignore[no-untyped-call]
-        u[1:] - 0.5 * phi_inv_r[1:] * (u[1:] - u[:-1]), (1, 0)
-    )
+    ur = jnp.pad(u[:-1] + 0.5 * phi_r[:-1] * (u[1:] - u[:-1]), (0, 1))
+    ul = jnp.pad(u[1:] - 0.5 * phi_inv_r[1:] * (u[1:] - u[:-1]), (1, 0))
 
     return ul, ur
 
@@ -458,13 +450,9 @@ def _reconstruct_ss_weno_side(
         from pyshocks.schemes import BoundaryType
 
         if bc == BoundaryType.Periodic:
-            w = jnp.pad(  # type: ignore[no-untyped-call]
-                u, rec.stencil_width, mode="wrap"
-            )
+            w = jnp.pad(u, rec.stencil_width, mode="wrap")
         else:
-            w = jnp.pad(  # type: ignore[no-untyped-call]
-                u, rec.stencil_width, constant_values=jnp.inf
-            )
+            w = jnp.pad(u, rec.stencil_width, constant_values=jnp.inf)
 
     omega = weno.ss_weno_242_weights(rec.si, w, eps=rec.eps)
     what = weno.weno_reconstruct(rec.si, w)

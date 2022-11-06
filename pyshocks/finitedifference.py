@@ -142,7 +142,7 @@ def make_taylor_approximation(
     A = jnp.array(
         [indices**i / math.factorial(i) for i in range(indices.size)], dtype=dtype
     )
-    b = jnp.zeros(indices.shape, dtype=dtype)  # type: ignore[no-untyped-call]
+    b = jnp.zeros(indices.shape, dtype=dtype)
     b = b.at[derivative].set(1)
 
     # determine coefficients
@@ -150,7 +150,7 @@ def make_taylor_approximation(
     assert jnp.allclose(jnp.sum(x), 0.0)
 
     n = max(abs(stencil[0]), abs(stencil[1]))
-    padded_x = jnp.zeros(2 * n + 1, dtype=x.dtype)  # type: ignore[no-untyped-call]
+    padded_x = jnp.zeros(2 * n + 1, dtype=x.dtype)
     padded_x = padded_x.at[n + indices].set(x)
 
     # determine order
@@ -213,7 +213,7 @@ def make_fornberg_approximation(
 
     # {{{ determine coefficients
 
-    c = jnp.zeros((x.size, derivative + 1), dtype=dtype)  # type: ignore
+    c = jnp.zeros((x.size, derivative + 1), dtype=dtype)
     c = c.at[0, 0].set(1.0)
 
     c1, c4 = 1, x[0] - xd
@@ -234,7 +234,7 @@ def make_fornberg_approximation(
     x = x.astype(jnp.int64)
 
     n = max(abs(stencil[0]), abs(stencil[1]))
-    padded_c = jnp.zeros(2 * n + 1, dtype=c.dtype)  # type: ignore[no-untyped-call]
+    padded_c = jnp.zeros(2 * n + 1, dtype=c.dtype)
     padded_c = padded_c.at[n + x].set(c)
 
     # }}}
@@ -260,7 +260,7 @@ def make_fornberg_approximation(
 
 
 def modified_wavenumber(st: Stencil, k: jnp.ndarray) -> jnp.ndarray:
-    km = jnp.empty(k.shape, dtype=jnp.complex128)  # type: ignore[no-untyped-call]
+    km = jnp.empty(k.shape, dtype=jnp.complex128)
 
     for n in range(k.shape[0]):
         exp = jnp.exp(1.0j * st.indices * k[n])

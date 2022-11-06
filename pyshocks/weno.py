@@ -269,7 +269,7 @@ def es_weno_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
     beta = weno_smoothness(s, u)
 
     # NOTE: see Equations 21-22 in [Yamaleev2009]
-    tau = jnp.pad((u[2:] - 2 * u[1:-1] + u[:-2]) ** 2, 1)  # type: ignore
+    tau = jnp.pad((u[2:] - 2 * u[1:-1] + u[:-2]) ** 2, 1)
     alpha = s.d * (1 + tau / (eps + beta))
 
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)
@@ -299,9 +299,7 @@ def ss_weno_parameters(grid: Grid, u0: jnp.ndarray) -> float:
 
 def ss_weno_242_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
     beta = weno_smoothness(s, u)
-    tau = jnp.pad(  # type: ignore[no-untyped-call]
-        (u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2)
-    )
+    tau = jnp.pad((u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2))
     alpha = s.d * (1.0 + tau / (eps + beta))
 
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)

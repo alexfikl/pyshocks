@@ -31,7 +31,7 @@ def func_step(
     a = mid - w * (mid - a)
     b = mid + w * (b - mid)
 
-    return jnp.logical_and(x > a, x < b).astype(x.dtype)
+    return jnp.logical_and(x > a, x < b).astype(x.dtype)  # type: ignore
 
 
 @pytest.mark.parametrize(
@@ -240,7 +240,10 @@ def test_tvd_slope_limiter_burgers(
             lm_name,
             lm_kwargs,
         )
-        logger.info("TVD: max(TV(u[n + 1]) - TV(u[n])) = %.12e", jnp.max(tvd_increase))
+        logger.info(
+            "TVD: max(TV(u[n + 1]) - TV(u[n])) = %.12e",
+            jnp.max(jnp.array(tvd_increase)),
+        )
     else:
         logger.info("SUCCESS: limiter %s args %s", lm_name, lm_kwargs)
 

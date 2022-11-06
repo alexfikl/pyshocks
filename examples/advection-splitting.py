@@ -54,7 +54,7 @@ def main(
     )
 
     # set up user data
-    velocity = jnp.full_like(grid.x, -2.0)  # type: ignore[no-untyped-call]
+    velocity = jnp.full_like(grid.x, -2.0)
     func = partial(sine_wave, k=1)
     u0 = func(0.0, grid.x)
 

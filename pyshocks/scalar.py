@@ -109,9 +109,9 @@ def scalar_flux_upwind(
     fr = flux(scheme, t, grid.f, ur)
 
     aavg = (ar[:-1] + al[1:]) / 2
-    fnum = jnp.where(aavg > 0, fr[:-1], fl[1:])  # type: ignore[no-untyped-call]
+    fnum = jnp.where(aavg > 0, fr[:-1], fl[1:])
 
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 # }}}
@@ -166,7 +166,7 @@ def lax_friedrichs_initial_condition_correction(
         quad = make_leggauss_quadrature(half_grid, order=order)
         half_u0 = cell_average(quad, func)
 
-    u0 = jnp.tile(half_u0.reshape(-1, 1), 2).reshape(-1)  # type: ignore
+    u0 = jnp.tile(half_u0.reshape(-1, 1), 2).reshape(-1)
     assert u0.shape == grid.x.shape
 
     return u0
@@ -229,7 +229,7 @@ def scalar_flux_rusanov(
         a = jnp.maximum(a[1:], a[:-1])
 
     fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * nu * (ul[1:] - ur[:-1])
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 # }}}
@@ -297,11 +297,11 @@ def scalar_flux_engquist_osher(
         scheme,
         t,
         grid.x,
-        jnp.full_like(grid.df, omega),  # type: ignore[no-untyped-call]
+        jnp.full_like(grid.df, omega),
     )
 
     fnum = fr[:-1] + fl[1:] - fo
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 # }}}
@@ -528,7 +528,7 @@ def _apply_boundary_scalar_periodic(
 def _evaluate_boundary_scalar_periodic(
     bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    return jnp.zeros_like(u)  # type: ignore[no-untyped-call]
+    return jnp.zeros_like(u)
 
 
 # }}}
@@ -575,7 +575,7 @@ def _evaluate_boundary_sat(
     assert grid.x.shape == u.shape
 
     i = grid.b_[bc.side]
-    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
+    e_i = jnp.eye(1, u.size, i).squeeze()
 
     return bc.tau * (u[i] - bc.g(t)) * e_i
 
@@ -624,11 +624,9 @@ def _evaluate_boundary_advection_sat(
     assert grid.x.shape == u.shape
 
     i = grid.b_[bc.side]
-    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
+    e_i = jnp.eye(1, u.size, i).squeeze()
 
-    return e_i * jnp.where(  # type: ignore[no-untyped-call]
-        bc.side * bc.velocity > 0, 0.0, bc.tau * (u[i] - bc.g(t))
-    )
+    return e_i * jnp.where(bc.side * bc.velocity > 0, 0.0, bc.tau * (u[i] - bc.g(t)))
 
 
 def make_advection_sat_boundary(
@@ -673,7 +671,7 @@ def _evaluate_boundary_diffusion_sat(
     assert grid.x.shape == u.shape
 
     i = grid.b_[bc.side]
-    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
+    e_i = jnp.eye(1, u.size, i).squeeze()
 
     Su = bc.S[i, :] @ u
     return bc.tau * ((u[i] + Su) - bc.g(t)) * e_i
@@ -714,7 +712,7 @@ def _evaluate_boundary_ssweno_burgers(
     assert grid.x.shape == u.shape
 
     i = grid.b_[bc.side]
-    e_i = jnp.eye(1, u.size, i).squeeze()  # type: ignore[no-untyped-call]
+    e_i = jnp.eye(1, u.size, i).squeeze()
 
     # NOTE: [Fisher2013] Equation 4.8
     s = bc.side

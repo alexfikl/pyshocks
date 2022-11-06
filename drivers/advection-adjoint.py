@@ -133,9 +133,7 @@ def evolve_adjoint(
     from pyshocks import apply_boundary
     from pyshocks.scalar import make_dirichlet_boundary
 
-    bc = make_dirichlet_boundary(
-        lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
-    )
+    bc = make_dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
 
     @jax.jit
     def _apply_boundary(t: float, u: jnp.ndarray, p: jnp.ndarray) -> jnp.ndarray:

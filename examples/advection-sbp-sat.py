@@ -52,7 +52,7 @@ def main(
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0, is_periodic=is_periodic)
 
     # set up user data
-    velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
+    velocity = jnp.ones_like(grid.x)
     func = partial(sine_wave, k=1)
     u0 = func(0.0, grid.x)
 

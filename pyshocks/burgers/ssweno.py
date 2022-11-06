@@ -25,7 +25,7 @@ def two_point_entropy_flux_42(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
         return (ul * ul + ul * ur + ur * ur) / 6
 
     qr = qi[qi.size // 2 + 1 :]
-    fss = jnp.zeros(u.size + 1, dtype=u.dtype)  # type: ignore[no-untyped-call]
+    fss = jnp.zeros(u.size + 1, dtype=u.dtype)
 
     i = 1
     fss = fss.at[i].set(
@@ -167,14 +167,14 @@ def _apply_operator_burgers_ssweno242(
     # {{{ inviscid flux
 
     # standard WENO reconstructed flux
-    fw = jnp.pad(fp[1:] + fm[:-1], 1)  # type: ignore[no-untyped-call]
+    fw = jnp.pad(fp[1:] + fm[:-1], 1)
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
     fs = two_point_entropy_flux_42(scheme.q.int, u)
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
-    b = jnp.pad((w[1:] - w[:-1]) * (fs[1:-1] - fw[1:-1]), 1)  # type: ignore
+    b = jnp.pad((w[1:] - w[:-1]) * (fs[1:-1] - fw[1:-1]), 1)
     delta = (jnp.sqrt(b**2 + scheme.c**2) - b) / jnp.sqrt(b**2 + scheme.c**2)
     fssw = fw + delta * (fs - fw)
     assert fssw.shape == grid.f.shape

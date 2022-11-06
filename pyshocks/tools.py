@@ -472,7 +472,7 @@ class IterationTimer:
 
     @property
     def total(self) -> jnp.ndarray:
-        return jnp.sum(self.t_deltas)
+        return jnp.sum(jnp.array(self.t_deltas))
 
     def stats(self) -> TimeResult:
         """Compute statistics across all the iterations."""

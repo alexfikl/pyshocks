@@ -34,7 +34,7 @@ def _numerical_flux_traffic_flow(
     u_avg = (u[1:] + u[:-1]) / 2
     f = (1 - u_avg) * u[:-1]
 
-    return jnp.pad(f, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(f, 1)
 
 
 def main(
@@ -56,8 +56,8 @@ def main(
     from pyshocks.scalar import make_dirichlet_boundary
 
     boundary = make_dirichlet_boundary(
-        ga=lambda t, x: jnp.ones_like(x),  # type: ignore[no-untyped-call]
-        gb=lambda t, x: jnp.zeros_like(x),  # type: ignore[no-untyped-call]
+        ga=lambda t, x: jnp.ones_like(x),
+        gb=lambda t, x: jnp.zeros_like(x),
     )
 
     mid = (grid.a + grid.b) / 2.0

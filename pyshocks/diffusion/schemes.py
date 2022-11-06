@@ -85,7 +85,7 @@ def _numerical_flux_diffusion_centered_scheme(
 
     fnum = -davg * (u[1:] - u[:-1]) / grid.df
 
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 # }}}

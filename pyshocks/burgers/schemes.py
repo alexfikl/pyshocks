@@ -255,7 +255,7 @@ def _numerical_flux_burgers_esweno32(
     # NOTE: see Equation  in [Yamaleev2009] for flux expression
     gnum = -(mu + (omega[1:] - omega[:-1]) / 8.0) * (u[1:] - u[:-1])
 
-    gnum = jnp.pad(gnum, 1)  # type: ignore[no-untyped-call]
+    gnum = jnp.pad(gnum, 1)
 
     # }}}
 
@@ -303,10 +303,10 @@ class SSMUSCL(FiniteVolumeScheme):
 def hesthaven_limiter(u: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
     # [Hesthaven2018] Page 193
     # gives phi_{i + 1/2} for i in [0, n - 1]
-    phi = jnp.where(  # type: ignore[no-untyped-call]
+    phi = jnp.where(
         u[:-1] * u[1:] > 0,
         1 - jnp.sign(u[:-1]),
-        jnp.where(  # type: ignore[no-untyped-call]
+        jnp.where(
             u[:-1] >= u[1:],
             1 - jnp.sign(u[:-1] + u[1:]),
             -2 * u[:-1] / (u[1:] - u[:-1]),
@@ -320,14 +320,14 @@ def hesthaven_limiter(u: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
 
         # [Hesthaven2018] Page 194
         # r_i for i in [1, n - 1]
-        r = jnp.pad(local_slope_ratio(u), 1)  # type: ignore[no-untyped-call]
+        r = jnp.pad(local_slope_ratio(u), 1)
 
-        phi = jnp.where(  # type: ignore[no-untyped-call]
+        phi = jnp.where(
             # if u_i * u_{i + 1} have different signs, revert to variant 1
             u[:-1] * u[1:] <= 0,
             phi,
             # otherwise use second-order scheme
-            jnp.where(  # type: ignore[no-untyped-call]
+            jnp.where(
                 u[:-1] > 0,
                 jnp.minimum(1, r[:-1]),
                 jnp.maximum(1, 2 - r[:-1]),
@@ -346,7 +346,7 @@ def _numerical_flux_burgers_ssmuscl(
     up = u[:-1] + 0.5 * phi * (u[1:] - u[:-1])
 
     fnum = flux(scheme, t, grid.f, up)
-    return jnp.pad(fnum, 1)  # type: ignore[no-untyped-call]
+    return jnp.pad(fnum, 1)
 
 
 # }}}

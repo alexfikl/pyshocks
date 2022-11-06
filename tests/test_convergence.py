@@ -306,7 +306,7 @@ class AdvectionTestCase(FiniteVolumeTestCase):
         return PeriodicBoundary()
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
-        velocity = jnp.full_like(grid.x, self.a)  # type: ignore[no-untyped-call]
+        velocity = jnp.full_like(grid.x, self.a)
 
         lm = make_limiter_from_name("default", theta=1.0)
         rec = make_reconstruction_from_name(self.rec_name, lm=lm)
@@ -345,7 +345,7 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
         from pyshocks.sbp import make_operator_from_name
 
-        velocity = jnp.full_like(grid.x, self.a)  # type: ignore[no-untyped-call]
+        velocity = jnp.full_like(grid.x, self.a)
         op = make_operator_from_name(self.sbp_name)
 
         return advection.make_scheme_from_name(
@@ -459,7 +459,7 @@ class DiffusionTestCase(FiniteVolumeTestCase):
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
-        diffusivity = jnp.full_like(grid.x, self.d)  # type: ignore[no-untyped-call]
+        diffusivity = jnp.full_like(grid.x, self.d)
 
         rec = make_reconstruction_from_name("constant")
         return diffusion.make_scheme_from_name(
@@ -491,7 +491,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
         from pyshocks.sbp import SecondDerivativeType, make_operator_from_name
 
-        diffusivity = jnp.full_like(grid.x, self.d)  # type: ignore[no-untyped-call]
+        diffusivity = jnp.full_like(grid.x, self.d)
         op = make_operator_from_name(
             self.sbp_name, second_derivative=SecondDerivativeType.Narrow
         )

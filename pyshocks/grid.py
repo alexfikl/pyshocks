@@ -123,8 +123,9 @@ class Grid:
         return jnp.s_[self.nghosts : self.x.size - self.nghosts]
 
     @property
-    def b_(self) -> Tuple[None, int, int]:
-        return (None, self.x.size - self.nghosts - 1, self.nghosts)
+    def b_(self) -> Tuple[int, int, int]:
+        # NOTE: -1 should be unused, but we set it to -1 for type consistency
+        return (-1, self.x.size - self.nghosts - 1, self.nghosts)
 
     @property
     def g_(self) -> Tuple[None, slice, slice]:
@@ -181,7 +182,7 @@ def make_uniform_cell_grid(
     x = (f[1:] + f[:-1]) / 2
 
     df = jnp.diff(x)
-    dx = jnp.full_like(x, dx0)  # type: ignore[no-untyped-call]
+    dx = jnp.full_like(x, dx0)
 
     assert jnp.linalg.norm(jnp.diff(f) - dx0) < 1.0e-8 * dx0
 
@@ -236,7 +237,7 @@ def make_uniform_point_grid(
     if is_periodic:
         if nghosts == 0:
             x = jnp.linspace(a, b, n - 1, endpoint=False, dtype=dtype)
-            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])  # type: ignore
+            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])
         else:
             x = jnp.linspace(
                 a - nghosts * dx0,
@@ -245,14 +246,14 @@ def make_uniform_point_grid(
                 endpoint=False,
                 dtype=dtype,
             )
-            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])  # type: ignore
+            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])
     else:
         x = jnp.linspace(
             a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=dtype
         )
-        f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])  # type: ignore
+        f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])
 
-    dx = jnp.full_like(x, dx0)  # type: ignore[no-untyped-call]
+    dx = jnp.full_like(x, dx0)
     df = jnp.diff(f)
 
     assert jnp.linalg.norm(jnp.diff(x) - dx0) < 1.0e-8 * dx0

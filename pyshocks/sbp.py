@@ -181,7 +181,7 @@ def make_sbp_boundary_matrix(
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
-    b = jnp.zeros((n, n), dtype=dtype)  # type: ignore[no-untyped-call]
+    b = jnp.zeros((n, n), dtype=dtype)
     b = b.at[0, 0].set(-1)
     b = b.at[-1, -1].set(1)
 
@@ -195,7 +195,7 @@ def make_sbp_diagonal_matrix(n: int, s: Stencil, *, weight: float = 1.0) -> jnp.
     :returns: an array of shape ``(n,)`` representing the diagonal.
     """
     assert s.is_diagonal
-    mat = jnp.full(n, s.int, dtype=s.dtype)  # type: ignore[no-untyped-call]
+    mat = jnp.full(n, s.int, dtype=s.dtype)
 
     if s.left is not None:
         mat = mat.at[: s.left.size].set(s.left)
@@ -217,7 +217,7 @@ def make_sbp_circulant_matrix(
     m = s.int.size
     return sum(
         jnp.roll(
-            weight * s.int[i] * jnp.eye(n, n, dtype=s.dtype),  # type: ignore
+            weight * s.int[i] * jnp.eye(n, n, dtype=s.dtype),
             i - m // 2,
             axis=1,
         )
@@ -233,7 +233,7 @@ def make_sbp_banded_matrix(n: int, s: Stencil, *, weight: float = 1.0) -> jnp.nd
     """
     o = s.int.size // 2
     mat: jnp.ndarray = sum(
-        weight * s.int[k] * jnp.eye(n, n, k=k - o, dtype=s.dtype)  # type: ignore
+        weight * s.int[k] * jnp.eye(n, n, k=k - o, dtype=s.dtype)
         for k in range(s.int.size)
     )
 
@@ -352,7 +352,7 @@ def sbp_matrix_from_name(
         )
     if name == "R":
         func = globals()[f"make_sbp_{op.ids}_second_derivative_r_matrix"]
-        return func(bc, jnp.ones_like(grid.x), dx=grid.dx_min)  # type: ignore
+        return func(bc, jnp.ones_like(grid.x), dx=grid.dx_min)
 
     raise ValueError(f"unknown SBP matrix name: '{name}'")
 
@@ -378,7 +378,7 @@ def make_sbp_mattsson2012_second_derivative(
         BS = 0
     else:
         assert S is not None
-        Bbar = jnp.zeros(S.shape, dtype=S.dtype)  # type: ignore[no-untyped-call]
+        Bbar = jnp.zeros(S.shape, dtype=S.dtype)
         Bbar = Bbar.at[0, 0].set(-b[0])
         Bbar = Bbar.at[-1, -1].set(b[-1])
         BS = Bbar @ S
@@ -516,7 +516,7 @@ def _sbp_21_second_derivative_matrix(
     if isinstance(b, jnp.ndarray):
         pass
     elif isinstance(b, Number):
-        b = jnp.full_like(grid.x, b, dtype=grid.dtype)  # type: ignore[no-untyped-call]
+        b = jnp.full_like(grid.x, jnp.array(b), dtype=grid.dtype)
     else:
         raise TypeError(f"unknown coefficient type: '{type(b).__name__}'")
 
@@ -751,7 +751,7 @@ def _sbp_42_second_derivative_matrix(
     if isinstance(b, jnp.ndarray):
         pass
     elif isinstance(b, Number):
-        b = jnp.full_like(grid.x, b, dtype=grid.dtype)  # type: ignore[no-untyped-call]
+        b = jnp.full_like(grid.x, jnp.array(b), dtype=grid.dtype)
     else:
         raise TypeError(f"unknown diffusivity coefficient: '{type(b).__name__}'")
 
@@ -776,7 +776,7 @@ def make_sbp_42_second_derivative_b_matrices(
     bc: BoundaryType, b: jnp.ndarray
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     # [Mattsson2012] Appendix A.2
-    B34 = jnp.pad((b[2:] + b[:-2]) / 2, 1)  # type: ignore[no-untyped-call]
+    B34 = jnp.pad((b[2:] + b[:-2]) / 2, 1)
 
     # TODO: [Mattsson2012] does not say what happens at the boundary points
     if bc == BoundaryType.Periodic:
@@ -1009,13 +1009,11 @@ def make_sbp_42_second_derivative_m_matrix(
     M = (
         jnp.diag(b[1:-1] / 6 - b[:-2] / 8 - b[2:] / 8, k=-2)  # type: ignore
         + jnp.diag(  # type: ignore[no-untyped-call]
-            jnp.pad(  # type: ignore[no-untyped-call]
-                b[:-3] / 6 + b[3:] / 6 + b[1:-2] / 2 + b[2:-1] / 2, 1
-            ),
+            jnp.pad(b[:-3] / 6 + b[3:] / 6 + b[1:-2] / 2 + b[2:-1] / 2, 1),
             k=-1,
         )
         + jnp.diag(  # type: ignore[no-untyped-call]
-            jnp.pad(  # type: ignore[no-untyped-call]
+            jnp.pad(
                 -b[:-4] / 24
                 - 5 * b[1:-3] / 6
                 - 5 * b[3:-1] / 6
@@ -1025,13 +1023,13 @@ def make_sbp_42_second_derivative_m_matrix(
             ),
             k=0,
         )
-        + jnp.diag(
-            jnp.pad(  # type: ignore[no-untyped-call]
-                b[:-3] / 6 + b[3:] / 6 + b[1:-2] / 2 + b[2:-1] / 2, 1
-            ),
+        + jnp.diag(  # type: ignore[no-untyped-call]
+            jnp.pad(b[:-3] / 6 + b[3:] / 6 + b[1:-2] / 2 + b[2:-1] / 2, 1),
             k=+1,
         )
-        + jnp.diag(b[1:-1] / 6 - b[:-2] / 8 - b[2:] / 8, k=+2)  # type: ignore
+        + jnp.diag(  # type: ignore[no-untyped-call]
+            b[1:-1] / 6 - b[:-2] / 8 - b[2:] / 8, k=+2
+        )
     )
 
     if bc == BoundaryType.Periodic:

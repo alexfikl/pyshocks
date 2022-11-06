@@ -51,15 +51,13 @@ def test_advection_vs_continuity(
     elif bc_type == "dirichlet":
         from pyshocks.scalar import make_dirichlet_boundary
 
-        boundary = make_dirichlet_boundary(
-            lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
-        )
+        boundary = make_dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
     else:
         raise ValueError(f"unknown 'bc_type': {bc_type}")
 
     # NOTE: the two schemes are only similar if the velocity is
     # divergence free; in 1d, that means it has to be constant
-    velocity = jnp.ones_like(grid.x)  # type: ignore[no-untyped-call]
+    velocity = jnp.ones_like(grid.x)
     ascheme = advection.Godunov(rec=rec, velocity=velocity)
     cscheme = continuity.Godunov(rec=rec, velocity=velocity)
 
@@ -140,9 +138,7 @@ def test_advection_finite_difference_jacobian(
     elif bc_type == "dirichlet":
         from pyshocks.scalar import make_dirichlet_boundary
 
-        boundary = make_dirichlet_boundary(
-            lambda t, x: jnp.zeros_like(x)  # type: ignore[no-untyped-call]
-        )
+        boundary = make_dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
     else:
         raise ValueError(f"unknown 'bc_type': {bc_type}")
 

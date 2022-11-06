@@ -50,7 +50,7 @@ def main(
     grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0, is_periodic=is_periodic)
 
     # set up user data
-    diffusivity = jnp.ones_like(grid.x)  # type: ignore
+    diffusivity = jnp.ones_like(grid.x)
     func = partial(
         funcs.diffusion_expansion,
         # NOTE: odd nodes are not periodic!
