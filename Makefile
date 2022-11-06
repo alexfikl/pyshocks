@@ -33,12 +33,13 @@ reuse:
 # {{{ testing
 
 pin:
+	$(PYTHON) -m piptools compile requirements-build.in
 	$(PYTHON) -m piptools compile \
 		--extra dev --extra pyweno --upgrade \
 		-o requirements.txt setup.cfg
 
 pip-install:
-	$(PYTHON) -m pip install --upgrade pip wheel setuptools
+	$(PYTHON) -m pip install -r requirements-build.txt
 	$(PYTHON) -m pip install -r requirements.txt -e .
 
 docs:
