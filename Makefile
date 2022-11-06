@@ -38,7 +38,7 @@ pin:
 		-o requirements.txt setup.cfg
 
 pip-install:
-	$(PYTHON) -m pip install --upgrade pip numpy
+	$(PYTHON) -m pip install --upgrade pip wheel setuptools numpy
 	$(PYTHON) -m pip install -r requirements.txt -e .
 
 docs:
