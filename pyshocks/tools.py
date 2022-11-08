@@ -59,10 +59,8 @@ from typing import (
     TypeVar,
 )
 
-try:
-    from typing import ParamSpec  # noqa: F811
-except ImportError:
-    from typing_extensions import ParamSpec
+# NOTE: needs python 3.10
+from typing_extensions import ParamSpec
 
 from types import TracebackType
 import pathlib

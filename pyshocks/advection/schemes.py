@@ -255,11 +255,11 @@ def _apply_operator_flux_split_godunov(
     u = apply_boundary(bc, grid, t, u)
     cond = scheme.velocity < 0
 
-    dup = fd.apply_derivative(scheme.sp, jnp.where(cond, u, 0), grid.dx)
-    dum = fd.apply_derivative(scheme.sm, jnp.where(cond, 0, u), grid.dx)
+    du_p = fd.apply_derivative(scheme.sp, jnp.where(cond, u, 0), grid.dx)
+    du_m = fd.apply_derivative(scheme.sm, jnp.where(cond, 0, u), grid.dx)
 
     # FIXME: why is this not `-velocity * du`?
-    return scheme.velocity * (dup + dum)
+    return scheme.velocity * (du_p + du_m)
 
 
 # }}}
