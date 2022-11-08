@@ -3,10 +3,10 @@ Upstream-Name: pyshocks
 Upstream-Contact: Alexandru Fikl <alexfikl@gmail.com>
 Source: https://github.com/alexfikl/pyshocks
 
-Files: docs/* *.md *.rst *.cfg requirements.txt *Makefile
+Files: docs/* *.md *.rst *.cfg requirements* Makefile
 Copyright: 2022 Alexandru Fikl <alexfikl@gmail.com>
 License: CC0-1.0
 
-Files: .gitignore .readthedocs.yml pyproject.toml .github/workflows/ci.yml .codespell-ignore .pre-commit-config.yaml
+Files: .gitignore .readthedocs.yml pyproject.toml .github/* .codespell-ignore .pre-commit-config.yaml
 Copyright: 2022 Alexandru Fikl <alexfikl@gmail.com>
 License: CC0-1.0
