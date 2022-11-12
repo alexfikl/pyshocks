@@ -1,4 +1,4 @@
-PYTHON?=python
+PYTHON?=python -X dev
 
 all: flake8 pylint
 
