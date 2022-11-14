@@ -39,6 +39,7 @@ pin:
 		-o requirements.txt setup.cfg
 
 pip-install:
+	$(PYTHON) -m pip install --upgrade pip setuptools
 	$(PYTHON) -m pip install -r requirements-build.txt
 	$(PYTHON) -m pip install -r requirements.txt -e .
 
