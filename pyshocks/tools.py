@@ -670,10 +670,28 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
         "ytick.minor": {"size": 4.0},
     }
 
-    if "science" in mp.style.available:
+    try:
+        # NOTE: since v1.1.0 an import is required to import the styles
+        import SciencePlots  # noqa: F401
+    except ImportError:
+        pass
+
+    if "science" in mp.style.library:
         mp.style.use(["science", "ieee"])
     else:
-        mp.style.use("seaborn-white")
+        # NOTE: try to use the upstream seaborn styles and fallback to matplotlib
+
+        try:
+            import seaborn
+
+            mp.style.use(seaborn.axes_style("whitegrid"))
+        except ImportError:
+            if "seaborn-v0_8" in mp.style.library:
+                # NOTE: matplotlib v3.6 deprecated all the seaborn styles
+                mp.style.use("seaborn-v0_8-white")
+            elif "seaborn" in mp.style.library:
+                # NOTE: for older versions of matplotlib
+                mp.style.use("seaborn-white")
 
     for group, params in defaults.items():
         try:
