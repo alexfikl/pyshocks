@@ -674,7 +674,10 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
         # NOTE: since v1.1.0 an import is required to import the styles
         import SciencePlots  # noqa: F401
     except ImportError:
-        pass
+        try:
+            import scienceplots  # noqa: F401
+        except ImportError:
+            pass
 
     if "science" in mp.style.library:
         mp.style.use(["science", "ieee"])
