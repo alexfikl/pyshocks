@@ -30,6 +30,25 @@ reuse:
 
 # }}}
 
+# {{{ alternative linting
+
+pyright:
+	pyright --stats pyshocks tests examples drivers
+	@echo -e "\e[1;32mpyright clean!\e[0m"
+
+ruff:
+	ruff pyshocks tests examples drivers
+	@echo -e "\e[1;32mruff clean!\e[0m"
+
+pytype:
+	$(PYTHON) -m pytype \
+		--strict-parameter-checks \
+		--strict-primitive-comparisons \
+		pyshocks tests examples drivers
+	@echo -e "\e[1;32mpytype clean!\e[0m"
+
+# }}}
+
 # {{{ testing
 
 pin:

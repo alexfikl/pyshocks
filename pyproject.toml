@@ -9,3 +9,18 @@ build-backend = "setuptools.build_meta"
 line-length = 88
 target-version = ['py38']
 exclude='\.eggs|\.git|\.mypy_cache|build|dist|\.pytest_cache|\.pytype'
+
+[tool.ruff]
+target-version = "py38"
+line-length = 88
+select = ["B", "E", "F", "I", "N", "Q", "U", "W"]
+ignore = [
+    # Module level import not at top of file
+    "E402",
+    # Import block is un-sorted or un-formatted
+    "I001",
+    # Argument name should be lowercase
+    "N803",
+    # Variable in function should be lowercase
+    "N806",
+    ]
