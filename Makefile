@@ -52,9 +52,12 @@ pytype:
 # {{{ testing
 
 pin:
-	$(PYTHON) -m piptools compile requirements-build.in
 	$(PYTHON) -m piptools compile \
-		--extra dev --extra pyweno --upgrade \
+		--resolver=backtracking --upgrade \
+		requirements-build.in
+	$(PYTHON) -m piptools compile \
+		--resolver=backtracking --upgrade \
+		--extra dev --extra pyweno \
 		-o requirements.txt setup.cfg
 
 pip-install:
