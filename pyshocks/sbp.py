@@ -602,7 +602,7 @@ def make_sbp_21_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.1
-    pi = jnp.array(dtype.type(1.0))
+    pi = jnp.array(1, dtype=dtype)
 
     pb_l = jnp.array([0.5], dtype=dtype)
     pb_r = pb_l
@@ -1076,7 +1076,7 @@ def make_sbp_42_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.nd
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.2
-    pi = jnp.array(dtype.type(1.0))
+    pi = jnp.array(1, dtype=dtype)
 
     pb_l = jnp.array([17 / 48, 59 / 48, 43 / 48, 49 / 48], dtype=dtype)
     pb_r = pb_l[::-1]
@@ -1273,7 +1273,7 @@ def make_sbp_64_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.nd
         dtype = jnp.dtype(jnp.float64)
 
     # [Mattsson2012] Appendix A.3
-    pi = jnp.array(dtype.type(1.0))
+    pi = jnp.array(1, dtype=dtype)
 
     pb_l = jnp.array(
         [
