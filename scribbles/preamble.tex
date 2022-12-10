@@ -1,0 +1,165 @@
+% SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
+% SPDX-License-Identifier: CC0-1.0
+
+% <<< packages
+
+\usepackage[utf8]{inputenc}
+\usepackage[activate={true,nocompatibility},
+            final,
+            tracking=true,
+            kerning=true,
+            spacing=true,
+            factor=1100,
+            stretch=10,
+            shrink=10]{microtype}
+\microtypecontext{spacing=nonfrench}
+
+\usepackage{xparse}
+\usepackage{scrlayer-scrpage}
+
+\usepackage{fixmath}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\usepackage{mathrsfs}
+\usepackage{xfrac}
+
+\usepackage{tikz}
+\usepackage[mathlines]{lineno}
+\usepackage{booktabs}
+\usepackage[shortlabels]{enumitem}
+
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\usepackage{lmodern}
+
+% >>>
+
+% <<< formatting
+
+% set default page margins
+\makeatletter
+\@ifundefined{KOMAoptions}{}{
+\KOMAoptions{
+    DIV=14,
+    parskip=half*,
+    overfullrule}}
+
+% custom headers and footers
+\pagestyle{plain}
+\clearscrheadfoot
+\refoot[\pagemark]{\pagemark}
+\rofoot[\pagemark]{\pagemark}
+
+% less jarring links
+\hypersetup{
+    colorlinks=true,
+    urlcolor=blue,
+    citecolor=black,
+    linkcolor=black
+}
+
+% simple todo command
+\usepackage{todonotes}
+\newcommand{\unsure}[1]{
+    \todo[linecolor=red,backgroundcolor=red!25,bordercolor=red,inline]{#1}}
+
+% add line numbers
+\renewcommand{\linenumberfont}{
+    \normalfont\footnotesize\textcolor{black!50}
+}
+
+\linenumbers
+
+% number equations within sections
+\numberwithin{equation}{section}
+
+% >>>
+
+% <<< commands
+
+% <<< math commands
+
+% integral element with proper spacing
+\NewDocumentCommand \dx { O{x} } {\,\mathrm{d} #1}
+% style for displaying vectors
+\NewDocumentCommand \vect { m } { \mathbold{#1} }
+
+% jump notation
+\NewDocumentCommand \jump { sm } {
+    \IfBooleanTF#1
+    {\left\llbracket #2 \right\rrbracket}
+    {\llbracket #2 \rrbracket}
+}
+% average notation
+\NewDocumentCommand \avg { sm } {
+    \IfBooleanTF#1
+    {\left\langle #2 \right\rangle}
+    {\langle #2 \rangle}
+}
+% inner product
+\NewDocumentCommand \ip { m } { \avg{ #1 } }
+
+% ordinary derivative
+\NewDocumentCommand \od { m m } { \dfrac{\mathrm{d} #1}{\mathrm{d} #2} }
+% material derivative
+\NewDocumentCommand \md { m m } { \dfrac{\mathrm{D} #1}{\mathrm{D} #2} }
+% partial derivative
+\NewDocumentCommand \pd { m m } { \dfrac{\partial #1}{\partial #2} }
+
+% set of real number
+\NewDocumentCommand \R {} { \mathbb{R} }
+
+% >>>
+
+% <<< math operators
+
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\sech}{sech}
+\DeclareMathOperator{\argmin}{\operatorname{arg}\,\operatorname{min}}
+\DeclareMathOperator{\esssup}{\operatorname{ess}\,\operatorname{sup}}
+
+% >>>
+
+% <<< theorem environments
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{remark}{Remark}
+\newcommand{\remarkautorefname}{Remark}
+\newtheorem{lemma}{Lemma}
+\newcommand{\lemmaautorefname}{Lemma}
+\newtheorem{example}{Example}
+\newcommand{\exampleautorefname}{Example}
+\newtheorem{proposition}{Proposition}
+\newcommand{\propositionautorefname}{Proposition}
+\newtheorem{definition}{Definition}
+\newcommand{\definitionautorefname}{Definition}
+
+% >>>
+
+% >>>
+
+% <<< title
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}}
+\makeatletter
+\def\@maketitle{
+\begin{center}
+    \normalfont \normalsize
+
+    \horrule{0.5pt}
+    \vspace{0.2cm}
+
+    {\huge \bfseries \@title \par}
+
+    \vspace{0.3cm}
+    \horrule{2pt}
+\end{center}
+}
+\makeatother
+
+% >>>
+
+% vim:foldmarker=<<<,>>>:foldmethod=marker:nospell

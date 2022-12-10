@@ -1,0 +1,970 @@
+\documentclass{scrartcl}
+\input{./preamble}
+
+\usepackage{float}
+\usepackage{pgfplots}
+\pgfplotsset{width=10cm,compat=1.9}
+
+\title{SS WENO Scheme: Implementation Details}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction} % {{{
+
+We describe here the SS WENO 2-4-2 scheme of~\cite{Fisher2013} as it applies to the
+scalar inviscid Burgers equation. The complete system is given by
+\[
+\begin{cases}
+    u_t + f(u)_x = 0, & \quad (t, x) \in [0, T] \times [a, b], \\
+    u(0, x) = u_0(x), & \quad x \in [a, b], \\
+    u(t, a) = g_a(t), & \quad t \in [0, T] \text{ and } u(t, a) > 0, \\
+    u(t, b) = g_b(t), & \quad t \in [0, T] \text{ and } u(t, b) < 0, \\
+\end{cases}
+\]
+where $u_0$ is the initial condition and $(g_a, g_b)$ are boundary conditions
+that only apply at inflow boundaries. The analysis of the SS WENO scheme is
+also presented in~\cite{Fisher2012} in a bit more detail. We will follow here
+the description from the PhD thesis~\cite{Fisher2012}.
+
+\begin{remark}
+To ensure numerical entropy stability, the alternative boundary conditions are
+considered (see~\cite[Section 4.1]{Fisher2013})
+\[
+\left\{
+\begin{aligned}
+\frac{u(t, a) + |u(t, a)|}{3} u(t, a) - g_a(t) =\,\, 0, \\
+\frac{u(t, b) - |u(t, a)|}{3} u(t, a) + g_b(t) =\,\, 0,
+\end{aligned}
+\right.
+\]
+which are clearly not equivalent to the standard choice of Dirichlet boundary
+conditions from above.
+\end{remark}
+
+As a general description, the SS WENO 2-4-2 scheme is a fourth-order interior
+and second-order boundary WENO finite difference scheme that satisfies entropy
+and energy estimates. For this, a special limiter for the fourth-order WENO
+reconstruction is given and specific SAT boundary conditions are constructed.
+They are all  described below.
+
+% }}}
+
+\section{SS WENO Scheme} % {{{
+\label{sc:ssweno}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=1.5]
+\draw[thick] (0, 0) -- (10, 0);
+
+\draw[thick] (0, -0.3) -- (0, 0.3);
+\draw[thick] (10, -0.3) -- (10, 0.3);
+
+% solution points
+\foreach \x in {0, 1, ..., 10} {
+    \draw (\x, -0.2) -- (\x, 0.2);
+    \fill (\x, 0) circle [radius=0.08];
+}
+\node at (0, -0.3) [below] {$x_0$};
+\node at (1, -0.3) [below] {$x_1$};
+\node at (2.5, -0.3) [below] {$\cdots$};
+\node at (4, -0.3) [below] {$x_{i - 2}$};
+\node at (5, -0.3) [below] {$x_{i - 1}$};
+\node at (6, -0.3) [below] {$x_{i}$};
+\node at (7, -0.3) [below] {$x_{i + 1}$};
+\node at (8.5, -0.3) [below] {$\cdots$};
+\node at (10, -0.3) [below] {$x_{N - 1}$};
+
+% flux points
+\foreach \x in {0.0, 0.3, 1.6, 2.4, 3.5, 4.5, ..., 6.5, 7.6, 8.4, 9.7, 10} {
+    \fill[red!70] (\x - 0.05, -0.05) rectangle (\x + 0.05, 0.05);
+}
+\node at (0, 0) [left] {$\bar{x}_0$};
+\node at (0.3, 0) [above] {$\bar{x}_1$};
+\node at (4.5, 0) [above] {$\bar{x}_{i - 1}$};
+\node at (5.5, 0) [above] {$\bar{x}_{i}$};
+\node at (6.5, 0) [above] {$\bar{x}_{i + 1}$};
+\node at (9.7, 0) [above] {$\bar{x}_{N - 1}$};
+\node at (10, 0) [right] {$\bar{x}_N$};
+\end{tikzpicture}
+\caption{
+    Dual computational grid for the solution points (black circles) and flux points
+    (orange squares). We have $N$ grid points $x_i$, for $i \in \{0, \dots, N - 1\}$,
+    and $N + 1$ flux points $\bar{x}_i$, for $i \in \{0, \dots, N\}$. The first and
+    the last flux points match the solution points.}
+\label{fig:weno:grid}
+\end{figure}
+
+To put the SS-WENO scheme together using~\cite[Equation 3.42]{Fisher2013}, we
+make use of a Method-of-Lines approach. We employ the special dual grid
+from~\cite{Fisher2011}, as seen in~\Cref{fig:weno:grid}. We introduce a slight
+change in indexing to better match a numerical implementation, i.e. both arrays
+are 0-indexed. In the following, the solution is denoted by $u_i \triangleq u(x_i)$.
+The fluxes are denoted by $f_i \triangleq f(u(x_i))$ and the reconstructed
+fluxes are $\bar{f}_i \approx f(u(\bar{x}_i))$, with the convention that values
+at flux points have a bar over them.
+
+In this notation, we write the semi-discrete equation as
+\[
+\od{u_i}{t} =
+-\frac{1}{P_{ii}} (\bar{f}^{SSW}_i - \bar{f}^{SSW}_{i - 1})
++ \frac{1}{P_{ii}} g_i,
+\]
+where $\bar{f}^{SSW}_i$ is the SS-WENO flux between the nodes $i$ and $i - 1$,
+$g_i$ are the boundary conditions and $P$ is the SBP norm matrix
+(see~\cite[Appendix A]{Fisher2013}). According to~\cite{Fisher2013}, the
+flux is written as
+\begin{equation} \label{eq:ssweno:flux}
+\bar{f}_i^{SSW} \triangleq \bar{f}^{W}_i + \bar{\delta}_i (\bar{f}^{S}_i - \bar{f}^W_i),
+\end{equation}
+where $\bar{f}^W_i$ is the WENO reconstructed flux from~\Cref{sc:weno} and
+$\bar{f}^S_i$ is the entropy conservative flux from~\Cref{sc:entropy}. The
+limiter $\bar{\delta}$ is given by $\bar{\delta}_0 = \bar{\delta}_N = 0$ and,
+for $i \in \{1, N - 1\}$,
+\begin{equation} \label{eq::ssweno:limiter}
+\bar{\delta}_i \triangleq
+    \frac{\sqrt{\bar{b}_i^2 + c^2} - \bar{b}_i}{\sqrt{\bar{b}_i^2 + c^2}}
+    \in [0, 2],
+    \quad \text{where }
+    \bar{b}_i \triangleq (w_i - w_{i - 1}) (\bar{f}^S_i - \bar{f}^W_i),
+\end{equation}
+where $c \in \mathbb{R}_+$ is a small positive constant. In~\cite{Fisher2013},
+it is taken to be $c = 10^{-12}$. The limiter values are shown
+in~\Cref{fig:ssweno:limiter}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.9]
+\begin{axis}[
+    grid=both,
+    axis lines=middle,
+    minor tick num=5,
+    grid style={line width=.1pt, draw=gray!40},
+    major grid style={line width=.2pt,draw=gray!50},
+    axis line style={latex-latex},
+    enlargelimits={abs=0.1},
+    xlabel=\(\bar{b}\),
+    ylabel=\(\bar{\delta}\)]
+\addplot [domain=-1:1, samples=200, color=black, ultra thick]
+    {(sqrt(x^2 + 0.0001) - x) / sqrt(x^2 + 0.0001)};
+\end{axis}
+\end{tikzpicture}
+\caption{
+    Graph of the $\bar{\delta}$ limiter for values of $\bar{b}$
+    for a value of $c = 10^{-2}$. The profile becomes sharper for smaller
+    values of $c$.}
+\label{fig:ssweno:limiter}
+\end{figure}
+
+The boundary conditions are given by~\cite[Equation 4.8]{Fisher2013}
+\begin{equation} \label{eq:ssweno:bc}
+\vect{g} = -\vect{e}_0 \left(
+\frac{u_0 + |u_0|}{3} u_0 - g_a
+\right) + \vect{e}_{N - 1} \left(
+\frac{u_{N - 1} - |u_{N - 1}|}{3} u_{N - 1} + g_b
+\right),
+\end{equation}
+which also apply the required upwinding, i.e. only inflow boundaries should be
+imposed.
+
+\subsection{Entropy Stability}
+\label{ssc:ssweno:stability}
+
+To finish, we give below a short proof that the SS-WENO flux limiter respects
+the entropy stability requirement~\cite[Equation 3.41]{Fisher2013}
+\[
+(w_i - w_{i - 1}) (\bar{f}_i - \bar{f}_i^{S}) \le 0,
+\]
+where $\bar{f}_i^{S}$ is the entropy conservative flux of~\Cref{sc:entropy}.
+
+\begin{proof}
+Replacing the SS-WENO flux~\eqref{eq:ssweno:flux} in the inequality gives
+\[
+(1 - \bar{\delta}_i) (w_i - w_{i - 1}) (\bar{f}_i^W - \bar{f}_i^{S}) \le 0,
+\]
+where we can further expand $\bar{\delta}_i$ to obtain
+\[
+\frac{\bar{b}_i}{\sqrt{\bar{b}_i^2 + c^2}}
+    (w_i - w_{i - 1}) (\bar{f}_i^W - \bar{f}_i^{S}) \le 0.
+\]
+
+As the numerator is positive and never zero due to $0 < c \ll 1$, we get that
+\[
+\begin{aligned}
+&
+\bar{b}_i (w_i - w_{i - 1}) (\bar{f}_i^W - \bar{f}_i^{S}) \le 0 \\
+\Leftrightarrow &
+-(w_i - w_{i - 1})^2 (\bar{f}_i^W - \bar{f}_i^{S})^2 \le 0,
+\end{aligned}
+\]
+which is true by definition. We note that in~\cite{Fisher2012}, the authors
+define
+\[
+\bar{\delta}_i \triangleq
+    \frac{\sqrt{\bar{b}_i^2 + c^2} - \bar{b}_i}{2 \sqrt{\bar{b}_i^2 + c^2}}
+    \in [0, 1],
+\]
+for which the entropy stability requirement is also satisfied.
+\end{proof}
+
+% }}}
+
+\section{Fourth Order WENO Construction} % {{{
+\label{sc:weno}
+
+We start by looking at a WENO method that results in a fourth-order reconstruction
+of the flux. While the SS WENO scheme is described in~\cite{Fisher2013}, the
+WENO reconstruction is taken from previous work in~\cite{Fisher2011}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=1.5]
+\draw[thick] (2.5, 0) -- (8.5, 0);
+\node at (2.5, 0) [left] {$\cdots$};
+\node at (8.5, 0) [right] {$\cdots$};
+
+% solution points
+\foreach \x in {3, 4, ..., 8} {
+    \fill (\x, 0) circle [radius=0.08];
+}
+\node at (3, -0.3) [below] {$x_{i - 3}$};
+\node at (4, -0.3) [below] {$x_{i - 2}$};
+\node at (5, -0.3) [below] {$x_{i - 1}$};
+\node at (6, -0.3) [below] {$x_{i}$};
+\node at (7, -0.3) [below] {$x_{i + 1}$};
+\node at (8, -0.3) [below] {$x_{i + 2}$};
+
+% flux points
+\foreach \x in {3.5, 4.5, ..., 7.5} {
+    \fill[red!70] (\x - 0.05, -0.05) rectangle (\x + 0.05, 0.05);
+}
+\node at (5.5, 0) [above] {$\bar{x}_{i}$};
+
+% stencils
+\draw [thick, dashed] (3, 0) -- (3.5, 1) node [above] {$S^{LL}_i$} -- (4, 0);
+\draw [thick, dashed] (4, 0) -- (4.5, 1) node [above] {$S^L_i$} -- (5, 0);
+\draw [thick, dashed] (5, 0) -- (5.5, 1) node [above] {$S^C_i$} -- (6, 0);
+\draw [thick, dashed] (6, 0) -- (6.5, 1) node [above] {$S^R_i$} -- (7, 0);
+\draw [thick, dashed] (7, 0) -- (7.5, 1) node [above] {$S^{RR}_i$} -- (8, 0);
+\end{tikzpicture}
+\caption{
+    Fourth-order WENO candidate stencils for reconstruction at $\bar{x}_i$.
+    The stencil $S^{LL}_i$ is valid for $i \in \{3, N - 1\}$, $S^L_i$ is
+    valid on $i \in \{2, N - 1\}$, $S^C_i$ is valid on $i \in \{1, N - 1\}$,
+    $S^R_i$ is valid on $i \in \{1, N - 2\}$ and $S^{RR}_i$ is valid on
+    $i \in \{1, N - 3\}$.}
+\label{fig:weno:stencils}
+\end{figure}
+
+For this fourth-order WENO reconstruction, we have a five candidate stencils, as
+seen in~\Cref{fig:weno:stencils}. Note that the $S^{LL}$ and $S^{RR}$ stencils only
+apply near the boundaries to ensure the correct order. This is enforced by the
+construction, so they can be evaluated everywhere.
+
+The reconstruction used is given by
+\begin{equation} \label{eq:weno:reconstruction}
+\bar{f}_i = \sum_{k = LL}^{RR} \bar{\omega}_i^{(k)} \bar{f}^{(k)}_i,
+\end{equation}
+where $\bar{f}^{(k)}_i$ is the candidate interpolation on stencil $k$. It then
+suffices to define the non-linear weights $\bar{\omega}^{(k)}$ and the candidate
+interpolated values $\bar{f}^{(k)}$ on each candidate stencil. For a general
+description of the construction see~\Cref{ax:weno}.
+
+\subsection{WENO Weights} % {{{
+\label{ssc:weno:weights}
+
+\begin{definition} \label{def:weno:weights}
+The nonlinear weights of the fourth-order WENO reconstruction are given by
+\[
+\bar{\omega}^{(k)}_i \triangleq \frac{\bar{\alpha}^{(k)}_i}{\displaystyle
+    \sum_{\ell = LL}^{RR} \bar{\alpha}^{(\ell)}_i},
+\quad \text{where }
+\bar{\alpha}^{(k)}_i \triangleq \bar{d}^{(k)}_i \left(
+1 + \frac{\bar{\tau}_i}{\bar{\beta}^{(k)}_i + \bar{\epsilon}_i}\right),
+\]
+where $\bar{\tau}$ and $\bar{\beta}^{(k)}$ are smoothness indicators. The value of
+$\epsilon$ is determined based on the application.
+\end{definition}
+
+In~\cite{Fisher2011}, the authors recommend taking
+\[
+\bar{\epsilon}_i \triangleq \Delta x^4 \max (\|u_0\|, \|u_0'\|),
+\]
+where the norm $\|\cdot\|$ can be taken as the $P$ norm of the accompanying
+SBP scheme. The discontinuity points are ignored when computing $u_0'$. Alternatively,
+in~\cite{Fisher2012} we have
+\[
+\bar{\epsilon}_i \triangleq \min (\bar{c}_i \Delta x^4, \Delta x^2),
+\quad \text{where }
+\bar{c}_i \triangleq 1
+    + \frac{\|u_{K_i}\|^2}{|K_i| + 1}
+    + \frac{\|\bar{\beta}_i\|}{|K_i|},
+\]
+where $|K_i|$ is the number of points in the stencil corresponding to the flux
+point $\bar{x}_i$. In our case, $|K_i| \in \{3, 4\}$ only
+(see~\Cref{def:weno:target_weights}).
+
+According to \cite[Appendix A]{Fisher2011}, it is recommended to base the
+smoothness indicators on the solution variables and not the fluxes themselves.
+The resulting indicators are given below.
+
+\begin{definition} \label{def:weno:smoothness}
+The smoothness indicators used in~\Cref{def:weno:weights} are given by
+\[
+\bar{\tau}_i \triangleq
+\begin{cases}
+    (u_{i + 1} - 3 u_i + 3 u_{i - 1} - u_{i - 2})^2,
+    & \quad i \in \{2, N - 2\}, \\
+    (u_{i + 2} - 3 u_{i + 1} + 3 u_i - u_{i - 1})^2,
+    & \quad i = 1, \\
+    (u_i - 3 u_{i - 1} + 3 u_{i - 2} - u_{i - 3})^2,
+    & \quad i = N - 1,
+\end{cases}
+\]
+and
+\[
+\begin{aligned}
+    \bar{\beta}_i^{LL} \triangleq\,\, &
+    (u_{i - 2} - u_{i - 3})^2, & \qquad i \in \{3, N - 1\}, \\
+    \bar{\beta}_i^{L} \triangleq\,\, &
+    (u_{i - 1} - u_{i - 2})^2, & \qquad i \in \{2, N - 1\}, \\
+    \bar{\beta}_i^{C} \triangleq\,\, &
+    (u_i - u_{i - 1})^2, & \qquad i \in \{1, N - 1\}, \\
+    \bar{\beta}_i^{R} \triangleq\,\, &
+    (u_{i + 1} - u_i)^2, & \qquad i \in \{1, N - 2\}, \\
+    \bar{\beta}_i^{RR} \triangleq\,\, &
+    (u_{i + 2} - u_{i + 1})^2, & \qquad i \in \{1, N - 3\}.
+\end{aligned}
+\]
+\end{definition}
+
+\begin{remark}
+    The smoothness indicators $\bar{\beta}^{(k)}$ can be left undefined outside
+    of the valid index ranges, since they will be multiplied by $\bar{d}^{(k)}_i$,
+    which is $0$ there.
+\end{remark}
+
+\begin{remark}
+    As described in~\cite{Fisher2011}, the $\bar{\beta}^{(k)}$ indicators are
+    approximation of the first derivatives, e.g.
+    \[
+    \bar{\beta}^{(C)}_i =
+        \Delta x^2 \left(\od{f}{x}(\bar{x}_i)\right)^2
+        + \mathcal{O}(\Delta x^3),
+    \]
+    and the $\bar{\tau}_i$ are approximations of the third derivative, i.e.
+    \[
+    \bar{\tau}_i =
+        \Delta x^6 \left(\od{^3 f}{x^3}(\bar{x}_i)\right)^2
+        + \mathcal{O}(\Delta x^7).
+    \]
+
+    This is sufficient to ensure that, for a careful choice of $\epsilon$,
+    \[
+    \frac{\bar{\tau}_i}{\bar{\epsilon}_i + \bar{\beta}^{k}_i} =
+    \mathcal{O}(\Delta x^4),
+    \]
+    which satisfies the truncation order of the scheme. As known for WENO schemes,
+    this fails in the vicinity of critical points, which is where $\bar{\epsilon}_i$
+    comes in.
+\end{remark}
+
+Finally, the target weights are given by~\cite[Appendix C.3]{Fisher2011} as
+$\bar{d} \in \mathbb{R}^{N + 1 \times 5}$, where each column corresponds to one
+of the candidate stencils. We then make the abuse of notation that
+\[
+\bar{d}^{(k)}_i \equiv \bar{d}_{i, k}.
+\]
+
+\begin{definition} \label{def:weno:target_weights}
+The target weights of the fourth-order WENO reconstruction are given by
+\[
+\bar{d} =
+\begin{bmatrix}
+0 & 0 & 1 & 0 & 0 \\[1em]
+0 & 0 & \dfrac{24}{31} & \dfrac{1013}{4898} & \dfrac{3}{158} \\[1em]
+0 & \dfrac{11}{56} & \dfrac{51}{70} & \dfrac{3}{40} & 0 \\[1em]
+\dfrac{3}{142} & \dfrac{357}{3266} & \dfrac{408}{575} & \dfrac{4}{25} & 0 \\[1em]
+0 & \dfrac{1}{6} & \dfrac{2}{3} & \dfrac{1}{6} & 0 \\[1em]
+\vdots & \vdots & \vdots & \vdots & \vdots \\[1em]
+\end{bmatrix},
+\]
+where the columns represent the 5 stencils. The target weights have the symmetry
+property
+\[
+\bar{d}_{i, k} = \bar{d}_{N - i, 4 - k}.
+\]
+\end{definition}
+
+We can see from~\Cref{def:weno:target_weights} how the candidate stencils vanish
+outside of the valid index ranges. For example, the first column corresponding
+to $S^{LL}$ is zero except at $i = 3$, i.e. $d_{3, 0} \ne 0$ and, by symmetry,
+$d_{N - 3, 4} \ne 0$.
+
+Finally, to ensure the stability of the scheme, the smoothness indicators
+require a modification. As described in~\cite{Fisher2011}, we must redefine
+the downwind indicator to ensure that it has a smaller weight in the final
+reconstruction. The downwind stencil is given by
+\[
+\bar{D}_i \triangleq
+\begin{cases}
+    C \text{ if } \bar{u}_i \le 0 \text{ else } RR, &
+        \quad i = 1, \\
+    L \text{ if } \bar{u}_i \le 0 \text{ else } R, &
+        \quad i = 2, \\
+    LL \text{ if } \bar{u}_i \le 0 \text{ else } R, &
+        \quad i = 3, \\
+    L \text{ if } \bar{u}_i \le 0 \text{ else } R, &
+        \quad i \in \{4, N - 4\}, \\
+    L \text{ if } \bar{u}_i \le 0 \text{ else } RR, &
+        \quad i = N - 3, \\
+    L \text{ if } \bar{u}_i \le 0 \text{ else } R, &
+        \quad i = N - 2, \\
+    LL \text{ if } \bar{u}_i \le 0 \text{ else } C, &
+        \quad i = N - 1, \\
+\end{cases}
+\]
+where $\bar{u}_i \triangleq (u_i + u_{i - 1}) / 2$. Then, we set
+\[
+\bar{\beta}^{\bar{D}_i}_i =
+\left(
+    \frac{1}{|K_i|}
+    \sum_{k \in K_i} \left[\bar{\beta}^{(k)}_i\right]^p
+\right)^{\frac{1}{p}},
+\]
+where $p \in \mathbb{N}$ even. In~\cite{Fisher2012}, this is taken to be $p = 4$.
+The general intuition being that taking $p \to \infty$ will yield the $\ell^\infty$
+norm. Modifying the smoothness indicator in this way, i.e. such that the downwind
+indicator is larger than the others, will ensure that the corresponding
+$\omega^{\bar{D}_i}_i$ will be smaller and the scheme will not select the
+downwind stencil. This adds additional dissipation and stabilizes the standard
+WENO scheme. Note that the energy stable WENO schemes from~\cite{Yamaleev2009}
+do not require such changes.
+
+\begin{remark}
+To follow the text of the method, i.e. to ensure that $\bar{\beta}_i^{\bar{D}_i}$
+is larger than its colleagues, we must set
+\[
+\bar{\beta}^{\bar{D}_i}_i =
+\left(
+    \sum_{k \in K_i} \left[\bar{\beta}^{(k)}_i\right]^p
+\right)^{\frac{1}{p}}
+\]
+without the averaging. The original definition is only accurate in the limit.
+\end{remark}
+
+% }}}
+
+\subsection{WENO Interpolation} % {{{
+\label{ssc:weno:interp}
+
+We now require a definition of the interpolated values $\bar{f}^{(k)}$ to
+complete the WENO reconstruction. The required interpolating functions are
+described in~\cite[Appendix C.2]{Fisher2011} and~\cite[Equation A.15]{Fisher2012}.
+In general, we write
+\[
+\bar{f}_i^{(k)} \triangleq \sum_{j = 0}^{p - 1} \bar{h}^{(k)}_{ij} f(u_{i + k + j - p - 1}),
+\]
+where $p$ is the number of points in the stencils and $\bar{h}^{(k)}$ are
+coefficient matrices. They are given below explicitly for the case of $p = 2$,
+so we write
+\[
+\begin{aligned}
+\bar{f}^{LL}_i \triangleq\,\, &
+    \bar{a}^{LL}_i f(u_{i - 3}) + \bar{b}^{LL}_i f(u_{i - 2}), &
+    \quad i \in \{3, N - 1\}, \\
+\bar{f}^{L}_i \triangleq\,\, &
+    \bar{a}^{L}_i f(u_{i - 2}) + \bar{b}^{L}_i f(u_{i - 1}), &
+    \quad i \in \{2, N - 1\}, \\
+\bar{f}^{C}_i \triangleq\,\, &
+    \bar{a}^{C}_i f(u_{i - 1}) + \bar{b}^{C}_i f(u_i), &
+    \quad i \in \{1, N - 1\}, \\
+\bar{f}^{R}_i \triangleq\,\, &
+    \bar{a}^{R}_i f(u_i) + \bar{b}^{R}_i f(u_{i + 1}), &
+    \quad i \in \{1, N - 2\}, \\
+\bar{f}^{RR}_i \triangleq\,\, &
+    \bar{a}^{RR}_i f(u_{i + 1}) + \bar{b}^{RR}_i f(u_{i + 2}), &
+    \quad i \in \{1, N - 3\}, \\
+\end{aligned}
+\]
+where $\bar{a}^{(k)}_i \triangleq \bar{h}^{(k)}_{i, 0}$ and
+$\bar{b}^{(k)}_i \triangleq \bar{h}^{(k)}_{i, 1}$. Note that the valid index
+ranges match those of the $\bar{\beta}$ smoothness indicators from
+\Cref{def:weno:smoothness}.
+
+\begin{definition} \label{def:weno:interp}
+The interpolation coefficients $\bar{h}^{(k)} \in \mathbb{R}^{N + 1 \times 2}$
+are given by
+\begin{gather}
+\bar{h}^{LL} \triangleq
+\begin{bmatrix}
+0 & 0 \\[1em]
+0 & 0 \\[1em]
+0 & 0 \\[1em]
+-\dfrac{71}{48} & \dfrac{119}{48} \\[1em]
+0 & 0 \\[1em]
+\vdots & \vdots
+\end{bmatrix},
+\qquad
+\bar{h}^{RR} \triangleq
+\begin{bmatrix}
+0 & 0 \\[1em]
+\dfrac{127}{48} & -\dfrac{79}{48} \\[1em]
+\dfrac{29}{12} & -\dfrac{17}{12} \\[1em]
+\dfrac{121}{48} & -\dfrac{73}{48} \\[1em]
+0 & 0 \\[1em]
+\vdots & \vdots
+\end{bmatrix}, \\
+\bar{h}^L \triangleq
+\begin{bmatrix}
+0 & 0 \\[1em]
+0 & 0 \\[1em]
+-\dfrac{7}{12} & \dfrac{19}{12} \\[1em]
+-\dfrac{23}{48} & \dfrac{71}{48} \\[1em]
+-\dfrac{1}{2} & \dfrac{3}{2} \\[1em]
+\vdots & \vdots
+\end{bmatrix},
+\qquad
+\bar{h}^C \triangleq
+\begin{bmatrix}
+1 & 0 \\[1em]
+\dfrac{31}{48} & \dfrac{17}{48} \\[1em]
+\dfrac{5}{12} & \dfrac{7}{12} \\[1em]
+\dfrac{25}{48} & \dfrac{23}{48} \\[1em]
+\dfrac{1}{2} & \dfrac{1}{2} \\[1em]
+\vdots & \vdots
+\end{bmatrix},
+\qquad
+\bar{h}^R \triangleq
+\begin{bmatrix}
+0 & 0 \\[1em]
+\dfrac{79}{48} & -\dfrac{31}{48} \\[1em]
+\dfrac{17}{12} & -\dfrac{5}{12} \\[1em]
+\dfrac{73}{48} & -\dfrac{25}{48} \\[1em]
+\dfrac{3}{2} & -\dfrac{1}{2} \\[1em]
+\vdots & \vdots
+\end{bmatrix},
+\end{gather}
+and satisfy the symmetry condition
+\[
+\bar{h}^{(k)}_{i, j} = \bar{h}^{(4 - k)}_{N - i, p - j - 1}.
+\]
+\end{definition}
+
+% }}}
+
+\subsection{WENO Flux Splitting} % {{{
+\label{ssc:weno:flux}
+
+Using the reconstruction as presented in~\eqref{eq:weno:reconstruction} is
+not going to be stable. This is obvious, as it does not perform proper upwinding
+To achieve this, a form a flux splitting is used through the decomposition
+(see e.g. \cite{Fisher2012})
+\[
+f = f^+ + f^-,
+\]
+where
+\[
+\od{f^+}{u} > 0
+\quad \text{and} \quad
+\od{f^-}{u} < 0.
+\]
+
+The choice of splitting used in~\cite{Fisher2012} is the standard Lax-Friedrichs
+splitting
+\[
+f^\pm_i \triangleq \frac{1}{2} (f_i \pm a_i u_i),
+\]
+where $a_i$ is a measure of the flux Jacobian eigenvalue magnitude at the point
+$x_i$. The common choice is to take $a_i \triangleq |u_i|$ for Burgers' equation. In~\cite{Fisher2012}, the authors take
+\[
+a_i = \max_{j \in K_i} |u_j|,
+\]
+for all the points $j \in K_i$ the stencil used to reconstruct the flux. To
+tie the flux splitting into the WENO reconstruction, we say that
+\[
+\begin{aligned}
+\bar{f}^{(k), +}_i =\,\, & \sum_{k = LL}^{RR} \omega^{(k), +}_i \bar{f}^+_i, \\
+\bar{f}^{(k), -}_i =\,\, & \sum_{k = LL}^{RR} \omega^{(k), -}_i \bar{f}^-_i,
+\end{aligned}
+\]
+where the downwind stencil for the $f^-$ reconstruction is obviously mirrored
+from the one in~\Cref{ssc:weno:weights}.
+
+% }}}
+
+% }}}
+
+\section{Entropy Conservative Flux} % {{{
+\label{sc:entropy}
+
+In this section we will look at the high-order extension of the of the entropy
+conservative flux from, as described in~\cite{Fisher2013}. The second-order
+expression for an entropy conservative flux is given in~\Cref{ax:entropy} by
+\[
+\bar{f}^s(u_i, u_j) \triangleq
+    \frac{1}{6} (u_i u_j + u_i u_j + u_j u_j).
+\]
+
+In~\cite{Fisher2013}, a high-order extension to finite domains is proposed.
+It is given by
+\[
+\bar{f}^{S}_i \triangleq \sum_{k = i}^{N - 1} \sum_{\ell = 0}^{i - 1}
+2 Q_{\ell, k} \bar{f}^s(u_\ell, u_k),
+\]
+for $i \in \{1, N - 1\}$. Here, $Q \in \mathbb{R}^{N \times N}$ is the SBP
+matrix used to construct the first-order derivative. In the fourth-order case,
+it is given by~\cite[Equation A.2]{Fisher2013}
+\[
+Q =
+\begin{bmatrix}
+    -\dfrac{1}{2} & \dfrac{59}{96} & -\dfrac{1}{12} & -\dfrac{1}{32}
+    & 0 & 0 & 0 & 0 & 0 & \cdots \\[1em]
+    -\dfrac{59}{96} & 0 & \dfrac{59}{96}
+    & 0 & 0 & 0 & 0 & 0 & 0 & \cdots \\[1em]
+    \dfrac{1}{12} & -\dfrac{59}{96} & 0 & \dfrac{59}{96} & -\dfrac{1}{12}
+    & 0 & 0 & 0 & 0 & \cdots \\[1em]
+    \dfrac{1}{32} & 0 & -\dfrac{59}{96} & 0 & \dfrac{2}{3} & -\dfrac{1}{12}
+    & 0 & 0 & 0 & \cdots \\[1em]
+    0 & 0 & \dfrac{1}{12} & -\dfrac{2}{3} & 0 & \dfrac{2}{3} & -\dfrac{1}{12}
+    & 0 & 0 & \vdots \\
+    \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots
+    & \ddots \\[1em]
+\end{bmatrix}
+\]
+and satisfies the symmetry condition
+\[
+Q_{ij} = -Q_{N - i, N - j}.
+\]
+
+By the construction of the high-order entropy flux, we can see that only
+rows $< i$ and columns $\ge i$ are used in the construction. Therefore, for
+interior points, where $i \in \{4, \dots, N - 4\}$, we have
+\[
+\begin{aligned}
+\bar{f}^S_i \triangleq\,\, &
+2 Q_{i, i + 1} f^s(u_{i - 1}, u_i)
++ 2 Q_{i, i + 2} f^s(u_{i - 1}, u_{i + 1})
++ 2 Q_{i - 1, i + 1} f^s(u_{i - 2}, u_i)) \\
+=\,\, &
+\frac{4}{3} f^s(u_{i - 1}, u_i)
+- \frac{1}{6} (f^s(u_{i - 1}, u_{i + 1}) + f^s(u_{i - 2}, u_i)).
+\end{aligned}
+\]
+
+The boundary expressions are more complicated, but can be constructed
+explicitly from the initial definition. They are
+\[
+\left\{
+\begin{aligned}
+f^S_i \triangleq \,\, & f(u_0), \\
+f^S_i \triangleq \,\, &
+    2 Q_{i - 1, i} f^s(u_{i - 1}, u_i)
+    - \frac{1}{6} f^s(u_0, u_2)
+    - \frac{1}{16} f^s(u_0, u_3), \\
+f^S_2 \triangleq \,\, &
+\frac{59}{24} f^s(u_1, u_2)
+- \frac{1}{6} f^s(u_0, u_2)
+- \frac{1}{16} f^s(u_0, u_3), \\
+f^S_3 \triangleq \,\, &
+\frac{59}{48} f^s(u_2, u_3)
+- \frac{1}{16} f^s(u_0, u_3)
+- \frac{1}{6} f^s(u_2, u_4),
+\end{aligned}
+\right.
+\]
+while the right boundary is flipped and gives
+\[
+\begin{aligned}
+f^S_N = \,\, & f(u_N), \\
+f^S_{N - 1} \triangleq \,\, &
+    -\frac{59}{48} f^s(u_{N - 1}, u_{N - 2})
+    + \frac{1}{6} f^s(u_{N - 1}, u_{N - 3})
+    + \frac{1}{12} f^s(u_{N - 1}, u_{N - 4}), \\
+f^S_{N - 2} \triangleq \,\, &
+    -\frac{59}{48} f^s(u_2, u_3)
+    + \frac{1}{6} f^s(u_2, u_4)
+    + \frac{1}{12} f^s(u_0, u_3), \\
+f^S_{N - 3} \triangleq \,\, &
+    -\frac{59}{48} f^s(u_3, u_4)
+    + \frac{1}{16} f^s(u_3, u_5)
+    + \frac{1}{6} f^s(u_2, u_4).
+\end{aligned}
+\]
+
+% }}}
+
+\appendix
+\section{Finite Difference WENO Reconstruction} % {{{
+\label{ax:weno}
+
+For completeness, we give here a short description of how WENO reconstruction is
+performed in the context of finite difference methods. The text generally
+follows the well-known presentation from~\cite{Shu2009}. In the case of finite
+difference WENO reconstructions, we are given the solution point values $u_i$ and
+$f(u_i)$ and are expected to reconstruct the value of the flux $\bar{f}_i$.
+
+We start by constructing a function $h(x)$ such that (see~\cite[Section 3.2]{Shu2009})
+\begin{equation} \label{eq:ax:weno_average}
+\frac{1}{\Delta x} \int_{x - \frac{\Delta x}{2}}^{x + \frac{\Delta x}{2}}
+    h(\xi) \dx[\xi] = f(u(x)),
+\end{equation}
+where $\Delta x$ is the uniform grid spacing. It is clear from this construction
+that the average of $h$ on the dual $\bar{x}_i$ grid (see~\Cref{fig:weno:grid}) satisfies
+\[
+\hat{h}_i = f(u_i),
+\]
+with the caveat that the cell is not always centred around $x_i$ (this is only
+true for interior points). By taking a derivative of~\eqref{eq:ax:weno_average}
+we get
+\[
+\frac{1}{\Delta x} (h(\bar{x}_{i + 1}) - h(\bar{x}_i)) = f(u)_x\Big|_{x = x_i},
+\]
+which implies that we can take $\bar{f}_i \equiv h(\bar{x}_i)$ as our flux
+approximation. Therefore, we are left with reconstructing $h(\bar{x}_i)$ from
+the cell-averaged values $\hat{h}_i$, completely equivalently to the finite
+volume case.
+
+Then, to reconstruct $h(\bar{x}_i)$ we follow~\cite[Section 2.2]{Shu2009}.
+We start by defining a polynomial $p^C(x)$ which interpolates $\hat{h}$ on $S^C$,
+i.e.
+\[
+\begin{aligned}
+p^C(x_{i - 1}) =\,\, & a_1^C x_{i - 1} + a_0^C = \hat{h}_{i - 1}, \\
+p^C(x_i) =\,\, & a_1^C x_i + a_0^C = \hat{h}_i,
+\end{aligned}
+\]
+and evaluate $p^C(\bar{x}_i) = \bar{h}^{C}_i$. Some simple algebra shows that
+\[
+\bar{h}^C_i = \frac{1}{2} \hat{h}_i + \frac{1}{2} \hat{h}_{i - 1},
+\]
+or in terms of the flux
+\[
+\bar{f}^C_i = \frac{1}{2} f_i + \frac{1}{2} f_{i - 1}
+= f(\bar{x}_i) + \mathcal{O}(\Delta x^2),
+\]
+which matches the previous central interior stencil from~\Cref{def:weno:interp}.
+The remaining interior points can be reconstructed in an equivalent manner.
+For the boundary points, the construction is similar, but it is more difficult
+to define the points $\bar{x}_i$, since they are no longer at the midpoint of
+$[x_{i - 1}, x_i]$.
+
+Finally, once we have the required stencil interpolation we can combine the
+lower-order interpolation to obtain a high-order result. For example, if we
+consider $\{S^L, S^C, S^R\}$, then we wish to find $\{\gamma^L, \gamma^C, \gamma^R\}$
+such that
+\[
+\bar{f}_i = \gamma^L \bar{f}^L_i + \gamma^C \bar{f}^C_i + \gamma^R \bar{f}_i
+\]
+is a fourth-order approximation. For example, a fourth-order Lagrange interpolant
+is given by
+\[
+\bar{f}_i = -\frac{1}{12} f_{i - 2} + \frac{7}{12} f_{i - 1} + \frac{7}{12} f_i - \frac{1}{12} f_{i + 1},
+\]
+which implies that
+\[
+\gamma^L = \frac{1}{6},
+\gamma^C = \frac{2}{3}
+\quad \text{and }
+\gamma^R = \frac{1}{6}.
+\]
+
+\begin{proof}
+From the two-point stencil reconstructions, we have that
+\[
+\bar{f}_i =
+\gamma^L \left(-\frac{1}{2} f_{i - 2} + \frac{3}{2} f_{i - 1}\right)
++ \gamma^C \left(\frac{1}{2} f_{i - 1} + \frac{1}{2} f_i\right)
++ \gamma^R \left(\frac{3}{2} f_i - \frac{1}{2} f_{i + 1}\right),
+\]
+which needs to match the fourth-order expansion above. We are left with a system
+of 4 equations and 3 unknowns. From the coefficients of $f_{i - 2}$ and $f_{i + 1}$,
+we directly have that
+\[
+\begin{aligned}
+-\frac{1}{2} \gamma^L =\,\, -\frac{1}{12} \implies \gamma^L = \frac{1}{6}, \\
+-\frac{1}{2} \gamma^R =\,\, -\frac{1}{12} \implies \gamma^R = \frac{1}{6}.
+\end{aligned}
+\]
+
+Then, from the coefficient of $f_{i - 1}$, we have that
+\[
+\frac{1}{2} (3 \gamma^L + \gamma^C) = \frac{7}{12} \implies
+\gamma^C = \frac{2}{3}.
+\]
+\end{proof}
+
+% }}}
+
+\section{Entropy Conservative Flux} % {{{
+\label{ax:entropy}
+
+Entropy stable fluxes have been studied for a while now, for example
+in~\cite{Tadmor2003} or~\cite{Ismail2009}. We will give here a short introduction
+relevant to the scalar Burgers equation case we are working with. In general,
+the continuous solution must satisfy
+\[
+\pd{S}{t} + \pd{F}{x} \le 0
+\quad \Leftrightarrow \quad
+\od{}{t} \int_a^b S + F\Big|_{x = a}^{x = b} \le 0,
+\]
+where the weak form is satisfied by weak solutions and strong solutions alike.
+In the above, $S(u)$ is called the entropy and $F(u)$ is the entropy flux. Note
+that the entropy pair $(S, F)$ is not guaranteed to exist. They must satisfy the
+relation
+\[
+\od{S}{u} \od{f}{u} = \od{F}{u},
+\]
+where $f$ is the flux of the original conservation law. The entropy must also
+be convex, so its Hessian is positive definite, i.e.
+\[
+v \od{^2S}{u^2} v > 0,
+\]
+for all smooth functions $v \ne 0$. Due to these properties, it yields a one-to-one
+mapping from conserved variables to entropy variables $w = S_u$ and the original
+inequality. For physical purposes, it is important to note that entropy must
+decrease across a shock. Due to the symmetry of the entropy function construction,
+we can also define a potential $\varphi$ and potential flux $\psi$ as
+\[
+\varphi \triangleq w u - S
+\quad \text{and} \quad
+\psi \triangleq w f - F,
+\]
+such that $u = \varphi_w$ and $f = \psi_w$. Due to the construction, the potential
+function is also convex with respect to the entropy variables $w$.
+
+For Burgers' equation, we can simply take
+\[
+(S, F) = \left(\frac{u^2}{2}, \frac{u^3}{3}\right)
+\quad \text{and} \quad
+(\phi, \psi) = \left(\frac{w^2}{2}, \frac{w^3}{6}\right),
+\]
+such that the entropy variable is $w = S_u = u$. This is not sufficient at the
+continuous level, as the entropy equation must hold for all admissible entropy
+pairs, but it is a good starting point for designing numerical methods.
+
+For a scalar conservation law, we consider the semi-discrete form
+\[
+\od{u_i}{t} = -\frac{1}{P_{ii}} (\bar{f}_{i + 1} - \bar{f}_i) + \frac{1}{P_ii} g_i
+\quad \Leftrightarrow \quad
+\od{\vect{u}}{t} = -P^{-1} \Delta \bar{\vect{f}} + P^{-1} \vect{g},
+\]
+where $P$ is the SBP norm matrix. The flux must be constructed in such a way
+that it satisfies entropy inequalities. In~\cite{Fisher2013}, the authors
+propose a local condition to ensure entropy consistency
+\[
+(w_i - w_{i - 1}) \bar{f}^s_i = \psi_i - \psi_{i - 1}
+\]
+and entropy stability is achieved if the flux satisfies
+\[
+(w_i - w_{i - 1}) (\bar{f}_i - \bar{f}^s_i) \le 0.
+\]
+
+Substituting the potential flux for Burgers' equation, we get that
+\[
+(w_i - w_{i - 1}) \bar{f}^s_i = \frac{1}{6} (w_{i} - w_{i - 1})
+\implies
+\bar{f}^s_i =  \frac{1}{6} (u_i u_i + u_i u_{i - 1} + u_{i - 1} u_{i - 1}),
+\]
+which is a second-order entropy consistent flux. The high-order extension of
+these ideas is presented in~\Cref{sc:entropy}. However, the general idea
+consists of reformulating the above expression. Namely, we can write
+\[
+-\frac{1}{P_{ii}} (\bar{f}^S_{i + 1} - \bar{f}^S_i) =
+\sum_{j = 0}^N \left(
+\frac{1}{2}
+\begin{bmatrix}
+0 & 1 & 0 & \cdots & -1 \\
+-1 & 0 & 1 & \cdots & 0 \\
+0 & -1 & 0 & \cdots & 0 \\
+\vdots & \vdots & \ddots & & \vdots \\
+1 & 0 & \cdots & -1 & 0
+\end{bmatrix}
+\odot
+\begin{bmatrix}
+\bar{f}^s(u_0, u_0) & \cdots & \bar{f}^s(u_0, u_N) \\
+\vdots & \cdots & \vdots \\
+\bar{f}^s(u_N, u_0) & \cdots & \bar{f}^s(u_N, u_N)
+\end{bmatrix}
+\right)_{ji},
+\]
+where $\odot$ is the Hadamard product and the entropy conservative flux is given
+by
+\[
+\bar{f}^s(u, v) = \frac{1}{6} (u^2 + uv + v^2).
+\]
+
+Then, we can write our semi-discrete equations as
+\[
+\od{\vect{u}}{t}
++ 2 (\vect{Q} \odot \vect{F}^s) \vect{1}
++ \vect{B} (\vect{f}^S_b - \vect{f}^s) = 0,
+\]
+where $\vect{B} = \operatorname{diag}(-1, 0, \dots, 1)$ is the standard SBP
+boundary operator. As we can see, the original formulation uses a second-order
+method to arrive at entropy conservation. However, we can replace $\vect{Q}$
+with high-order SBP operators to obtain higher-order entropy conservative
+schemes. In particular, the fourth-order scheme is presented in~\Cref{sc:entropy}.
+
+% }}}
+
+\begin{thebibliography}{9}
+\bibitem{Tadmor2003}
+    E. Tadmor,
+    \textit{
+        Entropy Stability Theory for Difference Approximations of Nonlinear
+        Conservation Laws and Related Time-Dependent Problems},
+    Acta Numerica, Vol. 12, pp. 451--512, 2003,
+    \url{http://dx.doi.org/10.1017/s0962492902000156}.
+\bibitem{Ismail2009}
+    F. Ismail, P. L. Roe,
+    \textit{
+        Affordable, Entropy-Consistent {Euler} Flux Functions II: Entropy
+        Production at Shocks},
+    Journal of Computational Physics, Vol. 228, pp. 5410--5436, 2009,
+    \url{http://dx.doi.org/10.1016/j.jcp.2009.04.021}.
+\bibitem{Shu2009}
+    C.-W. Shu,
+    \textit{
+        High-Order Weighted Essentially Non-oscillatory Schemes for Convection
+        Dominated Problems},
+    {SIAM} Review, Vol. 51, pp. 82--126, 2009,
+    \url{http://dx.doi.org/10.1137/070679065}.
+\bibitem{Yamaleev2009}
+    N. K. Yamaleev, M. H. Carpenter,
+    \textit{A Systematic Methodology for Constructing High-Order Energy Stable {WENO} Schemes},
+    Journal of Computational Physics, Vol. 228, pp. 4248--4272, 2009,
+    \url{http://dx.doi.org/10.1016/j.jcp.2009.03.002}.
+\bibitem{Fisher2011}
+    T. C. Fisher, M. H. Carpenter, N. K. Yamaleev, S. H. Frankel,
+    \textit{
+        Boundary Closures for Fourth-Order Energy Stable Weighted Essentially
+        Non-Oscillatory Finite-Difference Schemes},
+    Journal of Computational Physics, Vol. 230, pp. 3727--3752, 2011,
+    \url{http://dx.doi.org/10.1016/j.jcp.2011.01.043}.
+\bibitem{Fisher2012}
+    T. C. Fisher,
+    \textit{
+        High-Order L2 Stable Multi-Domain Finite Difference Method for
+        Compressible Flows},
+    PhD Thesis, 2012,
+    \url{https://docs.lib.purdue.edu/dissertations/AAI3544141/}.
+\bibitem{Fisher2013}
+    T. C. Fisher, M. H. Carpenter,
+    \textit{
+        High-Order Entropy Stable Finite Difference Schemes for Nonlinear
+        Conservation Laws: Finite Domains},
+    Journal of Computational Physics, Vol. 252, pp. 518--557, 2013,
+    \url{http://dx.doi.org/10.1016/j.jcp.2013.06.014}.
+\bibitem{Jiang2013}
+    Y. Jiang, C.-W. Shu, M. Zhang,
+    \textit{
+        An Alternative Formulation of Finite Difference Weighted ENO Schemes
+        With Lax-Wendroff Time Discretization for Conservation Laws},
+    {SIAM} Journal on Scientific Computing, Vol. 35, pp. A1137--A1160, 2013,
+    \url{http://dx.doi.org/10.1137/120889885}.
+\end{thebibliography}
+
+\end{document}
