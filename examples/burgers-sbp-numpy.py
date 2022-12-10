@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Daniel J. Bodony <bodony@illinois.edu>
+# SPDX-FileCopyrightText: 2022 Daniel J. Bodony <bodony@illinois.edu>
 # SPDX-License-Identifier: MIT
 
 from typing import Any, Tuple
@@ -326,7 +326,7 @@ def main(
 
     from matplotlib import animation
 
-    animation.FuncAnimation(
+    anim = animation.FuncAnimation(  # noqa: F841
         fig, animate, np.arange(1, nt), init_func=init, interval=25, blit=True
     )
     plt.show()
