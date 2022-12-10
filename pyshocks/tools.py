@@ -51,15 +51,17 @@ from functools import wraps
 from typing import (
     Any,
     Callable,
+    Dict,
     Iterator,
     Iterable,
     List,
     Optional,
     Protocol,
-    Union,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
+    Union,
 )
 
 try:
@@ -618,6 +620,33 @@ class Color:
 # }}}
 
 
+# {{{ single-valued
+
+
+def is_single_valued(
+    iterable: Iterable[Any], predicate: Optional[Callable[[T, T], bool]] = None
+) -> bool:
+    it = iter(iterable)
+    try:
+        first_item = next(it)
+    except StopIteration:
+        return True
+
+    if predicate is None:
+        import operator
+
+        predicate = operator.eq
+
+    for other_item in it:
+        if not predicate(other_item, first_item):
+            return False
+
+    return True
+
+
+# }}}
+
+
 # {{{ matplotlib
 
 
@@ -751,6 +780,126 @@ def gca(
 def savefig(fig: Any, filename: PathLike, **kwargs: Any) -> None:
     logger.info("Saving '%s'", filename)
     fig.savefig(filename, **kwargs)
+
+
+# }}}
+
+
+# {{{ save animation
+
+
+def save_animation(
+    filename: Optional[Union[str, pathlib.Path]],
+    x: jnp.ndarray,
+    ys: Union[jnp.ndarray, Tuple[jnp.ndarray, ...]],
+    *,
+    fps: Optional[int] = None,
+    xlabel: Optional[str] = None,
+    ylabel: Optional[str] = None,
+    ymin: Optional[float] = None,
+    ymax: Optional[float] = None,
+    legends: Optional[Sequence[str]] = None,
+    fig_kwargs: Optional[Dict[str, Any]] = None,
+    plot_kwargs: Optional[Dict[str, Any]] = None,
+    anim_kwargs: Optional[Dict[str, Any]] = None,
+) -> None:
+    # {{{ handle inputs
+
+    if not isinstance(ys, tuple):
+        ys = (ys,)
+
+    if not is_single_valued(y.shape for y in ys):
+        raise ValueError("all 'ys' should be the same shape")
+
+    if (ys[0].shape[0],) != x.shape:
+        raise ValueError("'x' and 'ys' should have the same shape")
+
+    if xlabel is None:
+        xlabel = "$x$"
+
+    if ylabel is None:
+        ylabel = "$u(x, t)$"
+
+    if legends is not None and len(legends) != len(ys):
+        raise ValueError("must provide 'legends' for all inputs")
+
+    if fig_kwargs is None:
+        fig_kwargs = {}
+
+    if plot_kwargs is None:
+        plot_kwargs = {}
+
+    if anim_kwargs is None:
+        anim_kwargs = {}
+
+    if fps is None:
+        nframes = ys[0].shape[-1]
+        fps = max(int(nframes / 10), 10)
+
+    # }}}
+
+    # {{{ plot
+
+    def _anim_init() -> Tuple[Any, ...]:
+        for line in lines:
+            line.set_ydata(x)
+
+        return lines
+
+    def _anim_func(n: int) -> Tuple[Any, ...]:
+        for line, y in zip(lines, ys):
+            line.set_ydata(y[:, n])
+
+        return lines
+
+    import matplotlib.pyplot as mp
+
+    fig = mp.figure(**fig_kwargs)
+    ax = fig.gca()
+
+    if ymin is None:
+        ymin = min(y.min() for y in ys)
+
+    if ymax is None:
+        ymax = max(y.max() for y in ys)
+
+    ax.set_xlabel(xlabel)
+    if legends is not None:
+        ax.set_ylabel(ylabel)
+    ax.set_xlim([x[0], x[-1]])
+    ax.set_ylim([ymin - 0.1 * abs(ymin), ymax + 0.1 * abs(ymax)])
+    ax.margins(0.05)
+
+    if legends:
+        lines = tuple(
+            ax.plot(x, x, "o-", **plot_kwargs, label=label)[0] for label in legends
+        )
+        ax.legend(loc=1)
+    else:
+        lines = tuple(ax.plot(x, x, "o-", **plot_kwargs)[0] for _ in ys)
+
+    # }}}
+
+    # {{{ animation
+
+    from matplotlib import animation
+
+    anim_kwargs = {"interval": 25, "blit": True, **anim_kwargs}
+    anim = animation.FuncAnimation(  # noqa: F841
+        fig,
+        _anim_func,
+        jnp.arange(1, ys[0].shape[1]),
+        init_func=_anim_init,
+        **anim_kwargs,
+    )
+
+    if filename is None:
+        mp.show()
+    else:
+        writer = animation.FFMpegWriter(fps=fps)
+        anim.save(filename, writer=writer)
+
+    # }}}
 
 
 # }}}
