@@ -19,6 +19,18 @@ mypy:
 	$(PYTHON) -m mypy --strict --show-error-codes pyshocks tests examples drivers
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 
+linkcheck:
+	cd docs && make linkcheck SPHINXOPTS="-W --keep-going -n" || true
+	@echo -e "\e[1;32mlinkcheck clean!\e[0m"
+
+sphinxlint: linkcheck
+	$(PYTHON) -m sphinxlint -v \
+		--ignore docs/_build --ignore README.rst \
+		--enable all \
+		--max-line-length=88 \
+		.
+	@echo -e "\e[1;32msphinxlint clean!\e[0m"
+
 codespell:
 	codespell --summary \
 		--ignore-words .codespell-ignore \

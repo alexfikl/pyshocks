@@ -61,7 +61,7 @@ References
 .. [Shu1998] C.-W. Shu, *Essentially Non-Oscillatory and Weighted Essentially
     Non-Oscillatory Schemes for Hyperbolic Conservation Laws*,
     Lecture Notes in Mathematics, pp. 325--432, 1998,
-    `DOI <http://dx.doi.org/10.1007/bfb0096355>`.
+    `DOI <http://dx.doi.org/10.1007/bfb0096355>`__.
 
 .. [Yamaleev2009] N. K. Yamaleev, M. H. Carpenter, *Third-Order Energy
     Stable WENO Scheme*,
