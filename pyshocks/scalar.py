@@ -132,7 +132,7 @@ def lax_friedrichs_initial_condition_correction(
     total variation preservation with the Lax-Friedrichs scheme.
 
     This correction is described in Algorithm 3.1 from [Breuss2004]. Note that
-    in [Breuss2004] the authors also recommend modified boundary conditions,
+    in [Breuss2004]_ the authors also recommend modified boundary conditions,
     which are not implemented here.
 
     .. [Breuss2004] M. Breuß, *The Correct Use of the Lax–Friedrichs Method*,

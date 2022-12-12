@@ -6,8 +6,8 @@ Summation-by-Parts (SBP) Operators
 ----------------------------------
 
 These routines help construct several SBP operators with appropriate boundary
-conditions (see [Mattsson2012]_). First, we have that the first derivative
-operator is given by
+conditions (see [Mattsson2012]_ and [Parisi2010]_). First, we have that the
+first derivative operator is given by
 
 .. math::
 
