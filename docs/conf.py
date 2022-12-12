@@ -55,14 +55,16 @@ autodoc_default_options = {
 
 # autodoc_typehints = "description"
 
+nitpick_ignore = [("py:class", "jax._src.basearray.Array")]
+
 # }}}
 
 # {{{ links
 
 intersphinx_mapping = {
-    "https://docs.python.org/3": None,
-    "https://numpy.org/doc/stable": None,
-    "https://jax.readthedocs.io/en/latest": None,
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "jax": ("https://jax.readthedocs.io/en/latest", None),
 }
 
 # }}}

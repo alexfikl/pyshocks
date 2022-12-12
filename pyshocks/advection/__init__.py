@@ -25,6 +25,7 @@ Schemes
 .. autoclass:: Godunov
 .. autoclass:: ESWENO32
 
+.. autoclass:: FluxSplitGodunov
 .. autoclass:: SBPSAT
 
 .. class:: Upwind

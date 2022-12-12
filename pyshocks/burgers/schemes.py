@@ -277,10 +277,6 @@ class SSMUSCL(FiniteVolumeScheme):
     from [Hesthaven2018]_. The variants define a first-order and a second-order
     scheme.
 
-    .. [Hesthaven2018] J. S. Hesthaven, *Numerical Methods for Conservation
-        Laws - From Analysis to Algorithms*,
-        SIAM, 2018.
-
     .. attribute:: variant
 
         An integer denoting the version of the schemes described in

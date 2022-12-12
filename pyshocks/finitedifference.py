@@ -187,10 +187,6 @@ def make_fornberg_approximation(
     but uses an alternative method. This function is less vectorized and likely
     to perform worse than the Taylor method if used in a loop.
 
-    .. [Fornberg1998] B. Fornberg, *Calculation of Weights in Finite
-        Difference Formulas*, SIAM Review, Vol. 40, pp. 685--691, 1998,
-        `DOI <http://dx.doi.org/10.1137/s0036144596322507>`__.
-
     :arg derivative: integer order of the approximated derivative, e.g. ``1`` for
         the first derivative.
     :arg stencil: left and right bounds on the stencil around a point :math:`x_i`.

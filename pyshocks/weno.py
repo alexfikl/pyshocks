@@ -68,11 +68,6 @@ class Stencil:
 
     THe general setup is more akin to the description provided in [Shu1998]_.
 
-    .. [Shu1998] C.-W. Shu, *Essentially Non-Oscillatory and Weighted Essentially
-        Non-Oscillatory Schemes for Hyperbolic Conservation Laws*,
-        Lecture Notes in Mathematics, pp. 325--432, 1998,
-        `DOI <http://dx.doi.org/10.1007/bfb0096355>`.
-
     .. attribute:: a
 
         Coefficients that are part of the smoothness coefficient reconstruction.
@@ -314,12 +309,6 @@ def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:
     """Initialize coefficients for the fourth-order WENO scheme of [Fisher2013].
 
     The actual implementation details of the scheme are given in [Fisher2011]_.
-
-    .. [Fisher2011] T. C. Fisher, M. H. Carpenter, N. K. Yamaleev, S. H. Frankel,
-        *Boundary Closures for Fourth-Order Energy Stable Weighted Essentially
-        Non-Oscillatory Finite-Difference Schemes*,
-        Journal of Computational Physics, Vol. 230, pp. 3727-3752, 2011,
-        `DOI <http://dx.doi.org/10.1016/j.jcp.2011.01.043>`__.
 
     :returns: a 4-tuple containing the coefficients :math:`a, b, c` and :math:`d`.
         For a third-order scheme, :math:`a` is of shape ``(1,)``, :math:`b`

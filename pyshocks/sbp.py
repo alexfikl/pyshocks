@@ -38,16 +38,6 @@ where :math:`S` includes an approximation of the first-order derivative at
 the boundary. Second-, fourth- and sixth-order operators are provided in
 [Mattsson2012]_ and the references therein.
 
-.. [Mattsson2012] K. Mattsson, *Summation by Parts Operators for Finite
-    Difference Approximations of Second-Derivatives With Variable Coefficients*,
-    Journal of Scientific Computing, Vol. 51, pp. 650--682, 2012,
-    `DOI <http://dx.doi.org/10.1007/s10915-011-9525-z>`__.
-
-.. [Parisi2010] K. M. a. F. Parisi, *Stable and Accurate Second-Order
-    Formulation of the Shifted Wave Equation*,
-    Communications in Computational Physics, Vol. 7, pp. 103--137, 2010,
-    `DOI <http://dx.doi.org/10.4208/cicp.2009.08.135>`__.
-
 Interface
 ^^^^^^^^^
 

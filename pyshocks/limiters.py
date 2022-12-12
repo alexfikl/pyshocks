@@ -385,13 +385,7 @@ def _slope_limit_van_leer(
 
 @dataclass(frozen=True)
 class KorenLimiter(Limiter):
-    """A third-order TVD limiter described in [Kuzmin2006]_ due to B. Koren.
-
-    .. [Kuzmin2006] D. Kuzmin, *On the Design of General-Purpose Flux Limiters
-        for Finite Element Schemes. I. Scalar Convection*,
-        Journal of Computational Physics, Vol. 219, pp. 513--531, 2006,
-        `DOI <http://dx.doi.org/10.1016/j.jcp.2006.03.034>`__.
-    """
+    """A third-order TVD limiter described in [Kuzmin2006]_ due to B. Koren."""
 
 
 @evaluate.register(KorenLimiter)

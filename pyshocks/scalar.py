@@ -10,9 +10,6 @@ Fluxes
 
 These fluxes are based on the seminal work of [LeVeque2002]_.
 
-.. [LeVeque2002] R. J. LeVeque, *Finite Volume Methods for Hyperbolic Problems*,
-    Cambridge University Press, 2002.
-
 .. autofunction:: scalar_flux_upwind
 .. autofunction:: scalar_flux_rusanov
 .. autofunction:: scalar_flux_lax_friedrichs
@@ -134,11 +131,6 @@ def lax_friedrichs_initial_condition_correction(
     This correction is described in Algorithm 3.1 from [Breuss2004]. Note that
     in [Breuss2004]_ the authors also recommend modified boundary conditions,
     which are not implemented here.
-
-    .. [Breuss2004] M. Breuß, *The Correct Use of the Lax–Friedrichs Method*,
-        ESAIM: Mathematical Modelling and Numerical Analysis, Vol. 38,
-        pp. 519--540, 2004,
-        `DOI <http://dx.doi.org/10.1051/m2an:2004027>`__.
 
     :arg order: if not *None*, cell averages are computed, otherwise point
         values are used.
@@ -654,11 +646,6 @@ class OneSidedDiffusionSATBoundary(OneSidedSATBoundary):
     The boundary condition is described in [Mattsson2004]_ Equation 16. Note
     that :class:`OneSidedSATBoundary` can also be used, but is only
     energy stable if the derivative at the boundary vanishes.
-
-    .. [Mattsson2004] K. Mattsson, J. Nordström, *Summation by Parts Operators
-        for Finite Difference Approximations of Second Derivatives*,
-        Journal of Computational Physics, Vol. 199, pp. 503--540, 2004,
-        `DOI <http://dx.doi.org/10.1016/j.jcp.2004.03.001>`__.
     """
 
     S: ClassVar[jnp.ndarray]

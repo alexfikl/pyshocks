@@ -271,11 +271,6 @@ def _reconstruct_muscls(
 class WENOJS(Reconstruction):  # pylint: disable=abstract-method
     """A WENO-JS reconstruction from [JiangShu1996]_.
 
-    .. [JiangShu1996] G.-S. Jiang, C.-W. Shu, *Efficient Implementation of
-        Weighted ENO Schemes*,
-        Journal of Computational Physics, Vol. 126, pp. 202--228, 1996,
-        `DOI <http://dx.doi.org/10.1006/jcph.1996.0130>`__.
-
     .. attribute:: eps
 
         Small fudge factor used in smoothness indicators.

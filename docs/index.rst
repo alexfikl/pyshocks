@@ -15,6 +15,7 @@ Welcome
     schemes.rst
     timestepping.rst
     misc.rst
+    references.rst
 
 Indices and tables
 ==================

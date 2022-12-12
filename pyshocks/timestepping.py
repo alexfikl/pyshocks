@@ -342,11 +342,6 @@ class CKRK45(Stepper):
     and Kennedy [Carpenter1994]_.
 
     The coefficients are presented on page 13.
-
-    .. [Carpenter1994] M. H. Carpenter, C. A. Kennedy,
-        *Fourth-Order 2N-Storage Runge-Kutta Schemes*,
-        NASA Langley Research Center, 1994,
-        `URL <http://hdl.handle.net/2060/19940028444>`__.
     """
 
     # NOTE: myth goes that this coefficients are accurate to 26 digits

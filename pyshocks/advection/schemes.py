@@ -161,13 +161,7 @@ def esweno_lf_flux(
 
 @dataclass(frozen=True)
 class ESWENO32(FiniteVolumeScheme):
-    """Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_.
-
-    .. [Yamaleev2009] N. K. Yamaleev, M. H. Carpenter, *Third-Order Energy
-        Stable WENO Scheme*,
-        Journal of Computational Physics, Vol. 228, pp. 3025--3047, 2009,
-        `DOI <http://dx.doi.org/10.1016/j.jcp.2009.01.011>`__.
-    """
+    """Third-order Energy Stable WENO (ESWENO) scheme by [Yamaleev2009]_."""
 
 
 @numerical_flux.register(ESWENO32)

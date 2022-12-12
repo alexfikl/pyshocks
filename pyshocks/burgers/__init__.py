@@ -26,6 +26,7 @@ Schemes
 .. autoclass:: ESWENO32
 .. autoclass:: SSMUSCL
 
+.. autoclass:: FluxSplitRusanov
 .. autoclass:: SSWENO242
 
 .. autofunction:: scheme_ids

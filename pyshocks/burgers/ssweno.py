@@ -56,11 +56,6 @@ def two_point_entropy_flux_42(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
 class SSWENO242(FiniteDifferenceScheme):
     """Fourth-order Energy Stable WENO (ESWENO) scheme by [Fisher2013]_.
 
-    .. [Fisher2013] T. C. Fisher, M. H. Carpenter, *High-Order Entropy Stable
-        Finite Difference Schemes for Nonlinear Conservation Laws: Finite Domains*,
-        Journal of Computational Physics, Vol. 252, pp. 518--557, 2013,
-        `DOI <http://dx.doi.org/10.1016/j.jcp.2013.06.014>`__.
-
     .. attribute:: c
 
         Offset used in computing the entropy stable flux in Equation 3.42
