@@ -89,7 +89,7 @@ def evolve_forward(
         mp.ioff()
         mp.close(fig)
 
-    if not visualize:
+    if visualize:
         umax = jnp.max(event.u[grid.i_])
         umin = jnp.min(event.u[grid.i_])
         umag = jnp.max(jnp.abs(event.u[grid.i_]))
