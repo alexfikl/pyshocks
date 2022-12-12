@@ -15,6 +15,7 @@ from pyshocks import (
     predict_timestep,
 )
 from pyshocks import advection, sbp, get_logger
+from pyshocks.reconstruction import ConstantReconstruction
 from pyshocks.scalar import PeriodicBoundary, make_advection_sat_boundary
 
 logger = get_logger("advection-sbp-sat")
@@ -46,6 +47,12 @@ def main(
     :arg theta: Courant number used in time step estimation as
         :math:`\Delta t = \theta \Delta \tilde{t}`.
     """
+    if visualize or interactive:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            interactive = visualize = False
+
     # {{{ setup
 
     # set up grid
@@ -66,15 +73,12 @@ def main(
 
     # set up scheme
     op = sbp.make_operator_from_name(sbp_op_name)
-    scheme = advection.SBPSAT(rec=None, op=op, velocity=velocity)
+    scheme = advection.SBPSAT(rec=ConstantReconstruction(), op=op, velocity=velocity)
     scheme = bind(scheme, grid, boundary)
 
     # }}}
 
     # {{{ plotting
-
-    if interactive or visualize:
-        import matplotlib.pyplot as plt
 
     s = grid.i_
     if interactive:

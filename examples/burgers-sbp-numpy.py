@@ -301,7 +301,10 @@ def main(
     # code originally lifted and modified from
     # https://matplotlib.org/examples/animation/simple_anim.html
 
-    import matplotlib.pyplot as plt
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        return
 
     fig = plt.figure()
     ax = plt.axes()

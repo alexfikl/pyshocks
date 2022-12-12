@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 import jax
 import jax.numpy as jnp
-import matplotlib.pyplot as mp
 
 from pyshocks import (
     Grid,
@@ -135,6 +134,8 @@ def evolve_forward(
     s = grid.i_
 
     if interactive:
+        import matplotlib.pyplot as mp
+
         fig = mp.figure()
         ax = fig.gca()
         mp.ion()
@@ -208,6 +209,8 @@ def evolve_adjoint(
     s = grid.i_
 
     if interactive or visualize:
+        import matplotlib.pyplot as mp
+
         pmax = jnp.max(p0[s])
         pmin = jnp.min(p0[s])
         pmag = jnp.max(jnp.abs(p0[s]))
@@ -267,6 +270,12 @@ def main(
     interactive: bool = False,
     visualize: bool = True,
 ) -> None:
+    if visualize or interactive:
+        try:
+            import matplotlib.pyplot as plt  # noqa: F401
+        except ImportError:
+            interactive = visualize = False
+
     if not outdir.exists():
         outdir.mkdir()
 
@@ -303,6 +312,8 @@ def main(
 
     if not visualize:
         return
+
+    import matplotlib.pyplot as mp
 
     fig = mp.figure()
     grid = sim.grid

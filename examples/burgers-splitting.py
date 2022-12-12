@@ -43,6 +43,12 @@ def main(
     :arg theta: Courant number used in time step estimation as
         :math:`\Delta t = \theta \Delta \tilde{t}`.
     """
+    if visualize or interactive:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            interactive = visualize = False
+
     # {{{ setup
 
     # set up grid
@@ -67,9 +73,6 @@ def main(
     # }}}
 
     # {{{ plotting
-
-    if interactive or visualize:
-        import matplotlib.pyplot as plt
 
     s = grid.i_
     if interactive:

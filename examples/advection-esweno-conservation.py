@@ -48,6 +48,11 @@ def main(
         :math:`\Delta t = \theta \Delta \tilde{t}`.
     :arg periods: number of time periods.
     """
+    if visualize or interactive:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            interactive = visualize = False
 
     # {{{ setup
 
@@ -74,9 +79,6 @@ def main(
     # }}}
 
     # {{{ plotting
-
-    if interactive or visualize:
-        import matplotlib.pyplot as plt
 
     s = grid.i_
     if interactive:

@@ -15,6 +15,7 @@ from pyshocks import (
     predict_timestep,
 )
 from pyshocks import diffusion, sbp, get_logger
+from pyshocks.reconstruction import ConstantReconstruction
 from pyshocks.scalar import PeriodicBoundary, make_diffusion_sat_boundary
 
 logger = get_logger("diffusion-sbp-sat")
@@ -44,6 +45,12 @@ def main(
     """
     from pyshocks import funcs
 
+    if visualize or interactive:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            interactive = visualize = False
+
     # {{{ setup
 
     # set up grid
@@ -70,15 +77,14 @@ def main(
 
     # set up scheme
     op = sbp.make_operator_from_name(sbp_op_name)
-    scheme = diffusion.SBPSAT(rec=None, op=op, diffusivity=diffusivity)
+    scheme = diffusion.SBPSAT(
+        rec=ConstantReconstruction(), op=op, diffusivity=diffusivity
+    )
     scheme = bind(scheme, grid, boundary)
 
     # }}}
 
     # {{{ plotting
-
-    if interactive or visualize:
-        import matplotlib.pyplot as plt
 
     s = grid.i_
     if interactive:

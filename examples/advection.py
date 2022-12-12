@@ -86,7 +86,7 @@ def main(
     theta: float = 1.0,
     example_name: str = "sign",
     interactive: bool = False,
-    visualize: bool = True,
+    visualize: bool = False,
     verbose: bool = True,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     r"""
@@ -97,6 +97,12 @@ def main(
     :arg theta: Courant number used in time step estimation as
         :math:`\Delta t = \theta \Delta \tilde{t}`.
     """
+    if visualize or interactive:
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            interactive = visualize = False
+
     # {{{ setup
 
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
@@ -120,9 +126,6 @@ def main(
     # }}}
 
     # {{{ plotting
-
-    if interactive or visualize:
-        import matplotlib.pyplot as plt
 
     s = grid.i_
     if interactive:
@@ -229,8 +232,12 @@ def convergence(
     visualize: bool = True,
 ) -> None:
     if visualize:
-        import matplotlib.pyplot as plt
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            visualize = False
 
+    if visualize:
         fig = plt.figure()
         ax = fig.gca()
 
@@ -319,7 +326,7 @@ if __name__ == "__main__":
         choices=["const", "sign", "double_sign"],
     )
     parser.add_argument("-n", "--numcells", type=int, default=256)
-    parser.add_argument("--interactive", action="store_true")
+    parser.add_argument("-i", "--interactive", action="store_true")
     parser.add_argument("--convergence", action="store_true")
     parser.add_argument(
         "--outdir", type=pathlib.Path, default=pathlib.Path(__file__).parent
