@@ -304,7 +304,7 @@ def visualize_eoc(
 
     # {{{ plot eoc
 
-    h, error = eoc._history
+    h, error = eoc._history  # pylint: disable=protected-access
     ax.loglog(h, error, "o-", label=ylabel)
 
     # }}}
