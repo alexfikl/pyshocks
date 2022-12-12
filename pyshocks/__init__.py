@@ -65,6 +65,15 @@ jax.config.update("jax_enable_x64", True)  # type: ignore[no-untyped-call]
 # NOTE: forcing to "cpu" until anyone bothers even trying to test on GPUs
 jax.config.update("jax_platform_name", "cpu")  # type: ignore[no-untyped-call]
 
+# NOTE: enabled on more recent versions of jax
+jax.config.update("jax_array", True)  # type: ignore[no-untyped-call]
+
+# NOTE: useful options while debugging
+if __debug__:
+    jax.config.update("jax_debug_infs", True)  # type: ignore[no-untyped-call]
+    jax.config.update("jax_debug_nans", True)  # type: ignore[no-untyped-call]
+    jax.config.update("jax_enable_checks", True)  # type: ignore[no-untyped-call]
+
 # }}}
 
 __all__ = (
