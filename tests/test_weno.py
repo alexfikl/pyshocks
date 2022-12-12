@@ -13,7 +13,6 @@ from pyshocks import (
     SpatialFunction,
     BoundaryType,
     make_uniform_cell_grid,
-    make_uniform_point_grid,
 )
 from pyshocks.reconstruction import WENOJS, reconstruct, make_reconstruction_from_name
 
@@ -329,82 +328,6 @@ def test_weno_smooth_reconstruction_order_cell_values(
 
         eoc_l.add_data_point(grid.dx_max, error_l)
         eoc_r.add_data_point(grid.dx_max, error_r)
-
-    logger.info("\n%s", eoc_l)
-    logger.info("\n%s", eoc_r)
-
-    assert eoc_l.satisfied(order - 0.5)
-    assert eoc_r.satisfied(order - 0.5)
-
-
-@pytest.mark.parametrize(
-    ("name", "order", "resolutions"),
-    [
-        ("wenojs32", 3, list(range(256, 384 + 1, 32))),
-        ("esweno32", 3, list(range(192, 384 + 1, 32))),
-        # FIXME: this should be 5th order!
-        # ("wenojs53", 2, list(range(256, 384 + 1, 32))),
-        # FIXME: this should be 4th order!
-        ("ssweno242", 2, list(range(192, 384 + 1, 32))),
-    ],
-)
-@pytest.mark.parametrize(
-    "func_name",
-    [
-        "sine",
-        # NOTE: mostly for debugging to see where the points fall
-        # "linear",
-        # "quadratic",
-        # "cubic",
-    ],
-)
-def test_weno_smooth_reconstruction_order_point_values(
-    name: str,
-    order: int,
-    resolutions: List[int],
-    func_name: str,
-    visualize: bool = False,
-) -> None:
-    from pyshocks import EOCRecorder, rnorm
-
-    eoc_l = EOCRecorder(name="ul")
-    eoc_r = EOCRecorder(name="ur")
-    func = get_function(func_name)
-
-    if visualize:
-        import matplotlib.pyplot as mp
-
-        fig = mp.figure()
-        ax = fig.gca()
-
-    for n in resolutions:
-        grid = make_uniform_point_grid(-1.0, 1.0, n=n, nghosts=6)
-        u0 = func(grid.x)
-        ul_ref = ur_ref = func(grid.f[1:-1])
-
-        rec = make_reconstruction_from_name(name)
-        ul, ur = reconstruct(rec, grid, BoundaryType.Dirichlet, u0, u0, u0)
-
-        ul = ul[1:]
-        ur = ur[:-1]
-
-        if visualize:
-            ax.semilogy(grid.x[grid.i_], jnp.abs(ul_ref - ul)[grid.i_], "-")
-            # ax.semilogy(grid.x[grid.i_], jnp.abs(ur_ref - ur)[grid.i_], "--")
-            # ax.plot(grid.x[grid.i_], ul_ref[grid.i_])
-            # ax.plot(grid.x[grid.i_], ul[grid.i_])
-
-        error_l = rnorm(grid, ul, ul_ref, p=jnp.inf)
-        error_r = rnorm(grid, ur, ur_ref, p=jnp.inf)
-        logger.info("error: n %4d ul %.12e ur %.12e", n, error_l, error_r)
-
-        eoc_l.add_data_point(grid.dx_max, error_l)
-        eoc_r.add_data_point(grid.dx_max, error_r)
-
-    if visualize:
-        ax.set_xlabel("$x$")
-        ax.set_ylabel("$u^L$")
-        fig.savefig(f"test_weno_point_{name}_{func_name}_error")
 
     logger.info("\n%s", eoc_l)
     logger.info("\n%s", eoc_r)
