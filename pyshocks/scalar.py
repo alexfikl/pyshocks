@@ -101,8 +101,8 @@ def scalar_flux_upwind(
 
     from pyshocks.reconstruction import reconstruct
 
-    ul, ur = reconstruct(scheme.rec, grid, bc, u)
-    al, ar = reconstruct(scheme.rec, grid, bc, a)
+    ul, ur = reconstruct(scheme.rec, grid, bc, u, u, a)
+    al, ar = reconstruct(scheme.rec, grid, bc, a, a, a)
 
     fl = flux(scheme, t, grid.f, ul)
     fr = flux(scheme, t, grid.f, ur)
@@ -212,7 +212,7 @@ def scalar_flux_rusanov(
 
     from pyshocks.reconstruction import reconstruct
 
-    ul, ur = reconstruct(scheme.rec, grid, bc, u)
+    ul, ur = reconstruct(scheme.rec, grid, bc, u, u, a)
     fl = flux(scheme, t, grid.f, ul)
     fr = flux(scheme, t, grid.f, ur)
 
@@ -266,6 +266,7 @@ def scalar_flux_engquist_osher(
     grid: Grid,
     bc: BoundaryType,
     t: float,
+    a: jnp.ndarray,
     u: jnp.ndarray,
     omega: float = 0.0,
 ) -> jnp.ndarray:
@@ -284,7 +285,7 @@ def scalar_flux_engquist_osher(
 
     from pyshocks.reconstruction import reconstruct
 
-    ul, ur = reconstruct(scheme.rec, grid, bc, u)
+    ul, ur = reconstruct(scheme.rec, grid, bc, u, u, a)
     fr = flux(scheme, t, grid.f, jnp.maximum(ur, omega))
     fl = flux(scheme, t, grid.f, jnp.minimum(ul, omega))
     fo = flux(

@@ -98,8 +98,9 @@ def _numerical_flux_continuity_godunov(
 
     from pyshocks.reconstruction import reconstruct
 
-    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u)
-    al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, scheme.velocity)
+    a = scheme.velocity
+    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u, u, a)
+    al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, a, a, a)
 
     aavg = (ar[:-1] + al[1:]) / 2
     fnum = jnp.where(aavg > 0, ar[:-1] * ur[:-1], al[1:] * ul[1:])

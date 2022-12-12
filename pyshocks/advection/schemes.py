@@ -111,8 +111,9 @@ def upwind_flux(
 
     from pyshocks.reconstruction import reconstruct
 
-    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u)
-    al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, scheme.velocity)
+    a = scheme.velocity
+    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u, u, a)
+    al, ar = reconstruct(scheme.rec, grid, bc.boundary_type, a, a, a)
 
     aavg = (ar[:-1] + al[1:]) / 2
     fnum = jnp.where(aavg > 0, ur[:-1], ul[1:])
@@ -150,9 +151,10 @@ def esweno_lf_flux(
 
     from pyshocks.reconstruction import reconstruct
 
+    # FIXME: what the hell is this? Why are we reconstructing f?
     f = scheme.velocity * u
-    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u)
-    fl, fr = reconstruct(scheme.rec, grid, bc.boundary_type, f)
+    ul, ur = reconstruct(scheme.rec, grid, bc.boundary_type, u, u, u)
+    fl, fr = reconstruct(scheme.rec, grid, bc.boundary_type, f, u, scheme.velocity)
 
     a = jnp.max(jnp.abs(scheme.velocity))
     fnum = 0.5 * (fl[1:] + fr[:-1]) - 0.5 * a * (ul[1:] - ur[:-1])

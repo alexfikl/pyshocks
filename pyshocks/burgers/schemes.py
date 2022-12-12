@@ -199,7 +199,7 @@ def _numerical_flux_burgers_engquist_osher(
     from pyshocks.scalar import scalar_flux_engquist_osher
 
     return scalar_flux_engquist_osher(
-        scheme, grid, bc.boundary_type, t, u, omega=scheme.omega
+        scheme, grid, bc.boundary_type, t, u, u, omega=scheme.omega
     )
 
 
