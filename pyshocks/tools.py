@@ -138,7 +138,8 @@ def estimate_order_of_convergence(
     if x.size <= 1:
         raise RuntimeError("need at least two values to estimate order")
 
-    c = jnp.polyfit(jnp.log10(x), jnp.log10(y), 1)
+    eps = jnp.finfo(x.dtype).eps
+    c = jnp.polyfit(jnp.log10(x + eps), jnp.log10(y + eps), 1)
     return 10 ** c[-1], c[-2]
 
 
@@ -182,9 +183,18 @@ class EOCRecorder:
     .. automethod:: as_table
     """
 
-    def __init__(self, *, name: str = "Error") -> None:
+    def __init__(self, *, name: str = "Error", dtype: Any = None) -> None:
+        if dtype is None:
+            dtype = jnp.float64
+        dtype = jnp.dtype(dtype)
+
         self.name = name
+        self.dtype = dtype
         self.history: List[Tuple[jnp.ndarray, jnp.ndarray]] = []
+
+    @property
+    def _history(self) -> jnp.ndarray:
+        return jnp.array(self.history, dtype=self.dtype).T
 
     def add_data_point(self, h: jnp.ndarray, error: jnp.ndarray) -> None:
         """
@@ -200,7 +210,7 @@ class EOCRecorder:
         if not self.history:
             return np.nan
 
-        h, error = np.array(self.history).T
+        h, error = self._history
         _, eoc = estimate_order_of_convergence(h, error)
         return eoc
 
@@ -209,7 +219,7 @@ class EOCRecorder:
         return max(error for _, error in self.history)
 
     def satisfied(
-        self, order: float, atol: float = 1.0e-12, *, slack: float = 0
+        self, order: float, atol: Optional[float] = None, *, slack: float = 0
     ) -> bool:
         """
         :arg order: expected order of convergence of the data.
@@ -223,7 +233,10 @@ class EOCRecorder:
         if not self.history:
             return True
 
-        _, error = jnp.array(self.history).T
+        _, error = self._history
+        if atol is None:
+            atol = 1.0e2 * jnp.finfo(error.dtype).eps
+
         return bool(self.estimated_order >= (order - slack) or jnp.max(error) < atol)
 
     def as_table(self) -> str:
@@ -231,8 +244,6 @@ class EOCRecorder:
         :return: a table representation (Github Markdown Flavor) of the errors
             and estimated order of convergence of the current data.
         """
-        import numpy as np
-
         # header
         lines = []
         lines.append(("h", self.name, "EOC"))
@@ -240,7 +251,7 @@ class EOCRecorder:
         lines.append((":-:", ":-:", ":-:"))
 
         if self.history:
-            h, error = np.array(self.history).T
+            h, error = self._history
             orders = estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
 
             # rows
@@ -293,7 +304,7 @@ def visualize_eoc(
 
     # {{{ plot eoc
 
-    h, error = jnp.array(eoc.history).T
+    h, error = eoc._history
     ax.loglog(h, error, "o-", label=ylabel)
 
     # }}}

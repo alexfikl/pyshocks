@@ -126,7 +126,7 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> No
     if is_smooth:
         u = jnp.sin(theta)
     else:
-        u = theta < jnp.pi
+        u = (theta < jnp.pi).astype(theta.dtype)
 
     # }}}
 

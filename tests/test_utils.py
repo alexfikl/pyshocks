@@ -83,7 +83,9 @@ def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> N
         fig.savefig(f"test_sbp_matrices_rb_{op.ids}_eigs")
         fig.clf()
 
-    assert jnp.all(jnp.real(s)) > 0.0
+    # NOTE: allow negative values larger than eps because floating point..
+    mask = jnp.real(s) > -jnp.finfo(dtype).eps
+    assert jnp.all(mask), np.real(s[~mask])
 
     # }}}
 
@@ -289,9 +291,9 @@ def test_sbp_matrices_convergence(
     else:
         order = op.boundary_order
 
-    assert eoc_pu.estimated_order >= order - 0.25
-    assert eoc_du.estimated_order >= order - 0.25
-    assert eoc_dd.estimated_order >= order - 0.25
+    assert eoc_pu.satisfied(order, slack=0.25)
+    assert eoc_du.satisfied(order, slack=0.25)
+    assert eoc_dd.satisfied(order, slack=0.25)
 
 
 # }}}

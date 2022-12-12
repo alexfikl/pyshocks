@@ -94,6 +94,7 @@ def determine_stencil_truncation_error(
 
     c = 0.0
     i = derivative
+    indices = indices.astype(a.dtype)
     while i < 64 and jnp.allclose(c, 0.0, atol=atol, rtol=0.0):
         i += 1
         c = a @ indices**i / math.factorial(i)
@@ -217,11 +218,14 @@ def make_fornberg_approximation(
     c1, c4 = 1, x[0] - xd
     for i in range(1, x.size):
         j = jnp.arange(0, min(i, derivative) + 1)
+
+        # NOTE: avoids implicit conversion to float
+        cj = j.astype(dtype)
         c2, c5, c4 = 1, c4, x[i] - xd
 
         for k in range(i):
             c3 = x[i] - x[k]
-            c2, c6, c7 = c2 * c3, j * c[k, j - 1], c[k, j]
+            c2, c6, c7 = c2 * c3, cj * c[k, j - 1], c[k, j]
             c = c.at[k, j].set((c4 * c7 - c6) / c3)
 
         c = c.at[i, j].set(c1 * (c6 - c5 * c7) / c2)

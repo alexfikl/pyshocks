@@ -73,7 +73,7 @@ if __debug__:
     jax.config.update("jax_debug_infs", True)  # type: ignore[no-untyped-call]
     jax.config.update("jax_debug_nans", True)  # type: ignore[no-untyped-call]
     jax.config.update("jax_enable_checks", True)  # type: ignore[no-untyped-call]
-
+    jax.config.update("jax_numpy_dtype_promotion", "strict")  # type: ignore
 # }}}
 
 __all__ = (
