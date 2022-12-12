@@ -57,7 +57,7 @@ Boundary Conditions
 import enum
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Optional, Tuple, TypeVar
+from typing import Tuple, TypeVar
 
 import jax.numpy as jnp
 
@@ -102,31 +102,22 @@ class SchemeBase:
     .. attribute:: rec
 
         A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
-        to reconstruct high-order face-based values when needed by the numerical
-        scheme.
+        to reconstruct high-order values when needed by the numerical scheme.
     """
 
-    rec: Optional[Reconstruction]
+    rec: Reconstruction
 
     @property
     def name(self) -> str:
-        if self.rec is not None:
-            return f"{type(self).__name__}_{self.rec.name}".lower()
-        return type(self).__name__.lower()
+        return f"{type(self).__name__}_{self.rec.name}".lower()
 
     @property
     def order(self) -> int:
-        if self.rec is not None:
-            return self.rec.order
-
-        raise NotImplementedError
+        return self.rec.order
 
     @property
     def stencil_width(self) -> int:
-        if self.rec is not None:
-            return self.rec.stencil_width
-
-        raise NotImplementedError
+        return self.rec.stencil_width
 
 
 SchemeT = TypeVar("SchemeT", bound=SchemeBase)
@@ -264,7 +255,7 @@ class CombineScheme(SchemeBase):
 
 
 @predict_timestep.register(CombineScheme)
-def _predict_time_combine(
+def _predict_timestep_combine(
     scheme: CombineScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
     from functools import reduce

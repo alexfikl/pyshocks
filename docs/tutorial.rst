@@ -59,7 +59,7 @@ Now, we are in a position to implement a numerical scheme for this model.
 For this, we use the standard upwind scheme
 
 .. literalinclude:: ../examples/traffic-flow-model.py
-    :lines: 27-37
+    :lines: 27-38
     :language: python
     :linenos:
 
@@ -69,7 +69,7 @@ to implement the scheme. To evolve the traffic flow model in time, we can use
 the following setup
 
 .. literalinclude:: ../examples/traffic-flow-model.py
-    :lines: 70-85
+    :lines: 71-86
     :language: python
     :linenos:
 

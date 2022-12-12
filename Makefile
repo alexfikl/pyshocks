@@ -87,14 +87,14 @@ test:
 run-examples:
 	@for ex in $$(find examples -name "*.py"); do \
 		echo -e "\x1b[1;32m===> \x1b[97mRunning $${ex}\x1b[0m"; \
-		$(PYTHON) "$${ex}"; \
+		$(PYTHON) "$${ex}" || exit $$?; \
 		sleep 1; \
 	done
 
 run-drivers:
 	@for ex in $$(find drivers -name "*.py"); do \
 		echo -e "\x1b[1;32m===> \x1b[97mRunning $${ex}\x1b[0m"; \
-		$(PYTHON) "$${ex}"; \
+		$(PYTHON) "$${ex}" || exit $$?; \
 		sleep 1; \
 	done
 

@@ -337,12 +337,14 @@ def burgers_riemann(
         raise ValueError("x0 must be in the domain [a, b]")
 
     if ul <= ur:
-        x_t = (x - x0) / (t + 1.0e-15)
-        r = (
-            ul * (x < x0 + ul * t)
-            + x_t * jnp.logical_and(x0 + ul * t < x, x0 + ur * t > x)  # type: ignore
-            + ur * (x0 + ur * t < x)
-        )
+        h_l = (x < x0 + ul * t).astype(x.dtype)
+        h_c = jnp.logical_and(  # type: ignore[no-untyped-call]
+            x0 + ul * t < x,
+            x0 + ur * t > x,
+        ).astype(x.dtype)
+        h_r = (x0 + ur * t < x).astype(x.dtype)
+
+        r = ul * h_l + (x - x0) / (t + 1.0e-15) * h_c + ur * h_r
     else:
         # shock velocity
         s = (ul + ur) / 2.0
@@ -404,12 +406,14 @@ def burgers_linear_shock(
     tmax = 1 / a
 
     # strong solutions valid for t < tmax
-    xt = (b - a * x) / (1 - a * t)
-    s0 = (
-        ul * (x < xa + ul * t)
-        + xt * jnp.logical_and(xa + ul * t < x, xb + ur * t > x)  # type: ignore
-        + ur * (x > xb + ur * t)
-    )
+    s0_l = (x < xa + ul * t).astype(x.dtype)
+    s0_c = jnp.logical_and(  # type: ignore[no-untyped-call]
+        xa + ul * t < x,
+        xb + ur * t > x,
+    ).astype(x.dtype)
+    s0_r = (x > xb + ur * t).astype(x.dtype)
+
+    s0 = ul * s0_l + (b - a * x) / (1 - a * t) * s0_c + ur * s0_r
 
     # weak solution valid for t > tmax
     s = (ul + ur) / 2
@@ -417,7 +421,7 @@ def burgers_linear_shock(
     h = (x < (x0 + s * (t - tmax))).astype(x.dtype)
     s1 = ul * h + ur * (1 - h)
 
-    h = t < tmax
+    h = jnp.array(t < tmax, dtype=x.dtype)
     return s0 * h + (1 - h) * s1
 
 
@@ -465,14 +469,18 @@ def burgers_tophat(
     # shock velocity
     s = (uc + us) / 2
 
-    return (
-        us * (x < xa + us * t)
-        + (x - xa)
-        / (t + 1.0e-15)
-        * jnp.logical_and(xa + us * t < x, x < xa + uc * t)  # type: ignore
-        + uc * jnp.logical_and(xa + uc * t < x, x < xb + s * t)  # type: ignore
-        + us * (x > xb + s * t)
-    )
+    h_l = (x < xa + us * t).astype(x.dtype)
+    h_e = jnp.logical_and(  # type: ignore[no-untyped-call]
+        xa + us * t < x,
+        x < xa + uc * t,
+    ).astype(x.dtype)
+    h_c = jnp.logical_and(  # type: ignore[no-untyped-call]
+        xa + uc * t < x,
+        x < xb + s * t,
+    ).astype(x.dtype)
+    h_r = (x > xb + s * t).astype(x.dtype)
+
+    return us * h_l + (x - xa) / (t + 1.0e-15) * h_e + uc * h_c + us * h_r
 
 
 # }}}

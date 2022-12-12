@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import jax
 import jax.numpy as jnp
 
-from pyshocks import ConservationLawScheme, Grid, flux, numerical_flux
+from pyshocks import Boundary, ConservationLawScheme, Grid, flux, numerical_flux
 
 
 @dataclass(frozen=True)
@@ -28,6 +28,7 @@ def _flux_traffic_flow(
 def _numerical_flux_traffic_flow(
     scheme: TrafficFlowScheme,
     grid: Grid,
+    bc: Boundary,
     t: float,
     u: jnp.ndarray,
 ) -> jnp.ndarray:

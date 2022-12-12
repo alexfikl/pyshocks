@@ -15,6 +15,7 @@ from pyshocks import (
     predict_timestep,
 )
 from pyshocks import advection, get_logger
+from pyshocks.reconstruction import ConstantReconstruction
 from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
 
 logger = get_logger("advection-splitting")
@@ -65,7 +66,9 @@ def main(
         boundary = make_dirichlet_boundary(ga=func, gb=func)
 
     # set up scheme
-    scheme = advection.FluxSplitGodunov(rec=None, sorder=order, velocity=velocity)
+    scheme = advection.FluxSplitGodunov(
+        rec=ConstantReconstruction(), sorder=order, velocity=velocity
+    )
     scheme = bind(scheme, grid, boundary)
 
     # }}}

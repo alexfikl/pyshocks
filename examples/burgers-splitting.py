@@ -15,6 +15,7 @@ from pyshocks import (
     predict_timestep,
 )
 from pyshocks import burgers, funcs, get_logger
+from pyshocks.reconstruction import ConstantReconstruction
 from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
 
 logger = get_logger("burgers-splitting")
@@ -60,7 +61,7 @@ def main(
         boundary = make_dirichlet_boundary(ga=func, gb=func)
 
     # set up scheme
-    scheme = burgers.FluxSplitRusanov(rec=None, sorder=order)
+    scheme = burgers.FluxSplitRusanov(rec=ConstantReconstruction(), sorder=order)
     scheme = bind(scheme, grid, boundary)
 
     # }}}
