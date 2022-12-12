@@ -14,7 +14,10 @@ Grid
 
 .. autofunction:: make_uniform_cell_grid
 .. autofunction:: make_uniform_point_grid
+.. autofunction:: make_uniform_ssweno_grid
 
+Quadrature
+^^^^^^^^^^
 .. autoclass:: Quadrature
     :no-show-inheritance:
 
@@ -174,17 +177,15 @@ def make_uniform_cell_grid(
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
-    dx0 = (b - a) / n
+    h = (b - a) / n
 
-    f = jnp.linspace(
-        a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts + 1, dtype=dtype
-    )
+    f = jnp.linspace(a - nghosts * h, b + nghosts * h, n + 2 * nghosts + 1, dtype=dtype)
     x = (f[1:] + f[:-1]) / 2
 
     df = jnp.diff(x)
-    dx = jnp.full_like(x, dx0)
+    dx = jnp.full_like(x, h)
 
-    assert jnp.linalg.norm(jnp.diff(f) - dx0) < 1.0e-8 * dx0
+    assert jnp.linalg.norm(jnp.diff(f) - h) < 1.0e-8 * h
 
     return UniformGrid(
         a=a,
@@ -194,8 +195,8 @@ def make_uniform_cell_grid(
         nghosts=nghosts,
         dx=dx,
         df=df,
-        dx_min=dx0,
-        dx_max=dx0,
+        dx_min=h,
+        dx_max=h,
     )
 
 
@@ -232,31 +233,29 @@ def make_uniform_point_grid(
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
 
-    dx0 = (b - a) / (n - 1)
+    h = (b - a) / (n - 1)
 
     if is_periodic:
         if nghosts == 0:
             x = jnp.linspace(a, b, n - 1, endpoint=False, dtype=dtype)
-            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])
+            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + h / 2])
         else:
             x = jnp.linspace(
-                a - nghosts * dx0,
-                b + nghosts * dx0,
+                a - nghosts * h,
+                b + nghosts * h,
                 n + 2 * nghosts - 1,
                 endpoint=False,
                 dtype=dtype,
             )
-            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + dx0 / 2])
+            f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + h / 2])
     else:
-        x = jnp.linspace(
-            a - nghosts * dx0, b + nghosts * dx0, n + 2 * nghosts, dtype=dtype
-        )
+        x = jnp.linspace(a - nghosts * h, b + nghosts * h, n + 2 * nghosts, dtype=dtype)
         f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])
 
-    dx = jnp.full_like(x, dx0)
+    dx = jnp.full_like(x, h)
     df = jnp.diff(f)
 
-    assert jnp.linalg.norm(jnp.diff(x) - dx0) < 1.0e-8 * dx0
+    assert jnp.linalg.norm(jnp.diff(x) - h) < 1.0e-8 * h
 
     return UniformGrid(
         a=a,
@@ -266,8 +265,76 @@ def make_uniform_point_grid(
         dx=dx,
         f=f,
         df=df,
-        dx_min=dx0,
-        dx_max=dx0,
+        dx_min=h,
+        dx_max=h,
+    )
+
+
+# }}}
+
+
+# {{{ SS-WENO grid
+
+
+def make_uniform_ssweno_grid(
+    a: float,
+    b: float,
+    n: int,
+    *,
+    is_periodic: bool = False,
+    dtype: Optional["jnp.dtype[Any]"] = None,
+) -> UniformGrid:
+    """Construct the complementary grid described in [Fisher2011]_.
+
+    In the periodic case, this is the standard grid, so it matches the one
+    produced by :func:`make_uniform_point_grid`.
+
+    :arg a: left boundary of the domain :math:`[a, b]`.
+    :arg b: right boundary of the domain :math:`[a, b]`.
+    :arg n: number of points that discretize the domain.
+    """
+    if b < a:
+        raise ValueError(f"incorrect interval a > b: '{a}' > '{b}'")
+
+    if n <= 0:
+        raise ValueError(f"number of cells should be > 0: '{n}'")
+
+    assert n >= 0
+
+    h = (b - a) / (n - 1)
+    dx = jnp.full(n, h, dtype=dtype)
+
+    if is_periodic:
+        x = jnp.linspace(a, b, n, endpoint=False, dtype=dtype)
+        f = x + h / 2
+        df = dx
+    else:
+        x = jnp.linspace(a, b, n, dtype=dtype)
+
+        from pyshocks.schemes import BoundaryType
+        from pyshocks.sbp import make_sbp_42_norm_stencil, make_sbp_matrix_from_stencil
+
+        p = make_sbp_42_norm_stencil(dtype=dtype)
+        p = make_sbp_matrix_from_stencil(BoundaryType.Dirichlet, n, p, weight=1)
+
+        f = jnp.zeros(n + 1, dtype=dtype)
+        f = f.at[0].set(x[0])
+        f = f.at[1:].set(h * p)
+
+        df = jnp.diff(f)
+
+    assert jnp.linalg.norm(jnp.diff(x) - h) < 1.0e-8 * h
+
+    return UniformGrid(
+        a=a,
+        b=b,
+        nghosts=0,
+        x=x,
+        dx=dx,
+        f=f,
+        df=df,
+        dx_min=h,
+        dx_max=h,
     )
 
 

@@ -28,6 +28,7 @@ from pyshocks.grid import (
     cell_average,
     make_uniform_cell_grid,
     make_uniform_point_grid,
+    make_uniform_ssweno_grid,
     norm,
     rnorm,
 )
@@ -75,6 +76,7 @@ __all__ = (
     "UniformGrid",
     "make_uniform_cell_grid",
     "make_uniform_point_grid",
+    "make_uniform_ssweno_grid",
     "SchemeT",
     "SchemeBase",
     "CombineScheme",
