@@ -659,7 +659,7 @@ def _evaluate_boundary_diffusion_sat(
     assert grid.x.shape == u.shape
 
     i = grid.b_[bc.side]
-    e_i = jnp.eye(1, u.size, i).squeeze()
+    e_i = jnp.eye(1, u.size, i, dtype=u.dtype).squeeze()
 
     Su = bc.S[i, :] @ u
     return bc.tau * ((u[i] + Su) - bc.g(t)) * e_i
@@ -700,7 +700,7 @@ def _evaluate_boundary_ssweno_burgers(
     assert grid.x.shape == u.shape
 
     i = grid.b_[bc.side]
-    e_i = jnp.eye(1, u.size, i).squeeze()
+    e_i = jnp.eye(1, u.size, i, dtype=u.dtype).squeeze()
 
     # NOTE: [Fisher2013] Equation 4.8
     s = bc.side
