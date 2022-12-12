@@ -9,7 +9,7 @@ References
 .. [Carpenter1994] M. H. Carpenter, C. A. Kennedy,
     *Fourth-Order 2N-Storage Runge-Kutta Schemes*,
     NASA Langley Research Center, 1994,
-    `URL <http://hdl.handle.net/2060/19940028444>`__.
+   `URL <https://ntrs.nasa.gov/citations/19940028444>`__.
 
 .. [Fisher2011] T. C. Fisher, M. H. Carpenter, N. K. Yamaleev, S. H. Frankel,
     *Boundary Closures for Fourth-Order Energy Stable Weighted Essentially
