@@ -138,7 +138,7 @@ def estimate_order_of_convergence(
     if x.size <= 1:
         raise RuntimeError("need at least two values to estimate order")
 
-    eps = jnp.finfo(x.dtype).eps
+    eps = jnp.finfo(x.dtype).eps  # type: ignore[no-untyped-call]
     c = jnp.polyfit(jnp.log10(x + eps), jnp.log10(y + eps), 1)
     return 10 ** c[-1], c[-2]
 
@@ -235,7 +235,7 @@ class EOCRecorder:
 
         _, error = self._history
         if atol is None:
-            atol = 1.0e2 * jnp.finfo(error.dtype).eps
+            atol = 1.0e2 * jnp.finfo(error.dtype).eps  # type: ignore[no-untyped-call]
 
         return bool(self.estimated_order >= (order - slack) or jnp.max(error) < atol)
 
