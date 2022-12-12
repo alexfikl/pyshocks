@@ -157,7 +157,7 @@ def make_uniform_cell_grid(
     n: int,
     *,
     nghosts: int = 1,
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Grid:
     """
     :arg a: left boundary of the domain :math:`[a, b]`.
@@ -176,6 +176,7 @@ def make_uniform_cell_grid(
 
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     h = (b - a) / n
 
@@ -213,7 +214,7 @@ def make_uniform_point_grid(
     *,
     nghosts: int = 0,
     is_periodic: bool = False,
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> UniformGrid:
     """
     :arg a: left boundary of the domain :math:`[a, b]`.
@@ -232,6 +233,7 @@ def make_uniform_point_grid(
 
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     h = (b - a) / (n - 1)
 
@@ -282,7 +284,7 @@ def make_uniform_ssweno_grid(
     n: int,
     *,
     is_periodic: bool = False,
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> UniformGrid:
     """Construct the complementary grid described in [Fisher2011]_.
 
@@ -298,6 +300,10 @@ def make_uniform_ssweno_grid(
 
     if n <= 0:
         raise ValueError(f"number of cells should be > 0: '{n}'")
+
+    if dtype is None:
+        dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     assert n >= 0
 

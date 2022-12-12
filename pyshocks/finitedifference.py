@@ -13,7 +13,7 @@ Finite Difference Approximations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 import jax.numpy as jnp
 
@@ -116,7 +116,7 @@ def make_taylor_approximation(
     stencil: Tuple[int, int],
     *,
     atol: float = 1.0e-6,
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Stencil:
     r"""Determine a finite difference stencil by solving a linear system from the
     Taylor expansion.
@@ -136,6 +136,7 @@ def make_taylor_approximation(
 
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # setup
     indices = jnp.arange(stencil[0], stencil[1] + 1)
@@ -178,7 +179,7 @@ def make_fornberg_approximation(
     stencil: Tuple[int, int],
     *,
     atol: float = 1.0e-6,
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Stencil:
     r"""Determine a finite difference stencil by Fornberg's method [Fornberg1998]_.
 
@@ -206,6 +207,7 @@ def make_fornberg_approximation(
 
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # setup
     x = jnp.arange(stencil[0], stencil[1] + 1, dtype=dtype)

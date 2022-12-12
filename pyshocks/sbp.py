@@ -170,9 +170,7 @@ class Stencil:
         return jnp.dtype(self.int.dtype)
 
 
-def make_sbp_boundary_matrix(
-    n: int, *, dtype: Optional["jnp.dtype[Any]"] = None
-) -> jnp.ndarray:
+def make_sbp_boundary_matrix(n: int, *, dtype: Any = None) -> jnp.ndarray:
     """Construct the boundary :math:`B` operator for an SBP discretization.
 
     :arg n: size of the matrix.
@@ -180,6 +178,7 @@ def make_sbp_boundary_matrix(
     """
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     b = jnp.zeros((n, n), dtype=dtype)
     b = b.at[0, 0].set(-1)
@@ -597,9 +596,10 @@ def make_sbp_21_second_derivative_m_matrix(
     return M / dx
 
 
-def make_sbp_21_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
+def make_sbp_21_norm_stencil(dtype: Any = None) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.1
     pi = jnp.array(1, dtype=dtype)
@@ -611,10 +611,11 @@ def make_sbp_21_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
 
 
 def make_sbp_21_first_derivative_q_stencil(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.1
     qi = jnp.array([-0.5, 0.0, 0.5], dtype=dtype)
@@ -627,10 +628,11 @@ def make_sbp_21_first_derivative_q_stencil(
 
 def make_sbp_21_second_derivative_s_stencil(
     sd: SecondDerivativeType,
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.1
     si = jnp.array([1], dtype=dtype)
@@ -647,10 +649,11 @@ def make_sbp_21_second_derivative_s_stencil(
 
 
 def make_sbp_21_second_derivative_c_stencils(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.1
     c22_i = jnp.array([1], dtype=dtype)
@@ -662,10 +665,11 @@ def make_sbp_21_second_derivative_c_stencils(
 
 
 def make_sbp_21_second_derivative_d_stencils(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.1
     d22_i = jnp.array([1, -2, 1], dtype=dtype)
@@ -1071,9 +1075,10 @@ def make_sbp_42_second_derivative_m_matrix(
     return -M / dx
 
 
-def make_sbp_42_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.ndarray:
+def make_sbp_42_norm_stencil(dtype: Any = None) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.2
     pi = jnp.array(1, dtype=dtype)
@@ -1085,10 +1090,11 @@ def make_sbp_42_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.nd
 
 
 def make_sbp_42_first_derivative_q_stencil(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Fisher2013] Appendix A, Equation A.1
     # [Fisher2013] Appendix A, Equation A.2 boundary
@@ -1111,10 +1117,11 @@ def make_sbp_42_first_derivative_q_stencil(
 
 def make_sbp_42_second_derivative_s_stencil(
     sd: SecondDerivativeType,
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.2
     si = jnp.array([0], dtype=dtype)
@@ -1137,10 +1144,11 @@ def make_sbp_42_second_derivative_s_stencil(
 
 
 def make_sbp_42_second_derivative_c_stencils(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.2
     c34_i = jnp.array(1, dtype=dtype)
@@ -1170,10 +1178,11 @@ def make_sbp_42_second_derivative_c_stencils(
 
 
 def make_sbp_42_second_derivative_d_stencils(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.2
 
@@ -1268,9 +1277,10 @@ def _sbp_64_first_derivative_matrix(
 # {{{ stencils
 
 
-def make_sbp_64_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.ndarray:
+def make_sbp_64_norm_stencil(dtype: Any = None) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # [Mattsson2012] Appendix A.3
     pi = jnp.array(1, dtype=dtype)
@@ -1292,10 +1302,11 @@ def make_sbp_64_norm_stencil(dtype: Optional["jnp.dtype[Any]"] = None) -> jnp.nd
 
 
 def make_sbp_64_first_derivative_q_stencil(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> jnp.ndarray:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     qi = jnp.array([1 / 12, -2 / 3, 0.0, 2 / 3, -1 / 12], dtype=dtype)
 

@@ -24,7 +24,7 @@ ES-WENO
 """
 
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 import jax.numpy as jnp
 
@@ -144,7 +144,7 @@ def weno_reconstruct(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.n
 # {{{ WENOJS
 
 
-def weno_js_32_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
+def weno_js_32_coefficients(dtype: Any = None) -> Stencil:
     r"""Initialize the coefficients of the third-order WENO-JS scheme.
 
     :returns: a :class:`Stencil` containing the coefficients :math:`a, b, c`
@@ -155,6 +155,7 @@ def weno_js_32_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
 
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # NOTE: the arrays here are slightly modified from [Shu2009] by
     # * zero padding to the full stencil length
@@ -183,7 +184,7 @@ def weno_js_32_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
     return Stencil(a=a, b=b, c=c, d=d)
 
 
-def weno_js_53_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
+def weno_js_53_coefficients(dtype: Any = None) -> Stencil:
     r"""Initialize the coefficients of the fifth-order WENO-JS scheme.
 
     :returns: a :class:`Stencil` containing the coefficients :math:`a, b, c`
@@ -193,6 +194,7 @@ def weno_js_53_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil
     """
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # smoothness indicator (Equation 2.17 [Shu2009])
     a = jnp.array([13.0 / 12.0, 1.0 / 4.0], dtype=dtype)
@@ -308,7 +310,7 @@ def ss_weno_242_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarra
 # {{{ reconstruction
 
 
-def ss_weno_242_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stencil:
+def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:
     """Initialize coefficients for the fourth-order WENO scheme of [Fisher2013].
 
     The actual implementation details of the scheme are given in [Fisher2011]_.
@@ -327,6 +329,7 @@ def ss_weno_242_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
 
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # smoothness indicator coefficients ([Fisher2011] Equation 71)
     a = jnp.array([1.0], dtype=dtype)
@@ -358,10 +361,11 @@ def ss_weno_242_coefficients(dtype: Optional["jnp.dtype[Any]"] = None) -> Stenci
 
 
 def ss_weno_242_boundary_coefficients(
-    dtype: Optional["jnp.dtype[Any]"] = None,
+    dtype: Any = None,
 ) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
+    dtype = jnp.dtype(dtype)
 
     # boundary stencils ([Fisher2011] Equation 77)
     c = jnp.array(
