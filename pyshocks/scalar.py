@@ -18,6 +18,8 @@ These fluxes are based on the seminal work of [LeVeque2002]_.
 .. autofunction:: scalar_flux_lax_friedrichs
 .. autofunction:: scalar_flux_engquist_osher
 
+.. autofunction:: lax_friedrichs_initial_condition_correction
+
 Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^
 
@@ -350,11 +352,10 @@ class TwoSidedBoundary(Boundary):
 
     @property
     def boundary_type(self) -> BoundaryType:
-        return (
-            self.left.boundary_type
-            if self.left.boundary_type == self.right.boundary_type
-            else BoundaryType.Mixed
-        )
+        if self.left.boundary_type != self.right.boundary_type:
+            raise NotImplementedError()
+
+        return self.left.boundary_type
 
 
 @apply_boundary.register(TwoSidedBoundary)

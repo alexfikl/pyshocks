@@ -227,7 +227,7 @@ def test_weno_vs_pyweno(
     logger.info("error smoothness: left %.5e right %.5e", error_l, error_r)
     assert error_l < 1.0e-5 and error_r < 1.0e-8
 
-    ulhat, urhat = reconstruct(rec, grid, BoundaryType.Ghost, u)
+    ulhat, urhat = reconstruct(rec, grid, BoundaryType.Dirichlet, u)
 
     error_l = rnorm(grid, ul, ulhat)
     error_r = rnorm(grid, ur, urhat)
@@ -321,7 +321,7 @@ def test_weno_smooth_reconstruction_order_cell_values(
         u0 = cell_average(quad, func)
 
         ul_ref = ur_ref = func(grid.f)
-        ul, ur = reconstruct(rec, grid, BoundaryType.Ghost, u0)
+        ul, ur = reconstruct(rec, grid, BoundaryType.Dirichlet, u0)
 
         error_l = rnorm(grid, ul, ul_ref[:-1], p=jnp.inf)
         error_r = rnorm(grid, ur, ur_ref[1:], p=jnp.inf)
@@ -383,7 +383,7 @@ def test_weno_smooth_reconstruction_order_point_values(
         ul_ref = ur_ref = func(grid.f[1:-1])
 
         rec = make_reconstruction_from_name(name)
-        ul, ur = reconstruct(rec, grid, BoundaryType.Ghost, u0)
+        ul, ur = reconstruct(rec, grid, BoundaryType.Dirichlet, u0)
 
         ul = ul[1:]
         ur = ur[:-1]

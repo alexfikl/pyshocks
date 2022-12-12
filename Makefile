@@ -20,12 +20,13 @@ mypy:
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 
 codespell:
-	@codespell --summary \
+	codespell --summary \
 		--ignore-words .codespell-ignore \
 		pyshocks tests examples drivers
+	@echo -e "\e[1;32mcodespell clean!\e[0m"
 
 reuse:
-	@reuse lint
+	reuse lint
 	@echo -e "\e[1;32mREUSE compliant!\e[0m"
 
 # }}}

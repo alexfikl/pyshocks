@@ -409,8 +409,6 @@ class BoundaryType(enum.Enum):
     are described by :attr:`BoundaryType.Periodic`.
     """
 
-    #: A generic set of mixed boundary conditions.
-    Mixed = enum.auto()
     #: Standard periodic boundary conditions.
     Periodic = enum.auto()
     #: Dirichlet boundary conditions, i.e. boundary conditions which impose the
@@ -419,8 +417,6 @@ class BoundaryType(enum.Enum):
     #: Neumnann boundary conditions, i.e. boundary conditions that impose the
     #: normal derivative at the boundary.
     Neumann = enum.auto()
-    #: Ghost cell boundary conditions (can be any of the above).
-    Ghost = enum.auto()
 
 
 @dataclass(frozen=True)
