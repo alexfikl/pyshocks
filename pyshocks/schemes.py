@@ -407,8 +407,11 @@ class BoundaryType(enum.Enum):
     #: value of the state variable at the boundary.
     Dirichlet = enum.auto()
     #: Neumnann boundary conditions, i.e. boundary conditions that impose the
-    #: normal derivative at the boundary.
+    #: normal gradient or flux at the boundary.
     Neumann = enum.auto()
+    #: Homogeneous Neumann boundary conditions, i.e. zero normal gradient or
+    #: zero flux at the boundary
+    HomogeneousNeumann = enum.auto()
 
 
 @dataclass(frozen=True)

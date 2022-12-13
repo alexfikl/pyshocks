@@ -21,6 +21,15 @@ ES-WENO
 
 .. autofunction:: es_weno_weights
 .. autofunction:: es_weno_parameters
+
+SS-WENO
+^^^^^^^
+
+.. autofunction:: ss_weno_242_coefficients
+.. autofunction:: ss_weno_242_boundary_coefficients
+
+.. autofunction:: ss_weno_242_parameters
+.. autofunction:: ss_weno_242_weights
 """
 
 from dataclasses import dataclass
@@ -29,7 +38,6 @@ from typing import Any, Tuple
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
-
 
 # {{{ weno
 
@@ -278,7 +286,7 @@ def es_weno_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
 # {{{ SSWENO
 
 
-def ss_weno_parameters(grid: Grid, u0: jnp.ndarray) -> float:
+def ss_weno_242_parameters(grid: Grid, u0: jnp.ndarray) -> float:
     """Estimate the SSWENO parameters from the grid and initial condition.
 
     :arg u0: initial condition evaluated at given points.
