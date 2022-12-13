@@ -13,6 +13,7 @@ from pyshocks import (
     SpatialFunction,
     BoundaryType,
     make_uniform_cell_grid,
+    make_uniform_ssweno_grid,
 )
 from pyshocks.reconstruction import WENOJS, reconstruct, make_reconstruction_from_name
 
@@ -338,6 +339,122 @@ def test_weno_smooth_reconstruction_order_cell_values(
 
 # }}}
 
+
+# {{{ test_ss_weno_burgers_two_point_flux
+
+
+@jax.jit
+def two_point_entropy_flux_21(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+        return (ul * ul + ul * ur + ur * ur) / 6
+
+    qr = qi[qi.size // 2 + 1 :]
+    fss = jnp.zeros(u.size + 1, dtype=u.dtype)
+
+    i = 1
+    fss = fss.at[i].set(2 * qr[1] * fs(u[i - 1], u[i]))
+    i = u.size - 1
+    fss = fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i + 1]))
+
+    def body(i: int, fss: jnp.ndarray) -> jnp.ndarray:
+        return fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
+
+    return jax.lax.fori_loop(2, u.size - 1, body, fss)
+
+
+def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
+    grid = make_uniform_ssweno_grid(a=-1.0, b=1.0, n=n)
+
+    from pyshocks import sbp
+
+    q = sbp.make_sbp_21_first_derivative_q_stencil(dtype=grid.dtype)
+
+    # check constant
+    u = jnp.full_like(grid.x, 1.0)
+
+    fs_ref = (u[1:] * u[1:] + u[1:] * u[:-1] + u[:-1] * u[:-1]) / 6
+    fs = two_point_entropy_flux_21(q.int, u)
+    assert fs.shape == grid.f.shape
+
+    # NOTE: constant solutions should just do nothing
+    error = jnp.linalg.norm(fs[1:-1] - fs_ref)
+    assert error < 1.0e-15
+
+    # check non-constant
+    u = jnp.sin(2.0 * jnp.pi * grid.x)
+
+    fs_ref = (u[1:] * u[1:] + u[1:] * u[:-1] + u[:-1] * u[:-1]) / 6
+    fs = two_point_entropy_flux_21(q.int, u)
+    assert fs.shape == grid.f.shape
+
+    error = jnp.linalg.norm(fs[1:-1] - fs_ref)
+    assert error < 1.0e-15
+
+
+@pytest.mark.parametrize("bc", [BoundaryType.Dirichlet])
+def test_ss_weno_burgers_two_point_flux(bc: BoundaryType) -> None:
+    grid = make_uniform_ssweno_grid(a=-1.0, b=1.0, n=64)
+
+    from pyshocks import sbp
+    from dataclasses import replace
+
+    q = sbp.make_sbp_42_first_derivative_q_stencil(dtype=grid.dtype)
+    q = replace(q, left=None, right=None)
+    Q = sbp.make_sbp_matrix_from_stencil(bc, grid.n, q)
+
+    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+        return (ul * ul + ul * ur + ur * ur) / 6
+
+    def two_point_flux_numpy_v0(u: jnp.ndarray) -> jnp.ndarray:
+        import numpy as np
+
+        q = jax.device_get(Q)
+        w = jax.device_get(u)
+        fss = np.zeros(w.size + 1, dtype=w.dtype)
+
+        for i in range(1, w.size):
+            for j in range(i):
+                for k in range(i, u.size):
+                    fss[i] += 2 * q[j, k] * fs(w[j], w[k])
+
+        return jax.device_put(fss)
+
+    from pyshocks import BlockTimer
+
+    # {{{ reference numpy version
+
+    u0 = jnp.sin(2.0 * jnp.pi * grid.x) ** 2
+    with BlockTimer() as bt:
+        fs_ref = two_point_flux_numpy_v0(u0)
+    logger.info("%s", bt)
+
+    # }}}
+
+    # {{{ jax
+
+    from pyshocks.burgers.ssweno import two_point_entropy_flux_42
+
+    with BlockTimer() as bt:
+        fs_jax = two_point_entropy_flux_42(q.int, u0)
+    logger.info("%s", bt)
+
+    # NOTE: repeat computation for the sake of the JIT, to see the speedup
+    with BlockTimer() as bt:
+        fs_jax = two_point_entropy_flux_42(q.int, u0)
+    logger.info("%s", bt)
+
+    error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)
+    logger.info("error: %.12e", error)
+    assert error < 1.0e-15
+
+    error = jnp.linalg.norm(fs_ref - fs_jax) / jnp.linalg.norm(fs_ref)
+    logger.info("error: %.12e", error)
+    assert error < 1.0e-15
+
+    # }}}
+
+
+# }}}
 
 if __name__ == "__main__":
     import sys
