@@ -9,21 +9,21 @@ from pyshocks.schemes import BoundaryType
 
 
 @enum.unique
-class ConvolutionType:
+class ConvolutionType(enum.Enum):
     """Convolution types supported by :func:`scipy.ndimage.convolve1d`."""
 
     #: Reflected around the edge of the last pixel, e.g.
     #: ``(d c b a | a b c d | d c b a)``.
-    Reflect: enum.auto()
+    Reflect = enum.auto()
     #: Filled with a constant beyond the edge of the last pixel, e.g.
     #: ``(k k k k | a b c d | k k k k)``.
-    Constant: enum.auto()
+    Constant = enum.auto()
     #: Filled with the value of the last pixel beyond the boundary, e.g.
     #: ``(a a a a | a b c d | d d d d)``.
-    Nearest: enum.auto()
+    Nearest = enum.auto()
     #: Reflected around the center of the last pixel, i.e.
     #: ``(d c b | a b c d | c b a)``.
-    Mirror: enum.auto()
+    Mirror = enum.auto()
     #: Wrapping around the opposite edge, i.e.
     #: ``(a b c d | a b c d | a b c d)``.
     Wrap = enum.auto()
@@ -60,7 +60,7 @@ def convolution_type_to_pad_mode(cv: ConvolutionType) -> str:
 
 
 def convolve1d(
-    input: jnp.ndarray,
+    ary: jnp.ndarray,
     weights: jnp.ndarray,
     *,
     mode: ConvolutionType = ConvolutionType.Reflect,
@@ -70,12 +70,12 @@ def convolve1d(
     Should perform identically to :func:`scipy.ndimage.convolve1d`. Performance
     is not guaranteed.
     """
-    n = weights.size // 2 + 1
+    n = weights.size // 2
 
-    u = jnp.pad(input, n, mode=convolution_type_to_pad_mode(mode))
+    u = jnp.pad(ary, n, mode=convolution_type_to_pad_mode(mode))
     u = jnp.convolve(u, weights, mode="same")
 
     result = u[n:-n]
-    assert result.shape == u.shape
+    assert result.shape == ary.shape
 
     return result

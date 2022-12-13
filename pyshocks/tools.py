@@ -45,11 +45,13 @@ Timing and Profiling
 """
 
 import os
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import wraps
 from typing import (
     Any,
     Callable,
+    Iterator,
     List,
     Optional,
     Protocol,
@@ -64,9 +66,12 @@ from typing_extensions import ParamSpec
 
 from types import TracebackType
 import pathlib
-import logging
 
 import jax.numpy as jnp
+
+from pyshocks.logging import get_logger
+
+logger = get_logger(__name__)
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -584,44 +589,6 @@ class Color:
 # }}}
 
 
-# {{{ logging
-
-
-def get_logger(
-    module: str,
-    level: Optional[Union[int, str]] = None,
-) -> logging.Logger:
-    if level is None:
-        level = logging.INFO
-
-    if isinstance(level, str):
-        level = getattr(logging, level.upper())
-
-    assert isinstance(level, int)
-
-    logger = logging.getLogger(module)
-    logger.propagate = False
-    logger.setLevel(level)
-
-    try:
-        from rich.logging import RichHandler
-
-        logger.addHandler(RichHandler())
-    except ImportError:
-        # NOTE: rich is vendored by pip since November 2021
-        try:
-            from pip._vendor.rich.logging import RichHandler  # type: ignore
-
-            logger.addHandler(RichHandler())
-        except ImportError:
-            logger.addHandler(logging.StreamHandler())
-
-    return logger
-
-
-# }}}
-
-
 # {{{ matplotlib
 
 
@@ -712,6 +679,49 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
             mp.rc(group, **params)
         except KeyError:
             pass
+
+
+@contextmanager
+def figure(filename: Optional[pathlib.Path] = None, **kwargs: Any) -> Iterator[Any]:
+    import matplotlib.pyplot as mp
+
+    fig = mp.figure()
+    try:
+        yield fig
+    finally:
+        if filename is not None:
+            savefig(fig, filename, **kwargs)
+        else:
+            mp.show()
+
+        mp.close(fig)
+
+
+@contextmanager
+def gca(
+    fig: Any,
+    filename: Optional[pathlib.Path] = None,
+    *,
+    clear: bool = True,
+    **kwargs: Any,
+) -> Iterator[Any]:
+    try:
+        yield fig.gca()
+    finally:
+        if filename is not None:
+            savefig(fig, filename, **kwargs)
+        else:
+            import matplotlib.pyplot as mp
+
+            mp.show()
+
+        if clear:
+            fig.clf()
+
+
+def savefig(fig: Any, filename: pathlib.Path, **kwargs: Any) -> None:
+    logger.info("Saving '%s'", filename)
+    fig.savefig(filename, **kwargs)
 
 
 # }}}

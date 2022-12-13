@@ -4,6 +4,7 @@
 from importlib import metadata
 import jax
 
+from pyshocks.logging import get_logger
 from pyshocks.tools import (
     T,
     P,
@@ -19,7 +20,6 @@ from pyshocks.tools import (
     timeit,
     repeatit,
     profileit,
-    get_logger,
     set_recommended_matplotlib,
 )
 from pyshocks.grid import (
