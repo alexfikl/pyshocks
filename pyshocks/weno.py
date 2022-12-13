@@ -7,7 +7,7 @@ Weighted Essentially Non-Oscillatory (WENO) Reconstruction
 
 .. autoclass:: Stencil
 .. autofunction:: weno_smoothness
-.. autofunction:: weno_reconstruct
+.. autofunction:: weno_interp
 
 WENO-JS
 ^^^^^^^
@@ -55,7 +55,7 @@ class Stencil:
 
     where :math:`u_{m, k}` represents the stencil around :math:`m`. See
     Equations 3.2-3.4 in [JiangShu1996] for an example of the fifth-order
-    scheme. The value of the function is reconstructed using the :math:`c`
+    scheme. The value of the function is interpolated using the :math:`c`
     coefficients as
 
     .. math::
@@ -78,7 +78,7 @@ class Stencil:
 
     .. attribute:: a
 
-        Coefficients that are part of the smoothness coefficient reconstruction.
+        Coefficients that are part of the smoothness coefficient expressions.
 
     .. attribute:: b
 
@@ -86,7 +86,7 @@ class Stencil:
 
     .. attribute:: c
 
-        Coefficients that define the solution reconstruction stencils.
+        Coefficients that define the solution interpolation stencils.
 
     .. attribute:: d
 
@@ -124,16 +124,16 @@ def weno_smoothness(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.nd
     )
 
 
-def weno_reconstruct(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.ndarray:
-    r"""Reconstruct the variable *u* at the cell faces for WENO-JS.
+def weno_interp(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.ndarray:
+    r"""Interpolate the variable *u* at the cell faces for WENO-JS.
 
-    The reconstruction has the form
+    The interpolation has the form
 
     .. math::
 
         \hat{u}^r_m = \sum c_{r, k} u_{m - k}.
 
-    :returns: the :math:`\hat{u}_i` reconstruction, for each stencil in the
+    :returns: the interpolated :math:`\hat{u}_i`, for each stencil in the
         scheme. The returned array has a shape of ``(c.shape[0], u.size)``.
     """
     return jnp.stack(
@@ -231,8 +231,8 @@ def weno_js_53_coefficients(dtype: Any = None) -> Stencil:
 def weno_js_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
     r"""Compute the standard WENO-JS weights.
 
-    :returns: the weights :math:`\omega_i` for each stencil reconstruction
-        from :func:`weno_reconstruct`.
+    :returns: the weights :math:`\omega_i` for each stencil interpolation
+        from :func:`weno_interp`.
     """
     beta = weno_smoothness(s, u)
     alpha = s.d / (eps + beta) ** 2
@@ -268,8 +268,8 @@ def es_weno_parameters(grid: Grid, u0: jnp.ndarray) -> Tuple[float, float]:
 def es_weno_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
     r"""Compute the ESWENO weights.
 
-    :returns: the weights :math:`\omega_i` for each stencil reconstruction
-        from :func:`weno_reconstruct`.
+    :returns: the weights :math:`\omega_i` for each stencil interpolation
+        from :func:`weno_interp`.
     """
     beta = weno_smoothness(s, u)
 
@@ -310,7 +310,7 @@ def ss_weno_242_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarra
     return alpha / jnp.sum(alpha, axis=0, keepdims=True)
 
 
-# {{{ reconstruction
+# {{{ interpolation
 
 
 def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:

@@ -354,7 +354,7 @@ class WENOJS53(WENOJS):
 
 def _reconstruct_weno_js_side(rec: WENOJS, f: jnp.ndarray) -> jnp.ndarray:
     omega = weno.weno_js_weights(rec.s, f, eps=rec.eps)
-    uhat = weno.weno_reconstruct(rec.s, f)
+    uhat = weno.weno_interp(rec.s, f)
 
     return jnp.sum(omega * uhat, axis=0)
 
@@ -416,7 +416,7 @@ class ESWENO32(Reconstruction):
 
 def _reconstruct_es_weno_side(rec: ESWENO32, f: jnp.ndarray) -> jnp.ndarray:
     omega = weno.es_weno_weights(rec.s, f, eps=rec.eps)
-    uhat = weno.weno_reconstruct(rec.s, f)
+    uhat = weno.weno_interp(rec.s, f)
 
     return jnp.sum(omega * uhat, axis=0)
 
@@ -499,7 +499,7 @@ def _reconstruct_ss_weno_side(
             w = jnp.pad(f, rec.stencil_width, constant_values=jnp.inf)
 
     omega = weno.ss_weno_242_weights(rec.si, w, eps=rec.eps)
-    what = weno.weno_reconstruct(rec.si, w)
+    what = weno.weno_interp(rec.si, w)
 
     return jnp.sum(omega * what, axis=0)
 

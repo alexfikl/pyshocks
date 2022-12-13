@@ -81,9 +81,9 @@ def test_weno_smoothness_indicator_vectorization(
             uhat0[i, j] = jnp.sum(u[j + stencil] * c[i, ::-1])
 
     # jnp.convolve-based
-    from pyshocks.weno import weno_reconstruct
+    from pyshocks.weno import weno_interp
 
-    uhat1 = weno_reconstruct(rec.s, u)
+    uhat1 = weno_interp(rec.s, u)
 
     # }}}
 
