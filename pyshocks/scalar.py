@@ -308,7 +308,7 @@ def scalar_flux_engquist_osher(
 
 
 @dataclass(frozen=True)
-class OneSidedBoundary(Boundary):  # pylint: disable=abstract-method
+class OneSidedBoundary(Boundary):
     """
     .. attribute:: side
 

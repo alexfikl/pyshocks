@@ -55,6 +55,7 @@ Boundary Conditions
 """
 
 import enum
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import singledispatch
 from typing import Tuple, TypeVar
@@ -411,7 +412,7 @@ class BoundaryType(enum.Enum):
 
 
 @dataclass(frozen=True)
-class Boundary:
+class Boundary(ABC):
     """Boundary conditions for one-dimensional domains.
 
     .. attribute:: boundary_type
@@ -421,13 +422,14 @@ class Boundary:
     """
 
     @property
+    @abstractmethod
     def boundary_type(self) -> BoundaryType:
-        raise NotImplementedError
+        pass
 
 
 @singledispatch
 def apply_boundary(bc: Boundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.ndarray:
-    """Apply boundary conditions in place in the solution *u*.
+    """Apply boundary conditions in the ghost layer of the solution *u*.
 
     :arg bc: boundary condition description.
     :arg grid:
@@ -443,7 +445,7 @@ def apply_boundary(bc: Boundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.nd
 def evaluate_boundary(
     bc: Boundary, grid: Grid, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    """Evaluates the boundary conditions out of place.
+    """Evaluate the boundary conditions at domain boundaries.
 
     Unlike :func:`apply_boundary`, this function simply returns a set of
     boundary values at the required boundary points and zero elsewhere.
