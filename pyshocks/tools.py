@@ -77,6 +77,8 @@ T = TypeVar("T")
 R = TypeVar("R")
 P = ParamSpec("P")
 
+PathLike = Union[pathlib.Path, str]
+
 
 # {{{ callable protocols
 
@@ -288,7 +290,7 @@ class EOCRecorder:
 
 
 def visualize_eoc(
-    filename: Union[str, pathlib.Path],
+    filename: PathLike,
     eoc: EOCRecorder,
     order: float,
     *,
@@ -682,7 +684,7 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
 
 
 @contextmanager
-def figure(filename: Optional[pathlib.Path] = None, **kwargs: Any) -> Iterator[Any]:
+def figure(filename: Optional[PathLike] = None, **kwargs: Any) -> Iterator[Any]:
     import matplotlib.pyplot as mp
 
     fig = mp.figure()
@@ -700,7 +702,7 @@ def figure(filename: Optional[pathlib.Path] = None, **kwargs: Any) -> Iterator[A
 @contextmanager
 def gca(
     fig: Any,
-    filename: Optional[pathlib.Path] = None,
+    filename: Optional[PathLike] = None,
     *,
     clear: bool = True,
     **kwargs: Any,
@@ -719,7 +721,7 @@ def gca(
             fig.clf()
 
 
-def savefig(fig: Any, filename: pathlib.Path, **kwargs: Any) -> None:
+def savefig(fig: Any, filename: PathLike, **kwargs: Any) -> None:
     logger.info("Saving '%s'", filename)
     fig.savefig(filename, **kwargs)
 
