@@ -19,68 +19,60 @@ set_recommended_matplotlib()
 @pytest.mark.parametrize(
     "cv",
     [
-        # ConvolutionType.Reflect,
+        ConvolutionType.Reflect,
+        ConvolutionType.Mirror,
         ConvolutionType.Constant,
-        # ConvolutionType.Nearest,
-        # ConvolutionType.Wrap,
+        ConvolutionType.Nearest,
+        ConvolutionType.Wrap,
     ],
 )
-@pytest.mark.parametrize(
-    ("n", "m"),
-    [
-        (128, 4),
-        (128, 5),
-        (128, 10),
-        (128, 11),
-        (257, 4),
-        (257, 5),
-        (257, 10),
-        (257, 11),
-    ],
-)
-def test_convolve_vs_scipy(
-    cv: ConvolutionType, n: int, m: int, visualize: bool = True
-) -> None:
-    # {{{ compute scipy
-
+def test_convolve_vs_scipy(cv: ConvolutionType, visualize: bool = False) -> None:
     import numpy as np
-    import scipy.ndimage as snd
 
     rng = np.random.default_rng(seed=42)
 
-    a = rng.random(n, dtype=np.float64)
-    w = rng.random(m, dtype=np.float64)
+    for _ in range(16):
+        # NOTE: ideally we want a combination of odd and even values for both
+        n = rng.integers(126, 384)
+        m = rng.integers(10, 27)
 
-    result_sp = snd.convolve1d(a, w, mode=cv.name.lower())
+        # {{{ compute scipy
 
-    # }}}
+        import scipy.ndimage as snd
 
-    # {{{ compare
+        a = rng.random(n, dtype=np.float64)
+        w = rng.random(m, dtype=np.float64)
 
-    from pyshocks.convolve import convolve1d
+        result_sp = snd.convolve1d(a, w, mode=cv.name.lower())
 
-    a = jax.device_put(a)
-    w = jax.device_put(w)
+        # }}}
 
-    result_ps = convolve1d(a, w, mode=cv)
+        # {{{ compare
 
-    error = jnp.linalg.norm(result_sp - result_ps) / jnp.linalg.norm(result_sp)
-    logger.info("")
-    logger.info("error: %s %.12e", cv, error)
-    # assert error < 1.0e-12
+        from pyshocks.convolve import convolve1d
 
-    # }}}
+        a = jax.device_put(a)
+        w = jax.device_put(w)
 
-    if visualize:
-        from pyshocks.tools import figure
+        result_ps = convolve1d(a, w, mode=cv)
 
-        filename = f"convolve_vs_scipy_{cv.name.lower()}_{n}_{m}"
-        with figure(filename) as fig:
-            ax = fig.gca()
+        error = jnp.linalg.norm(result_sp - result_ps) / jnp.linalg.norm(result_sp)
+        logger.info("error: %s n %3d m %3d %.12e", cv, n, m, error)
 
-            ax.plot(result_ps)
-            ax.plot(result_sp, "k--")
-            ax.set_title(cv.name)
+        # }}}
+
+        if visualize:
+            from pyshocks.tools import figure
+
+            filename = f"convolve_vs_scipy_{cv.name.lower()}_{n}_{m}"
+            with figure(filename) as fig:
+                ax = fig.gca()
+
+                ax.plot(result_ps)
+                ax.plot(result_sp, "k--")
+                ax.set_title(cv.name)
+
+        assert error < 1.0e-12
 
 
 # }}}

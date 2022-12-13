@@ -37,10 +37,10 @@ _BOUNDARY_TYPE_TO_CONVOLUTION_TYPE = {
 }
 
 _CONVOLUTION_TYPE_TO_PAD_MODE = {
-    ConvolutionType.Reflect: "reflect",
+    ConvolutionType.Reflect: "symmetric",
     ConvolutionType.Constant: "constant",
     ConvolutionType.Nearest: "edge",
-    # ConvolutionType.Mirror: "reflect", ??
+    ConvolutionType.Mirror: "reflect",
     ConvolutionType.Wrap: "wrap",
 }
 
@@ -71,6 +71,9 @@ def convolve1d(
     is not guaranteed.
     """
     n = weights.size // 2
+    if weights.size % 2 == 0:
+        # FIXME: better way to fix this? needed to match scipy.ndimage...
+        weights = jnp.pad(weights, (0, 1))
 
     u = jnp.pad(ary, n, mode=convolution_type_to_pad_mode(mode))
     u = jnp.convolve(u, weights, mode="same")
