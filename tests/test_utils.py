@@ -28,6 +28,7 @@ set_recommended_matplotlib()
 )
 def test_convolve_vs_scipy(cv: ConvolutionType, visualize: bool = False) -> None:
     import numpy as np
+    from pyshocks.tools import BlockTimer
 
     rng = np.random.default_rng(seed=42)
 
@@ -43,7 +44,9 @@ def test_convolve_vs_scipy(cv: ConvolutionType, visualize: bool = False) -> None
         a = rng.random(n, dtype=np.float64)
         w = rng.random(m, dtype=np.float64)
 
-        result_sp = snd.convolve1d(a, w, mode=cv.name.lower())
+        with BlockTimer() as bt:
+            result_sp = snd.convolve1d(a, w, mode=cv.name.lower())
+        logger.info("scipy:     %s", bt)
 
         # }}}
 
@@ -54,7 +57,12 @@ def test_convolve_vs_scipy(cv: ConvolutionType, visualize: bool = False) -> None
         a = jax.device_put(a)
         w = jax.device_put(w)
 
-        result_ps = convolve1d(a, w, mode=cv)
+        convolve1d_jitted = jax.jit(convolve1d, static_argnames=("mode",))
+        _ = convolve1d_jitted(a, w, mode=cv)
+
+        with BlockTimer() as bt:
+            result_ps = convolve1d_jitted(a, w, mode=cv)
+        logger.info("jax:       %s", bt)
 
         error = jnp.linalg.norm(result_sp - result_ps) / jnp.linalg.norm(result_sp)
         logger.info("error: %s n %3d m %3d %.12e", cv, n, m, error)

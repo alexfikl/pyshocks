@@ -75,6 +75,7 @@ def convolve1d(
         # FIXME: better way to fix this? needed to match scipy.ndimage...
         weights = jnp.pad(weights, (0, 1))
 
+    # TODO: would be nice to have jax do this for us properly :(
     u = jnp.pad(ary, n, mode=convolution_type_to_pad_mode(mode))
     u = jnp.convolve(u, weights, mode="same")
 

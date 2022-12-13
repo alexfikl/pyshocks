@@ -363,17 +363,13 @@ class BlockTimer:
         print(bt)
 
     .. attribute:: name
-    .. attribute:: callback
-
-        A callback taking the :class:`BlockTimer` itself that is called when
-        the context manager is exited.
-
     .. attribute:: t_wall
     .. attribute:: t_proc
+
+    .. automethod:: finalize
     """
 
     name: str = "block"
-    callback: Optional[Callable[["BlockTimer"], None]] = None
 
     t_wall: float = field(default=-1, init=False)
     t_wall_start: float = field(default=-1, init=False)
@@ -392,24 +388,29 @@ class BlockTimer:
         self.t_proc_start = time.process_time()
         return self
 
+    def finalize(self) -> None:
+        """Perform additional processing on ``__exit__``.
+
+        This functions is meant to be modified by subclasses to add behavior.
+        """
+
+        import time
+
+        self.t_wall = time.perf_counter() - self.t_wall_start
+        self.t_proc = time.process_time() - self.t_proc_start
+
     def __exit__(
         self,
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType],
     ) -> None:
-        import time
-
-        self.t_wall = time.perf_counter() - self.t_wall_start
-        self.t_proc = time.process_time() - self.t_proc_start
-
-        if self.callback is not None:
-            self.callback(self)
+        self.finalize()
 
     def __str__(self) -> str:
         return (
             f"{self.name}: completed "
-            f"({self.t_wall:.3}s wall, {self.t_cpu:.3f}x cpu)"
+            f"({self.t_wall:.3e}s wall, {self.t_cpu:.3f}x cpu)"
         )
 
 
@@ -481,10 +482,18 @@ class IterationTimer:
         :returns: a :class:`BlockTimer` that can be used to time a single
             iteration.
         """
-        return BlockTimer(
-            name="inner",
-            callback=lambda subtimer: self.t_deltas.append(subtimer.t_wall),
-        )
+
+        @dataclass
+        class _BlockTimer(BlockTimer):
+            t_deltas: Optional[jnp.ndarray] = None
+
+            def finalize(self) -> None:
+                super().finalize()
+
+                assert self.t_deltas is not None
+                self.t_deltas.append(self.t_wall)
+
+        return _BlockTimer(name="inner", t_deltas=self.t_deltas)
 
     @property
     def total(self) -> jnp.ndarray:
