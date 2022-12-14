@@ -27,7 +27,7 @@ flake8==5.0.4
     #   flake8-quotes
     #   pep8-naming
     #   pyshocks (setup.cfg)
-flake8-bugbear==22.10.27
+flake8-bugbear==22.12.6
     # via pyshocks (setup.cfg)
 flake8-comprehensions==3.10.1
     # via pyshocks (setup.cfg)
@@ -35,11 +35,11 @@ flake8-quotes==3.3.1
     # via pyshocks (setup.cfg)
 iniconfig==1.1.1
     # via pytest
-isort==5.10.1
+isort==5.11.2
     # via pylint
-jax==0.3.25
+jax==0.4.1
     # via pyshocks (setup.cfg)
-jaxlib==0.3.25
+jaxlib==0.4.1
     # via pyshocks (setup.cfg)
 lazy-object-proxy==1.8.0
     # via astroid
@@ -62,7 +62,7 @@ numpy==1.23.5
     #   scipy
 opt-einsum==3.3.0
     # via jax
-packaging==21.3
+packaging==22.0
     # via
     #   build
     #   pytest
@@ -70,9 +70,9 @@ pep517==0.13.0
     # via build
 pep8-naming==0.13.2
     # via pyshocks (setup.cfg)
-pip-tools==6.11.0
+pip-tools==6.12.0
     # via pyshocks (setup.cfg)
-platformdirs==2.5.4
+platformdirs==2.6.0
     # via pylint
 pluggy==1.0.0
     # via pytest
@@ -82,10 +82,8 @@ pyflakes==2.5.0
     # via flake8
 pygments==2.13.0
     # via rich
-pylint==2.15.7
+pylint==2.15.8
     # via pyshocks (setup.cfg)
-pyparsing==3.0.9
-    # via packaging
 pytest==7.2.0
     # via pyshocks (setup.cfg)
 pyweno @ git+https://github.com/memmett/PyWENO.git
@@ -110,9 +108,7 @@ tomlkit==0.11.6
 types-dataclasses==0.6.6
     # via pyshocks (setup.cfg)
 typing-extensions==4.4.0
-    # via
-    #   jax
-    #   mypy
+    # via mypy
 wheel==0.38.4
     # via pip-tools
 wrapt==1.14.1
