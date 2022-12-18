@@ -52,6 +52,7 @@ from typing import (
     Any,
     Callable,
     Iterator,
+    Iterable,
     List,
     Optional,
     Protocol,
@@ -187,7 +188,6 @@ class EOCRecorder:
     .. automethod:: __init__
     .. automethod:: add_data_point
     .. automethod:: satisfied
-    .. automethod:: as_table
     """
 
     def __init__(self, *, name: str = "Error", dtype: Any = None) -> None:
@@ -246,47 +246,62 @@ class EOCRecorder:
 
         return bool(self.estimated_order >= (order - slack) or jnp.max(error) < atol)
 
-    def as_table(self) -> str:
-        """
-        :return: a table representation (Github Markdown Flavor) of the errors
-            and estimated order of convergence of the current data.
-        """
-        # header
-        lines = []
-        lines.append(("h", self.name, "EOC"))
-        # NOTE: these make it into a centered markdown table
-        lines.append((":-:", ":-:", ":-:"))
+    def __str__(self) -> str:
+        return stringify_eoc(self)
 
-        if self.history:
-            h, error = self._history
-            orders = estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
 
-            # rows
-            for i in range(h.size):
-                lines.append(
-                    (
-                        f"{h[i]:.3e}",
-                        f"{error[i]:.6e}",
-                        "---" if i == 0 else f"{orders[i - 1, 1]:.3f}",
-                    )
-                )
+def flatten(iterable: Iterable[Iterable[T]]) -> Tuple[T, ...]:
+    from itertools import chain
 
-        # footer
-        lines.append(("Overall", "", f"{self.estimated_order:.3f}"))
+    return tuple(chain.from_iterable(iterable))
 
-        # figure out column width
-        widths = [max(len(line[i]) for line in lines) for i in range(3)]
-        formats = ["{:%s}" % w for w in widths]  # pylint: disable=C0209
 
-        return "\n".join(
-            [
-                " | ".join(fmt.format(value) for fmt, value in zip(formats, line))
-                for line in lines
-            ]
+def stringify_eoc(*eocs: EOCRecorder) -> str:
+    r"""
+    :arg eocs: an iterable of :class:`EOCRecorder`\ s that are assumed to have
+        the same number of entries in their histories.
+    :returns: a string representing the results in *eocs* in the
+        GitHub Markdown format.
+    """
+    histories = [eoc._history for eoc in eocs]
+    orders = [
+        estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
+        for h, error in histories
+    ]
+
+    h = histories[0][0]
+    ncolumns = 1 + 2 * len(eocs)
+    nrows = h.size
+
+    lines = []
+    lines.append(("h",) + flatten([(eoc.name, "EOC") for eoc in eocs]))
+
+    lines.append((":-:",) * ncolumns)
+
+    for i in range(nrows):
+        lines.append(
+            (f"{h[i]:.3e}",)
+            + flatten(
+                [
+                    (f"{error[i]:.6e}", "---" if i == 0 else f"{order[i - 1, i]:.3f}")
+                    for (_, error), order in zip(histories, orders)
+                ]
+            )
         )
 
-    def __str__(self) -> str:
-        return self.as_table()
+    lines.append(
+        ("Overall",) + flatten([("", f"{eoc.estimated_order:.3f}") for eoc in eocs])
+    )
+
+    widths = [max(len(line[i]) for line in lines) for i in range(ncolumns)]
+    formats = ["{:%s}" % w for w in widths]  # pylint: disable=C0209
+
+    return "\n".join(
+        [
+            " | ".join(fmt.format(value) for fmt, value in zip(formats, line))
+            for line in lines
+        ]
+    )
 
 
 def visualize_eoc(
