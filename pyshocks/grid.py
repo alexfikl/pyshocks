@@ -113,6 +113,8 @@ class Grid:
     dx_min: float
     dx_max: float
 
+    is_periodic: bool
+
     @property
     def dtype(self) -> "jnp.dtype[Any]":
         return jnp.dtype(self.x.dtype)
@@ -198,6 +200,7 @@ def make_uniform_cell_grid(
         df=df,
         dx_min=h,
         dx_max=h,
+        is_periodic=False,
     )
 
 
@@ -269,6 +272,7 @@ def make_uniform_point_grid(
         df=df,
         dx_min=h,
         dx_max=h,
+        is_periodic=is_periodic,
     )
 
 
@@ -311,7 +315,7 @@ def make_uniform_ssweno_grid(
     df = jnp.full(n, h, dtype=dtype)
 
     if is_periodic:
-        x = jnp.linspace(a, b, n, endpoint=False, dtype=dtype)
+        x = jnp.linspace(a, b, n - 1, endpoint=False, dtype=dtype)
         f = x + h / 2
         dx = df
     else:
@@ -343,6 +347,7 @@ def make_uniform_ssweno_grid(
         df=df,
         dx_min=h,
         dx_max=h,
+        is_periodic=is_periodic,
     )
 
 
@@ -425,7 +430,12 @@ def make_leggauss_quadrature(grid: Grid, order: int) -> Quadrature:
     if order < 1:
         raise ValueError(f"invalid order: '{order}'")
 
-    return make_leggauss_quadrature_from_points(grid.f, order)
+    if grid.is_periodic and grid.nghosts == 0:
+        f = jnp.pad(grid.f, (1, 0), constant_values=grid.x[0] - grid.dx[0] / 2)
+    else:
+        f = grid.f
+
+    return make_leggauss_quadrature_from_points(f, order)
 
 
 def make_leggauss_quadrature_from_points(x: jnp.ndarray, order: int) -> Quadrature:
@@ -437,7 +447,7 @@ def make_leggauss_quadrature_from_points(x: jnp.ndarray, order: int) -> Quadratu
     wi = jax.device_put(wi).reshape(-1, 1)
 
     # get grid sizes
-    dx = jnp.diff(x)
+    dx = x[1:] - x[:-1]
     dxm = 0.5 * dx.reshape(1, -1)
     xm = 0.5 * (x[1:] + x[:-1]).reshape(1, -1)
 
