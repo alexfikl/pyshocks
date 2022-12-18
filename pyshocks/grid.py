@@ -326,10 +326,12 @@ def make_uniform_ssweno_grid(
         f = jnp.zeros(n + 1, dtype=dtype)
         f = f.at[0].set(x[0])
         f = f.at[1:].set(h * p)
+        f = jnp.cumsum(f)
 
         dx = jnp.diff(f)
 
     assert jnp.linalg.norm(jnp.diff(x) - h) < 1.0e-8 * h
+    assert jnp.linalg.norm(df - h) < 1.0e-8 * h
 
     return UniformGrid(
         a=a,
