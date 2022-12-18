@@ -34,13 +34,15 @@ SS-WENO
 """
 
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, TYPE_CHECKING
 
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
-from pyshocks.convolve import ConvolutionType, convolve1d
-from pyshocks.schemes import BoundaryType
+
+if TYPE_CHECKING:
+    from pyshocks.convolve import ConvolutionType
+    from pyshocks.schemes import BoundaryType
 
 # {{{ weno
 
@@ -125,13 +127,13 @@ class BoundaryStencil:
 
     si: Stencil
 
-    bc: BoundaryType
+    bc: "BoundaryType"
     sl: Optional[Stencil]
     sr: Optional[Stencil]
 
 
 def weno_smoothness(
-    s: Stencil, u: jnp.ndarray, *, mode: ConvolutionType = ConvolutionType.Same
+    s: Stencil, u: jnp.ndarray, *, mode: Optional["ConvolutionType"] = None
 ) -> jnp.ndarray:
     r"""Compute the smoothness coefficients for a WENO scheme.
 
@@ -145,6 +147,8 @@ def weno_smoothness(
         a cell :math:`m`. The shape of the returned array is
         ``(b.shape[0], u.size)``.
     """
+    from pyshocks.convolve import convolve1d
+
     return jnp.stack(
         [
             sum(
@@ -157,7 +161,7 @@ def weno_smoothness(
 
 
 def weno_interp(
-    s: Stencil, u: jnp.ndarray, *, mode: ConvolutionType = ConvolutionType.Same
+    s: Stencil, u: jnp.ndarray, *, mode: Optional["ConvolutionType"] = None
 ) -> jnp.ndarray:
     r"""Interpolate the variable *u* at the cell faces for WENO-JS.
 
@@ -170,9 +174,9 @@ def weno_interp(
     :returns: the interpolated :math:`\hat{u}_i`, for each stencil in the
         scheme. The returned array has a shape of ``(c.shape[0], u.size)``.
     """
-    return jnp.stack(
-        [jnp.convolve(u, s.c[i, :], mode=mode) for i in range(s.c.shape[0])]
-    )
+    from pyshocks.convolve import convolve1d
+
+    return jnp.stack([convolve1d(u, s.c[i, :], mode=mode) for i in range(s.c.shape[0])])
 
 
 # }}}
@@ -378,9 +382,11 @@ def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:
     c = jnp.array(
         [
             # i + 2, i + 1, i, i - 1, i - 2
+            [0.0, 0.0, 0.0, 0.0, 0.0],  # LL
             [0.0, 0.0, 3.0 / 2.0, -1.0 / 2.0, 0.0],  # L
             [0.0, 1.0 / 2.0, 1.0 / 2.0, 0.0, 0.0],  # C
             [-1.0 / 2.0, 3.0 / 2.0, 0.0, 0.0, 0.0],  # R
+            [0.0, 0.0, 0.0, 0.0, 0.0],  # RR
         ],
         dtype=dtype,
     )
@@ -457,6 +463,10 @@ def ss_weno_242_boundary_coefficients(
 
 
 def ss_weno_242_interp(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
+    from pyshocks.schemes import BoundaryType
+    from pyshocks.convolve import ConvolutionType
+
+    assert isinstance(sb.bc, BoundaryType)
     if sb.bc == BoundaryType.Periodic:
         assert sb.sl is None and sb.sr is None
 
@@ -466,7 +476,13 @@ def ss_weno_242_interp(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
         assert sb.sl is not None and sb.sr is not None
 
         uhat = weno_interp(sb.si, u)
+        n, m = sb.sl.c.shape[1:]
+        uhat = uhat.at[:, :n].set(sb.sl.c @ u[:m])
+        n, m = sb.sr.c.shape[1:]
+        uhat = uhat.at[:, -n:].set(sb.sr.c @ u[-m:])
+
         assert uhat.shape == (5, u.size)
+        uhat = jnp.pad(uhat, ((0, 0), (1, 1)), constant_values=(u[0], u[-1]))
 
     return uhat
 
