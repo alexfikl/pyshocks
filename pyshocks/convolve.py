@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import enum
+from typing import Optional
 
 import jax.numpy as jnp
 
@@ -66,13 +67,16 @@ def convolve1d(
     ary: jnp.ndarray,
     weights: jnp.ndarray,
     *,
-    mode: ConvolutionType = ConvolutionType.Same,
+    mode: Optional[ConvolutionType] = None,
 ) -> jnp.ndarray:
     """Perform a convolution of one-dimensional arrays.
 
     Should perform identically to :func:`scipy.ndimage.convolve1d`. Performance
     is not guaranteed.
     """
+    if mode is None:
+        mode = ConvolutionType.Same
+
     if mode == ConvolutionType.Same:
         result = jnp.convolve(ary, weights, mode="same")
     else:
