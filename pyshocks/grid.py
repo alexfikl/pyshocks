@@ -254,8 +254,8 @@ def make_uniform_point_grid(
         x = jnp.linspace(a - nghosts * h, b + nghosts * h, n + 2 * nghosts, dtype=dtype)
         f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])
 
-    dx = jnp.full_like(x, h)
-    df = jnp.diff(f)
+    df = jnp.full_like(x, h)
+    dx = jnp.diff(f)
 
     assert jnp.linalg.norm(jnp.diff(x) - h) < 1.0e-8 * h
 
@@ -308,12 +308,12 @@ def make_uniform_ssweno_grid(
     assert n >= 0
 
     h = (b - a) / (n - 1)
-    dx = jnp.full(n, h, dtype=dtype)
+    df = jnp.full(n, h, dtype=dtype)
 
     if is_periodic:
         x = jnp.linspace(a, b, n, endpoint=False, dtype=dtype)
         f = x + h / 2
-        df = dx
+        dx = df
     else:
         x = jnp.linspace(a, b, n, dtype=dtype)
 
@@ -327,7 +327,7 @@ def make_uniform_ssweno_grid(
         f = f.at[0].set(x[0])
         f = f.at[1:].set(h * p)
 
-        df = jnp.diff(f)
+        dx = jnp.diff(f)
 
     assert jnp.linalg.norm(jnp.diff(x) - h) < 1.0e-8 * h
 

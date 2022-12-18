@@ -6,6 +6,7 @@ Weighted Essentially Non-Oscillatory (WENO) Reconstruction
 ----------------------------------------------------------
 
 .. autoclass:: Stencil
+.. autoclass:: BoundaryStencil
 .. autofunction:: weno_smoothness
 .. autofunction:: weno_interp
 
@@ -33,11 +34,13 @@ SS-WENO
 """
 
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
+from pyshocks.convolve import ConvolutionType, convolve1d
+from pyshocks.schemes import BoundaryType
 
 # {{{ weno
 
@@ -74,7 +77,7 @@ class Stencil:
 
         \omega_{i, m} = \frac{\alpha_{i, m}}{\sum_n \alpha_{i, n}}.
 
-    THe general setup is more akin to the description provided in [Shu1998]_.
+    The general setup is more akin to the description provided in [Shu1998]_.
 
     .. attribute:: a
 
@@ -100,7 +103,36 @@ class Stencil:
     d: jnp.ndarray
 
 
-def weno_smoothness(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.ndarray:
+@dataclass(frozen=True)
+class BoundaryStencil:
+    """
+    .. attribute:: si
+
+        Interior stencil coefficients.
+
+    .. attribute:: bc
+
+        The type of the boundary, as given by :class:`~pyshocks.BoundaryType`.
+
+    .. attribute:: sl
+
+        If not *None*, the stencil for the left boundary.
+
+    .. attribute:: sr
+
+        If not *None*, the stencil for the right boundary.
+    """
+
+    si: Stencil
+
+    bc: BoundaryType
+    sl: Optional[Stencil]
+    sr: Optional[Stencil]
+
+
+def weno_smoothness(
+    s: Stencil, u: jnp.ndarray, *, mode: ConvolutionType = ConvolutionType.Same
+) -> jnp.ndarray:
     r"""Compute the smoothness coefficients for a WENO scheme.
 
     The coefficients must have the form
@@ -116,7 +148,7 @@ def weno_smoothness(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.nd
     return jnp.stack(
         [
             sum(
-                s.a[j] * jnp.convolve(u, s.b[i, j, :], mode=mode) ** 2
+                s.a[j] * convolve1d(u, s.b[i, j, :], mode=mode) ** 2
                 for j in range(s.a.size)
             )
             for i in range(s.b.shape[0])
@@ -124,7 +156,9 @@ def weno_smoothness(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.nd
     )
 
 
-def weno_interp(s: Stencil, u: jnp.ndarray, *, mode: str = "same") -> jnp.ndarray:
+def weno_interp(
+    s: Stencil, u: jnp.ndarray, *, mode: ConvolutionType = ConvolutionType.Same
+) -> jnp.ndarray:
     r"""Interpolate the variable *u* at the cell faces for WENO-JS.
 
     The interpolation has the form
@@ -365,56 +399,51 @@ def ss_weno_242_boundary_coefficients(
     dtype = jnp.dtype(dtype)
 
     # boundary stencils ([Fisher2011] Equation 77)
-    c = jnp.array(
+    cl = jnp.array(
         [
-            [  # I_L
-                [
-                    [0, 0, 0, 0],
-                    [0, 0, 0, 0],
-                    [-7 / 12, 19 / 12, 0, 0],
-                    [-23 / 48, 71 / 48, 0, 0],
-                ],
-                [
-                    [-25 / 48, 73 / 48, 0, 0],
-                    [-5 / 12, 17 / 12, 0, 0],
-                    [-31 / 48, 79 / 48, 0, 0],
-                    [0, 0, 0, 0],
-                ],
+            # I_LL
+            [
+                # i = 0, 1, 2, 3, 4, 5
+                [0, 0, 0, 0, 0, 0],  # j = 1
+                [0, 0, 0, 0, 0, 0],  # j = 2
+                [0, 0, 0, 0, 0, 0],  # j = 3
+                [-71 / 48, 119 / 49, 0, 0, 0, 0],  # j = 4
             ],
-            [  # I_C
-                [
-                    [0, 1, 0, 0],
-                    [0, 31 / 48, 17 / 48, 0],
-                    [0, 5 / 12, 7 / 12, 0],
-                    [0, 25 / 48, 23 / 48, 0],
-                ],
-                [
-                    [0, 23 / 48, 25 / 48, 0],
-                    [0, 7 / 12, 5 / 12, 0],
-                    [0, 17 / 48, 31 / 48, 0],
-                    [0, 0, 1, 0],
-                ],
+            # I_L
+            [
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [-7 / 12, 19 / 12, 0, 0, 0, 0],
+                [0, -23 / 48, 71 / 48, 0, 0, 0],
             ],
-            [  # I_R
-                [
-                    [0, 0, 0, 0],
-                    [0, 0, 79 / 48, -31 / 48],
-                    [0, 0, 17 / 12, -5 / 12],
-                    [0, 0, 73 / 48, -25 / 48],
-                ],
-                [
-                    [0, 0, 71 / 48, -23 / 48],
-                    [0, 0, 19 / 12, -7 / 12],
-                    [0, 0, 0, 0],
-                    [0, 0, 0, 0],
-                ],
+            # I_C
+            [
+                [1, 0, 0, 0, 0, 0],
+                [31 / 48, 17 / 48, 0, 0, 0, 0],
+                [0, 5 / 12, 7 / 12, 0, 0, 0],
+                [0, 0, 25 / 48, 23 / 48, 0, 0],
+            ],
+            # I_R
+            [
+                [0, 0, 0, 0, 0, 0],
+                [0, 79 / 48, -31 / 48, 0, 0, 0],
+                [0, 0, 17 / 12, -5 / 12, 0, 0],
+                [0, 0, 73 / 48, -25 / 48, 0, 0],
+            ],
+            # I_RR
+            [
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 127 / 48, -79 / 48, 0, 0],
+                [0, 0, 29 / 12, -17 / 12, 0, 0],
+                [0, 0, 121 / 48, -73 / 48, 0, 0],
             ],
         ],
         dtype=dtype,
     )
+    cr = cl[::-1, :, ::-1]
 
     # weights coefficients ([Fisher2011] Equation 78)
-    d = jnp.array(
+    dl = jnp.array(
         [
             [0, 0, 1, 0, 0],
             [0, 0, 24 / 31, 1013 / 4898, 3 / 158],
@@ -422,8 +451,24 @@ def ss_weno_242_boundary_coefficients(
             [3 / 142, 357 / 3266, 408 / 575, 4 / 25, 0],
         ]
     )
+    dr = dl[::-1, ::-1]
 
-    return Stencil(a=0, b=0, c=c, d=d)
+    return Stencil(a=None, b=None, c=cl, d=dl), Stencil(a=None, b=None, c=cr, d=dr)
+
+
+def ss_weno_242_interp(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
+    if sb.bc == BoundaryType.Periodic:
+        assert sb.sl is None and sb.sr is None
+
+        uhat = weno_interp(sb.si, u, mode=ConvolutionType.Wrap)
+        assert uhat.shape == (5, u.size)
+    else:
+        assert sb.sl is not None and sb.sr is not None
+
+        uhat = weno_interp(sb.si, u)
+        assert uhat.shape == (5, u.size)
+
+    return uhat
 
 
 # }}}

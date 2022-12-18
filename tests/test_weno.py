@@ -340,6 +340,49 @@ def test_weno_smooth_reconstruction_order_cell_values(
 # }}}
 
 
+# {{{ test_ss_weno_interpolation
+
+
+@pytest.mark.parametrize("bc", [BoundaryType.Periodic, BoundaryType.Dirichlet])
+def test_ss_weno_242_interpolation(
+    bc: BoundaryType, order: int = 4, visualize: bool = False
+) -> None:
+    from pyshocks import make_leggauss_quadrature, cell_average
+    from pyshocks import EOCRecorder, rnorm
+
+    nstencils = 5
+    stencils = ("LL", "L", "C", "R", "RR")
+    eoc = [EOCRecorder(name=f"u_{stencils[i]}") for i in range(nstencils)]
+    errors = [None] * nstencils
+
+    from pyshocks import weno
+
+    func = get_function("sine")
+    for n in range(192, 384 + 1, 32):
+        grid = make_uniform_ssweno_grid(-1.0, 1.0, n=n)
+        quad = make_leggauss_quadrature(grid, order=order + 1)
+        u = cell_average(quad, func)
+        uhat = func(grid.f)
+
+        si = weno.ss_weno_242_coefficients(grid.x.dtype)
+        sl, sr = weno.ss_weno_242_boundary_coefficients(grid.x.dtype)
+
+        ubar = weno.ss_weno_242_interp(si, sl, sr, u)
+
+        for i in range(nstencils):
+            errors[i] = rnorm(grid, uhat, ubar[i], p=jnp.inf)
+            eoc[i].add_data_point(grid.dx_max, errors[i])
+
+            logger.info("error: n %4d u[%s]", n, stencils[i], errors[i])
+
+    logger.info("\n%s\n%s\n%s\n%s\n%s", *eoc)
+
+    for i in range(nstencils):
+        assert eoc[i].satisfied(order - 0.5)
+
+
+# }}}
+
 # {{{ test_ss_weno_burgers_two_point_flux
 
 
