@@ -263,7 +263,7 @@ def stringify_eoc(*eocs: EOCRecorder) -> str:
     :returns: a string representing the results in *eocs* in the
         GitHub Markdown format.
     """
-    histories = [eoc._history for eoc in eocs]
+    histories = [eoc._history for eoc in eocs]  # pylint: disable=protected-access
     orders = [
         estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
         for h, error in histories

@@ -1,6 +1,8 @@
 Utilities
 =========
 
+.. automodule:: pyshocks.convolve
+
 .. automodule:: pyshocks.tools
 
 .. automodule:: pyshocks.funcs

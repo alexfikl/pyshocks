@@ -351,14 +351,19 @@ def test_ss_weno_242_interpolation(
     from pyshocks import make_leggauss_quadrature, cell_average
     from pyshocks import EOCRecorder, rnorm
 
-    nstencils = 5
-    stencils = ("LL", "L", "C", "R", "RR")
+    is_periodic = bc == BoundaryType.Periodic
+    if is_periodic:
+        nstencils = 3
+        stencils = ("L", "C", "R")
+    else:
+        nstencils = 5
+        stencils = ("LL", "L", "C", "R", "RR")
+
     eocs = [EOCRecorder(name=f"u_{stencils[i]}") for i in range(nstencils)]
     errors = [None] * nstencils
 
     from pyshocks import weno
 
-    is_periodic = bc == BoundaryType.Periodic
     func = get_function("sine")
     for n in range(192, 384 + 1, 32):
         grid = make_uniform_ssweno_grid(-1.0, 1.0, n=n, is_periodic=is_periodic)
@@ -381,7 +386,9 @@ def test_ss_weno_242_interpolation(
 
             logger.info("error: n %4d u[%2s] %.12e", n, stencils[i], errors[i])
 
-    logger.info("\n%s\n%s\n%s\n%s\n%s", *eocs)
+    from pyshocks.tools import stringify_eoc
+
+    logger.info("\n%s", stringify_eoc(*eocs))
 
     # for i in range(nstencils):
     #     assert eocs[i].satisfied(order - 0.5)
