@@ -12,6 +12,9 @@ from pyshocks.schemes import BoundaryType
 class ConvolutionType(enum.Enum):
     """Convolution types supported by :func:`scipy.ndimage.convolve1d`."""
 
+    #: Matching :func:`numpy.convolve1d`.
+    Same = enum.auto()
+
     #: Reflected around the edge of the last pixel, e.g.
     #: ``(d c b a | a b c d | d c b a)``.
     Reflect = enum.auto()
@@ -63,27 +66,30 @@ def convolve1d(
     ary: jnp.ndarray,
     weights: jnp.ndarray,
     *,
-    mode: ConvolutionType = ConvolutionType.Reflect,
+    mode: ConvolutionType = ConvolutionType.Same,
 ) -> jnp.ndarray:
     """Perform a convolution of one-dimensional arrays.
 
     Should perform identically to :func:`scipy.ndimage.convolve1d`. Performance
     is not guaranteed.
     """
-    n = weights.size // 2
-    if weights.size % 2 == 0:
-        # FIXME: better way to fix this? needed to match scipy.ndimage...
-        weights = jnp.pad(weights, (0, 1))
+    if mode == ConvolutionType.Same:
+        result = jnp.convolve(ary, weights, mode="same")
+    else:
+        n = weights.size // 2
+        if weights.size % 2 == 0:
+            # FIXME: better way to fix this? needed to match scipy.ndimage...
+            weights = jnp.pad(weights, (0, 1))
 
-    # TODO: this seems to be about an order of magnitude slower than the scipy
-    # equivalent when jitted, so not great. This is mostly true for small
-    # weight sizes.
+        # TODO: this seems to be about an order of magnitude slower than the scipy
+        # equivalent when jitted, so not great. This is mostly true for small
+        # weight sizes.
 
-    # TODO: would be nice to have jax do this for us properly :(
-    u = jnp.pad(ary, n, mode=convolution_type_to_pad_mode(mode))
-    u = jnp.convolve(u, weights, mode="same")
+        # TODO: would be nice to have jax do this for us properly :(
+        u = jnp.pad(ary, n, mode=convolution_type_to_pad_mode(mode))
+        u = jnp.convolve(u, weights, mode="same")
 
-    result = u[n:-n]
+        result = u[n:-n]
+
     assert result.shape == ary.shape
-
     return result
