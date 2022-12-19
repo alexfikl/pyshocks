@@ -16,35 +16,19 @@ with common WENO schemes.
 
 It is currently quite far from that goal, so this is **very experimental**.
 
-Installation
+Requirements
 ============
 
-Common practice in the community is to set up a virtual environment
+The project currently supports Python 3.8 and later. The requirements are
+listed in ``setup.cfg``
+* ``jax`` and ``jaxlib``: base numeric and automatica differentiation package
+  used throughout. See
+  `JAX support policy <https://jax.readthedocs.io/en/latest/deprecation.html?highlight=nep>`__
+  for details on supported versions.
+* ``rich``: recommended for nicer logging.
+* ``matplotlib`` and ``SciencePlots``: recommended for nicer plotting.
 
-.. code:: bash
-
-    python -m venv --system-site-packages /path/to/env/pyshocks
-
-Activate the environment with
-
-.. code:: bash
-
-    source /path/to/env/pyshocks/bin/activate
-
-Finally, just install the package with
-
-.. code:: bash
-
-    python -m pip install -e .[dev]
-
-which should download all the dependencies. See the
-`official documentation <https://docs.python.org/3/tutorial/venv.html>`__
-for more details.
-
-Conda
-=====
-
-TODO for anyone using `conda <https://github.com/conda-forge/miniforge>`__.
+Additional development dependencies are listed in ``setup.cfg``.
 
 Documentation
 =============
