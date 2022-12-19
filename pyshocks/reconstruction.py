@@ -501,7 +501,7 @@ def _reconstruct_ss_weno_side(
     omega = weno.ss_weno_242_weights(rec.si, w, eps=rec.eps)
     what = weno.weno_interp(rec.si, w)
 
-    return jnp.sum(omega * what, axis=0)
+    return jnp.sum(omega * what[1:-1], axis=0)
 
 
 @reconstruct.register(SSWENO242)

@@ -354,7 +354,7 @@ def test_ss_weno_242_interpolation(
     is_periodic = bc == BoundaryType.Periodic
     if is_periodic:
         nstencils = 3
-        stencils = ("L", "C", "R")
+        stencils: Tuple[str, ...] = ("L", "C", "R")
     else:
         nstencils = 5
         stencils = ("LL", "L", "C", "R", "RR")

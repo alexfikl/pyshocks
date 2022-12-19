@@ -138,6 +138,9 @@ def lax_friedrichs_initial_condition_correction(
     if grid.x.size % 2 != 0 and grid.nghosts % 2 == 0:
         raise ValueError("only grids with even number of cells are supported")
 
+    if grid.is_periodic:
+        raise ValueError("periodic grids are not supported")
+
     half_grid = type(grid)(
         a=grid.a,
         b=grid.b,
@@ -149,6 +152,7 @@ def lax_friedrichs_initial_condition_correction(
         df=grid.df,
         dx_min=grid.dx_min,
         dx_max=grid.dx_max,
+        is_periodic=grid.is_periodic,
     )
 
     if order is None:

@@ -399,7 +399,7 @@ def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:
 
 def ss_weno_242_boundary_coefficients(
     dtype: Any = None,
-) -> Stencil:
+) -> Tuple[Stencil, Stencil]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
