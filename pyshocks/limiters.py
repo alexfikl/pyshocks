@@ -43,7 +43,7 @@ class Limiter:
 
     .. math::
 
-        \phi(r) = \phi\left(\frac{u_i - u_{i - 1}}{u_{i + 1} - u_i}\right) \ge 0
+        \phi(r) = \phi\left(\frac{u_i - u_{i - 1}}{u_{i + 1} - u_i}\right) \ge 0,
 
     which becomes zero when there is no need for limiting in the variable *u*.
     The limiter is applied by calling :func:`flux_limit`. Note that the limiter is
@@ -353,7 +353,7 @@ class VanLeerLimiter(Limiter):
 
     .. math::
 
-        \phi(r) = \frac{r + |r|}{1 + |r|}
+        \phi(r) = \frac{r + |r|}{1 + |r|}.
     """
 
     @property

@@ -90,9 +90,9 @@ def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> jnp.nd
 
     A function :math:`f(t, x)` is called one-sided Lipschitz continuous if
     there exists an integrable function :math:`L(t)` such that for every
-    :math:`x_1, x_2 \in \mathbb{R}^d` such that
+    :math:`x_1, x_2 \in \mathbb{R}`
 
-    .. math
+    .. math::
 
         \frac{f(t, x_1) - f(t, x_2)}{x_1 - x_2} \le L(t)
 

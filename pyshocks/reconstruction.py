@@ -41,12 +41,13 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Reconstruction:
-    """Describes a reconstruction algorithm for finite volume type methods.
+    """Describes a reconstruction algorithm.
 
     In finite volume methods, we have access to averaged cell values. A
     reconstruction algorithm will use these values to obtain high-order
     expressions for the values at cell faces, which are then used in flux
-    computations.
+    computations. Alternatively, in finite difference methods, we have access
+    to point (or node) values that are used to reconstruct in cell values.
 
     The reconstruct is performed using :func:`reconstruct`.
 
@@ -83,8 +84,7 @@ def reconstruct(
     u: jnp.ndarray,
     wavespeed: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
-    r"""Reconstruct face values from the cell-averaged values *f* of a
-    function of *u*.
+    r"""Reconstruct *f* as a function of *u*.
 
     In this implementation, we use the convention that::
 
@@ -107,7 +107,7 @@ def reconstruct(
     :arg bc: generic type of the boundary required to build the reconstruction
     :arg f: variable to reconstruct as a function of *u*.
     :arg u: base variable used in the reconstruction.
-    :arg vavespeed: wave speed with which *u* is transported, that can be used
+    :arg wavespeed: wave speed with which *u* is transported, that can be used
         to additionally upwind the reconstruction of *f*.
 
     :returns: a :class:`tuple` of ``(fl, fr)`` containing a reconstructed
@@ -125,7 +125,7 @@ def reconstruct(
 
 @dataclass(frozen=True)
 class ConstantReconstruction(Reconstruction):
-    r"""A standard first-order finite volume reconstruction.
+    r"""A standard first-order constant reconstruction.
 
     For this reconstruction, we have that
 
