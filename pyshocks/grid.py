@@ -239,6 +239,7 @@ def make_uniform_point_grid(
     dtype = jnp.dtype(dtype)
 
     h = (b - a) / (n - 1)
+    df = jnp.full(n + 2 * nghosts - 1, h, dtype=dtype)
 
     if is_periodic:
         if nghosts == 0:
@@ -253,14 +254,14 @@ def make_uniform_point_grid(
                 dtype=dtype,
             )
             f = jnp.hstack([(x[1:] + x[:-1]) / 2, x[-1] + h / 2])
+        dx = df
     else:
         x = jnp.linspace(a - nghosts * h, b + nghosts * h, n + 2 * nghosts, dtype=dtype)
         f = jnp.hstack([x[0], (x[1:] + x[:-1]) / 2, x[-1]])
-
-    df = jnp.full_like(x, h)
-    dx = jnp.diff(f)
+        dx = jnp.diff(f)
 
     assert jnp.linalg.norm(jnp.diff(x) - h) < 1.0e-8 * h
+    assert dx.shape == x.shape
 
     return UniformGrid(
         a=a,
