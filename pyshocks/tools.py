@@ -62,8 +62,11 @@ from typing import (
     TypeVar,
 )
 
-# NOTE: needs python 3.10
-from typing_extensions import ParamSpec
+try:
+    # NOTE: needs python 3.10
+    from typing import ParamSpec
+except ImportError:
+    from typing_extensions import ParamSpec  # type: ignore[assignment]
 
 from types import TracebackType
 import pathlib
