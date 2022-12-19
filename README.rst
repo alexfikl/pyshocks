@@ -21,6 +21,7 @@ Requirements
 
 The project currently supports Python 3.8 and later. The requirements are
 listed in ``setup.cfg``
+
 * ``jax`` and ``jaxlib``: base numeric and automatica differentiation package
   used throughout. See
   `JAX support policy <https://jax.readthedocs.io/en/latest/deprecation.html?highlight=nep>`__
