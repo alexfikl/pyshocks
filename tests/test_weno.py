@@ -385,7 +385,7 @@ def test_ss_weno_242_interpolation(
 
             logger.info("error: n %4d u[%2s] %.12e", n, stencils[i], errors[i])
 
-        errors[0] = abs(uhat[3] - ubar[0, 3]) / uhat[3]
+        errors[0] = abs(uhat[3] - ubar[0, 3]) / abs(uhat[3])
         eocs[0].add_data_point(grid.dx_max, errors[0])
         logger.info("error: n %4d u[%2s] %.12e", n, stencils[0], errors[0])
 
