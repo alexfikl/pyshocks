@@ -6,7 +6,7 @@
 #
 astroid==2.12.13
     # via pylint
-attrs==22.1.0
+attrs==22.2.0
     # via
     #   flake8-bugbear
     #   pytest
@@ -20,7 +20,7 @@ dill==0.3.6
     # via pylint
 exceptiongroup==1.0.4
     # via pytest
-flake8==5.0.4
+flake8==6.0.0
     # via
     #   flake8-bugbear
     #   flake8-comprehensions
@@ -31,11 +31,11 @@ flake8-bugbear==22.12.6
     # via pyshocks (setup.cfg)
 flake8-comprehensions==3.10.1
     # via pyshocks (setup.cfg)
-flake8-quotes==3.3.1
+flake8-quotes==3.3.2
     # via pyshocks (setup.cfg)
 iniconfig==1.1.1
     # via pytest
-isort==5.11.2
+isort==5.11.4
     # via pylint
 jax==0.4.1
     # via pyshocks (setup.cfg)
@@ -53,7 +53,7 @@ mypy==0.991
     # via pyshocks (setup.cfg)
 mypy-extensions==0.4.3
     # via mypy
-numpy==1.23.5
+numpy==1.24.0
     # via
     #   jax
     #   jaxlib
@@ -68,21 +68,21 @@ packaging==22.0
     #   pytest
 pep517==0.13.0
     # via build
-pep8-naming==0.13.2
+pep8-naming==0.13.3
     # via pyshocks (setup.cfg)
-pip-tools==6.12.0
+pip-tools==6.12.1
     # via pyshocks (setup.cfg)
 platformdirs==2.6.0
     # via pylint
 pluggy==1.0.0
     # via pytest
-pycodestyle==2.9.1
+pycodestyle==2.10.0
     # via flake8
-pyflakes==2.5.0
+pyflakes==3.0.1
     # via flake8
 pygments==2.13.0
     # via rich
-pylint==2.15.8
+pylint==2.15.9
     # via pyshocks (setup.cfg)
 pytest==7.2.0
     # via pyshocks (setup.cfg)
