@@ -371,20 +371,23 @@ def test_ss_weno_242_interpolation(
         u = cell_average(quad, func)
         uhat = func(grid.f)
 
-        if is_periodic:
-            sl = sr = None
-        else:
-            sl, sr = weno.ss_weno_242_boundary_coefficients(grid.x.dtype)
-
-        si = weno.ss_weno_242_coefficients(grid.x.dtype)
-        sb = weno.BoundaryStencil(bc=bc, si=si, sl=sl, sr=sr)
+        sb = weno.ss_weno_242_coefficients(bc, grid.x.dtype)
+        mask = weno.ss_weno_242_mask(sb, u)
         ubar = weno.ss_weno_242_interp(sb, u)
 
-        for i in range(nstencils):
-            errors[i] = rnorm(grid, uhat, ubar[i], p=jnp.inf)
+        print(uhat[3], ubar[0, 3])
+
+        for i in range(1, nstencils):
+            errors[i] = rnorm(
+                grid, uhat * mask[i], ubar[i] * mask[i], p=1, weighted=False
+            )
             eocs[i].add_data_point(grid.dx_max, errors[i])
 
             logger.info("error: n %4d u[%2s] %.12e", n, stencils[i], errors[i])
+
+        errors[0] = abs(uhat[3] - ubar[0, 3]) / uhat[3]
+        eocs[0].add_data_point(grid.dx_max, errors[0])
+        logger.info("error: n %4d u[%2s] %.12e", n, stencils[0], errors[0])
 
     from pyshocks.tools import stringify_eoc
 

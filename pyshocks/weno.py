@@ -351,7 +351,38 @@ def ss_weno_242_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarra
 # {{{ interpolation
 
 
-def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:
+def ss_weno_242_coefficients(bc: "BoundaryType", dtype: Any = None) -> BoundaryStencil:
+    from pyshocks.schemes import BoundaryType
+
+    si = ss_weno_242_interior_coefficients(dtype)
+
+    if bc == BoundaryType.Periodic:
+        sl = sr = None
+    else:
+        sl, sr = ss_weno_242_boundary_coefficients(dtype)
+
+    return BoundaryStencil(bc=bc, si=si, sl=sl, sr=sr)
+
+
+def ss_weno_242_mask(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
+    from pyshocks.schemes import BoundaryType
+
+    if sb.bc == BoundaryType.Periodic:
+        mask = jnp.ones((3, u.size), dtype=u.dtype)
+    else:
+        mask = jnp.ones((5, u.size + 1), dtype=u.dtype)
+        mask = mask.at[0, :].set(0)
+        mask = mask.at[-1, :].set(0)
+
+        d = sb.sl.d
+        mask = mask.at[:, : d.shape[1]].set((d > 0).astype(u.dtype))
+        d = sb.sl.d
+        mask = mask.at[:, -d.shape[1] :].set((d > 0).astype(u.dtype))
+
+    return mask
+
+
+def ss_weno_242_interior_coefficients(dtype: Any = None) -> Stencil:
     """Initialize coefficients for the fourth-order WENO scheme of [Fisher2013].
 
     The actual implementation details of the scheme are given in [Fisher2011]_.
@@ -370,7 +401,7 @@ def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:
     a = jnp.array([1.0], dtype=dtype)
     b = jnp.array(
         [
-            # i + 2, i + 1, i, i - 1, i - 2
+            # i + 3, i + 2, i + 1, i, i - 1, i - 2
             [[0.0, 0.0, 1.0, -1.0, 0.0]],  # L
             [[0.0, 1.0, -1.0, 0.0, 0.0]],  # C
             [[1.0, -1.0, 0.0, 0.0, 0.0]],  # R
@@ -378,15 +409,13 @@ def ss_weno_242_coefficients(dtype: Any = None) -> Stencil:
         dtype=dtype,
     )
 
-    # stencil coefficients ([Fisher2011] Equation 77)
+    # swatencil coefficients ([Fisher2011] Equation 77)
     c = jnp.array(
         [
             # i + 2, i + 1, i, i - 1, i - 2
-            [0.0, 0.0, 0.0, 0.0, 0.0],  # LL
             [0.0, 0.0, 3.0 / 2.0, -1.0 / 2.0, 0.0],  # L
             [0.0, 1.0 / 2.0, 1.0 / 2.0, 0.0, 0.0],  # C
             [-1.0 / 2.0, 3.0 / 2.0, 0.0, 0.0, 0.0],  # R
-            [0.0, 0.0, 0.0, 0.0, 0.0],  # RR
         ],
         dtype=dtype,
     )
@@ -413,7 +442,7 @@ def ss_weno_242_boundary_coefficients(
                 [0, 0, 0, 0, 0, 0],  # j = 1
                 [0, 0, 0, 0, 0, 0],  # j = 2
                 [0, 0, 0, 0, 0, 0],  # j = 3
-                [-71 / 48, 119 / 49, 0, 0, 0, 0],  # j = 4
+                [-71 / 48, 119 / 48, 0, 0, 0, 0],  # j = 4
             ],
             # I_L
             [
@@ -456,7 +485,7 @@ def ss_weno_242_boundary_coefficients(
             [0, 11 / 56, 51 / 70, 3 / 40, 0],
             [3 / 142, 357 / 3266, 408 / 575, 4 / 25, 0],
         ]
-    )
+    ).T
     dr = dl[::-1, ::-1]
 
     return Stencil(a=None, b=None, c=cl, d=dl), Stencil(a=None, b=None, c=cr, d=dr)
@@ -469,20 +498,17 @@ def ss_weno_242_interp(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
     assert isinstance(sb.bc, BoundaryType)
     if sb.bc == BoundaryType.Periodic:
         assert sb.sl is None and sb.sr is None
-
         uhat = weno_interp(sb.si, u, mode=ConvolutionType.Wrap)
-        assert uhat.shape == (5, u.size)
     else:
         assert sb.sl is not None and sb.sr is not None
 
-        uhat = weno_interp(sb.si, u)
+        uhat = jnp.empty((5, u.size + 1), dtype=u.dtype)
+        uhat = uhat.at[1:-1, 1:].set(weno_interp(sb.si, u))
+
         n, m = sb.sl.c.shape[1:]
         uhat = uhat.at[:, :n].set(sb.sl.c @ u[:m])
         n, m = sb.sr.c.shape[1:]
         uhat = uhat.at[:, -n:].set(sb.sr.c @ u[-m:])
-
-        assert uhat.shape == (5, u.size)
-        uhat = jnp.pad(uhat, ((0, 0), (1, 1)), constant_values=(u[0], u[-1]))
 
     return uhat
 

@@ -479,6 +479,8 @@ def cell_average(quad: Quadrature, fn: SpatialFunction) -> jnp.ndarray:
 
 @partial(jax.jit, static_argnums=(2,))
 def _norm(u: jnp.ndarray, dx: jnp.ndarray, p: Union[str, float]) -> jnp.ndarray:
+    u = jnp.abs(u)
+
     if p == 1:
         return jnp.sum(u * dx)
 
@@ -519,9 +521,7 @@ def norm(
         sizes.
     """
     dx = grid.dx[grid.i_] if weighted else 1.0
-    u = jnp.abs(u[grid.i_])
-
-    return _norm(u, dx, p)
+    return _norm(u[grid.i_], dx, p)
 
 
 def rnorm(
@@ -542,11 +542,11 @@ def rnorm(
 
     where the numerator is ignored if it is close to zero.
     """
-    vnorm = norm(grid, v, p=p)
+    vnorm = norm(grid, v, p=p, weighted=weighted)
     if vnorm < atol:
         vnorm = 1.0
 
-    return norm(grid, u - v, p=p) / vnorm
+    return norm(grid, u - v, p=p, weighted=weighted) / vnorm
 
 
 # }}}
