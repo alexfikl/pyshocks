@@ -370,6 +370,7 @@ def ss_weno_242_mask(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
     if sb.bc == BoundaryType.Periodic:
         mask = jnp.ones((3, u.size), dtype=u.dtype)
     else:
+        assert sb.sl is not None and sb.sr is not None
         mask = jnp.ones((5, u.size + 1), dtype=u.dtype)
         mask = mask.at[0, :].set(0)
         mask = mask.at[-1, :].set(0)
