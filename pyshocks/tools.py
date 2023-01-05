@@ -347,8 +347,8 @@ def visualize_eoc(
 
     # }}}
 
-    ax.grid(True, which="major", linestyle="-", alpha=0.75)
-    ax.grid(True, which="minor", linestyle="--", alpha=0.5)
+    ax.grid(visible=True, which="major", linestyle="-", alpha=0.75)
+    ax.grid(visible=True, which="minor", linestyle="--", alpha=0.5)
 
     ax.set_xlabel(abscissa)
 
@@ -607,7 +607,7 @@ class Color:
         return f"{Color.DarkGray}{s}{Color.Normal}"
 
     @staticmethod
-    def message(s: Any, success: bool = True) -> str:
+    def message(s: Any, *, success: bool = True) -> str:
         return Color.info(s) if success else Color.warn(s)
 
     @staticmethod
@@ -621,7 +621,7 @@ class Color:
 # {{{ matplotlib
 
 
-def check_usetex(s: bool) -> bool:
+def check_usetex(*, s: bool) -> bool:
     try:
         import matplotlib
     except ImportError:
@@ -654,7 +654,7 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
         return
 
     if use_tex is None:
-        use_tex = "GITHUB_REPOSITORY" not in os.environ and check_usetex(True)
+        use_tex = "GITHUB_REPOSITORY" not in os.environ and check_usetex(s=True)
 
     defaults = {
         "figure": {"figsize": (8, 8), "dpi": 300, "constrained_layout": {"use": True}},

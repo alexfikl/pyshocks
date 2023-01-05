@@ -467,7 +467,7 @@ class SSWENO242(Reconstruction):
     sb: ClassVar[weno.Stencil]
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "si", weno.ss_weno_242_coefficients())
+        object.__setattr__(self, "si", weno.ss_weno_242_interior_coefficients())
         object.__setattr__(self, "sb", weno.ss_weno_242_boundary_coefficients())
 
     @property

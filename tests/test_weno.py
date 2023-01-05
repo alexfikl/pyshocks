@@ -28,7 +28,7 @@ set_recommended_matplotlib()
 
 @pytest.mark.parametrize("rec_name", ["wenojs32", "wenojs53"])
 def test_weno_smoothness_indicator_vectorization(
-    rec_name: str, rtol: float = 2.0e-15, n: int = 64
+    rec_name: str, *, rtol: float = 2.0e-15, n: int = 64
 ) -> None:
     """Tests that the vectorized version of the smoothness indicator matches
     the explicitly looped version.
@@ -108,7 +108,7 @@ def test_weno_smoothness_indicator_vectorization(
 
 @pytest.mark.parametrize(("rec_name", "n"), [("wenojs32", 512), ("wenojs53", 128)])
 @pytest.mark.parametrize("is_smooth", [True, False])
-def test_weno_smoothness_indicator(rec_name: str, n: int, is_smooth: bool) -> None:
+def test_weno_smoothness_indicator(rec_name: str, n: int, *, is_smooth: bool) -> None:
     """Tests that the smoothness indicator actually works."""
 
     # {{{ setup
@@ -184,7 +184,7 @@ def _pyweno_reconstruct(
     ],
 )
 def test_weno_vs_pyweno(
-    rec_name: str, order: int, n: int, visualize: bool = False
+    rec_name: str, order: int, n: int, *, visualize: bool = False
 ) -> None:
     """Compares our weno reconstruction to PyWENO"""
     pytest.importorskip("pyweno")
@@ -304,6 +304,7 @@ def test_weno_smooth_reconstruction_order_cell_values(
     order: int,
     resolutions: List[int],
     func_name: str,
+    *,
     visualize: bool = False,
 ) -> None:
     from pyshocks import make_leggauss_quadrature, cell_average
@@ -346,7 +347,7 @@ def test_weno_smooth_reconstruction_order_cell_values(
 
 @pytest.mark.parametrize("bc", [BoundaryType.Periodic])
 def test_ss_weno_242_interpolation(
-    bc: BoundaryType, order: int = 4, visualize: bool = False
+    bc: BoundaryType, *, order: int = 4, visualize: bool = False
 ) -> None:
     from pyshocks import make_leggauss_quadrature, cell_average
     from pyshocks import EOCRecorder, rnorm

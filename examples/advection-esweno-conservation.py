@@ -93,8 +93,6 @@ def main(
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
 
-        ax.grid(True)
-
     # }}}
 
     # {{{ right-hand side
@@ -154,7 +152,6 @@ def main(
         ax.set_xlim([grid.a, grid.b])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
         fig.savefig(outdir / f"advection_esweno_{scheme.name}_{n:05d}_solution")
         fig.clf()

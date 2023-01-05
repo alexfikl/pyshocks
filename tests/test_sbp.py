@@ -17,7 +17,7 @@ set_recommended_matplotlib()
 
 @pytest.mark.parametrize("name", ["21", "42"])
 @pytest.mark.parametrize("bc", [BoundaryType.Dirichlet, BoundaryType.Periodic])
-def test_sbp_matrices(name: str, bc: BoundaryType, visualize: bool = False) -> None:
+def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -> None:
     from pyshocks import sbp
 
     is_periodic = bc == BoundaryType.Periodic
@@ -231,7 +231,7 @@ def _sbp_rnorm(P: jnp.ndarray, x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
 @pytest.mark.parametrize("bc", [BoundaryType.Dirichlet, BoundaryType.Periodic])
 @pytest.mark.parametrize("sd_type", ["Compatible", "FullyCompatible", "Narrow"])
 def test_sbp_matrices_convergence(
-    name: str, bc: BoundaryType, sd_type: str, visualize: bool = True
+    name: str, bc: BoundaryType, sd_type: str, *, visualize: bool = True
 ) -> None:
     from pyshocks import sbp
 

@@ -137,7 +137,7 @@ class Stencil:
         The :class:`~numpy.dtype` of the stencils.
     """
 
-    int: jnp.ndarray
+    int: jnp.ndarray  # noqa: A003
     left: Optional[jnp.ndarray]
     right: Optional[jnp.ndarray]
 

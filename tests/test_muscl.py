@@ -56,7 +56,7 @@ def func_step(
     ],
 )
 def test_flux_limiters(
-    lm_name: str, lm_kwargs: Dict[str, Any], smooth: bool, visualize: bool = False
+    lm_name: str, lm_kwargs: Dict[str, Any], *, smooth: bool, visualize: bool = False
 ) -> None:
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_cell_grid(-1.0, 1.0, n=128, nghosts=1)
@@ -169,7 +169,7 @@ def test_flux_limiters(
     ],
 )
 def test_tvd_slope_limiter_burgers(
-    lm_name: str, lm_kwargs: Dict[str, Any], smooth: bool, visualize: bool = False
+    lm_name: str, lm_kwargs: Dict[str, Any], *, smooth: bool, visualize: bool = False
 ) -> None:
     from pyshocks.reconstruction import MUSCL
     from pyshocks.scalar import PeriodicBoundary

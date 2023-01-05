@@ -139,7 +139,6 @@ def main(
         ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
     # }}}
 
@@ -214,7 +213,6 @@ def main(
         ax.set_xlim([grid.a, grid.b])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
 
         fig.savefig(outdir / f"advection_{scheme.name}_{example_name}_{n:05d}")
         plt.close(fig)
@@ -288,7 +286,6 @@ def convergence(
         ax.set_xlim([-1.0, 1.0])
         ax.set_xlabel("$x$")
         ax.set_ylabel("$y$")
-        ax.grid(True)
 
         fig.savefig(outdir / f"advection_{scheme.name}_convergence")
         plt.close(fig)

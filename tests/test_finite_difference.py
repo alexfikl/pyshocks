@@ -25,6 +25,7 @@ set_recommended_matplotlib()
 def test_advection_vs_continuity(
     rec_name: str,
     bc_type: str,
+    *,
     a: float = -1.0,
     b: float = +1.0,
     n: int = 256,
@@ -112,6 +113,7 @@ def test_advection_vs_continuity(
 def test_advection_finite_difference_jacobian(
     rec_name: str,
     bc_type: str,
+    *,
     a: float = -1.0,
     b: float = +1.0,
     n: int = 32,
@@ -232,7 +234,7 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
     return eoc
 
 
-def test_finite_difference_taylor_stencil(visualize: bool = False) -> None:
+def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
     if visualize:
         try:
             import matplotlib.pyplot as plt

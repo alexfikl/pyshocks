@@ -19,7 +19,7 @@ logger = get_logger("test_timestepping")
     [(ts.ForwardEuler, 1), (ts.SSPRK33, 3), (ts.RK44, 4), (ts.CKRK45, 4)],
 )
 def test_time_convergence(
-    cls: Type[ts.Stepper], order: int, visualize: bool = False
+    cls: Type[ts.Stepper], order: int, *, visualize: bool = False
 ) -> None:
     if visualize:
         try:
@@ -87,7 +87,6 @@ def test_time_convergence(
     if visualize:
         ax.set_xlabel("$t$")
         ax.set_ylabel("$u$")
-        ax.grid(True)
         fig.savefig(f"timestepping_{eoc.name.lower()}")
         plt.close(fig)
 

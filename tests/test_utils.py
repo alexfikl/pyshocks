@@ -26,7 +26,7 @@ set_recommended_matplotlib()
         ConvolutionType.Wrap,
     ],
 )
-def test_convolve_vs_scipy(cv: ConvolutionType, visualize: bool = False) -> None:
+def test_convolve_vs_scipy(cv: ConvolutionType, *, visualize: bool = False) -> None:
     import numpy as np
     from pyshocks.tools import BlockTimer
 
