@@ -21,6 +21,7 @@ mypy:
 
 doc8:
 	$(PYTHON) -m doc8 pyshocks docs
+	@echo -e "\e[1;32mdoc8 clean!\e[0m"
 
 linkcheck:
 	cd docs && make linkcheck SPHINXOPTS="-W --keep-going -n" || true
