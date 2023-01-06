@@ -23,6 +23,21 @@ jobs:
         make pip-install
         make flake8
 
+  sphinxlint:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    -
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    - name: Main Script
+      run: |
+        make pip-install
+        make codespell
+        make sphinxlint
+
   pylint:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-latest

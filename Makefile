@@ -19,11 +19,14 @@ mypy:
 	$(PYTHON) -m mypy --strict --show-error-codes pyshocks tests examples drivers
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 
+doc8:
+	$(PYTHON) -m doc8 pyshocks docs
+
 linkcheck:
 	cd docs && make linkcheck SPHINXOPTS="-W --keep-going -n" || true
 	@echo -e "\e[1;32mlinkcheck clean!\e[0m"
 
-sphinxlint: linkcheck
+sphinxlint: linkcheck doc8
 	$(PYTHON) -m sphinxlint -v \
 		--ignore docs/_build --ignore README.rst \
 		--enable all \
