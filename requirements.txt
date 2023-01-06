@@ -18,7 +18,7 @@ commonmark==0.9.1
     # via rich
 dill==0.3.6
     # via pylint
-exceptiongroup==1.0.4
+exceptiongroup==1.1.0
     # via pytest
 flake8==6.0.0
     # via
@@ -41,7 +41,7 @@ jax==0.4.1
     # via pyshocks (setup.cfg)
 jaxlib==0.4.1
     # via pyshocks (setup.cfg)
-lazy-object-proxy==1.8.0
+lazy-object-proxy==1.9.0
     # via astroid
 mccabe==0.7.0
     # via
@@ -53,7 +53,7 @@ mypy==0.991
     # via pyshocks (setup.cfg)
 mypy-extensions==0.4.3
     # via mypy
-numpy==1.24.0
+numpy==1.24.1
     # via
     #   jax
     #   jaxlib
@@ -72,7 +72,7 @@ pep8-naming==0.13.3
     # via pyshocks (setup.cfg)
 pip-tools==6.12.1
     # via pyshocks (setup.cfg)
-platformdirs==2.6.0
+platformdirs==2.6.2
     # via pylint
 pluggy==1.0.0
     # via pytest
@@ -80,7 +80,7 @@ pycodestyle==2.10.0
     # via flake8
 pyflakes==3.0.1
     # via flake8
-pygments==2.13.0
+pygments==2.14.0
     # via rich
 pylint==2.15.9
     # via pyshocks (setup.cfg)
@@ -88,9 +88,9 @@ pytest==7.2.0
     # via pyshocks (setup.cfg)
 pyweno @ git+https://github.com/memmett/PyWENO.git
     # via pyshocks (setup.cfg)
-rich==12.6.0
+rich==13.0.0
     # via pyshocks (setup.cfg)
-scipy==1.9.3
+scipy==1.10.0
     # via
     #   jax
     #   jaxlib
