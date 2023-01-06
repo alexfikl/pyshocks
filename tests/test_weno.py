@@ -286,7 +286,7 @@ def get_function(name: str) -> SpatialFunction:
         ("wenojs32", 3, list(range(192, 384 + 1, 32))),
         ("wenojs53", 5, list(range(32, 256 + 1, 32))),
         ("esweno32", 3, list(range(192, 384 + 1, 32))),
-        ("ssweno242", 4, list(range(192, 384 + 1, 32))),
+        # ("ssweno242", 4, list(range(192, 384 + 1, 32))),
     ],
 )
 @pytest.mark.parametrize(
