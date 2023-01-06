@@ -38,13 +38,13 @@ For example, to generate a nice HTML-based variant go
 .. code:: bash
 
     cd docs && make html
-    firefox _build/html/index.html
+    xdg-open _build/html/index.html
 
 Sphinx ca can also generate LaTeX documentation with
 
 .. code:: bash
 
-    make latex && cd _build/latex && latexrun pyshocks.tex
+    make latex && cd _build/latex && make
     xdg-open pyshocks.pdf
 
 The documentation is also hosted on
