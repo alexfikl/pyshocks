@@ -34,7 +34,7 @@ sphinxlint: linkcheck
 codespell:
 	codespell --summary \
 		--ignore-words .codespell-ignore \
-		pyshocks tests examples drivers
+		pyshocks tests examples drivers README.rst
 	@echo -e "\e[1;32mcodespell clean!\e[0m"
 
 reuse:

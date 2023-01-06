@@ -10,7 +10,7 @@ About
 =====
 
 This repository contains some preliminary experiments on performing adjoint-based
-optimization for systems with shocks by using automatic differentiation. The
+optimization of systems with shocks by using automatic differentiation. The
 main goal is to get it working for the one-dimensional unsteady Euler equations
 with common WENO schemes.
 
@@ -19,17 +19,15 @@ It is currently quite far from that goal, so this is **very experimental**.
 Requirements
 ============
 
-The project currently supports Python 3.8 and later. The requirements are
-listed in ``setup.cfg``
+The project currently supports Python 3.8 and later. The (full) requirements are
+listed in ``setup.cfg``.
 
-* ``jax`` and ``jaxlib``: base numeric and automatica differentiation package
+* ``jax`` and ``jaxlib``: base numeric and automatic differentiation package
   used throughout. See
   `JAX support policy <https://jax.readthedocs.io/en/latest/deprecation.html?highlight=nep>`__
   for details on supported versions.
 * ``rich``: recommended for nicer logging.
 * ``matplotlib`` and ``SciencePlots``: recommended for nicer plotting.
-
-Additional development dependencies are listed in ``setup.cfg``.
 
 Documentation
 =============
