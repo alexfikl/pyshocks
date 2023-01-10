@@ -31,7 +31,6 @@ import jax.numpy as jnp
 
 from pyshocks.grid import Grid
 
-
 # {{{ limiter interface
 
 

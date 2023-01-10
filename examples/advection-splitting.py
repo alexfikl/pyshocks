@@ -9,12 +9,13 @@ import jax.numpy as jnp
 
 from pyshocks import (
     Boundary,
-    make_uniform_point_grid,
-    bind,
+    advection,
     apply_operator,
+    bind,
+    get_logger,
+    make_uniform_point_grid,
     predict_timestep,
 )
-from pyshocks import advection, get_logger
 from pyshocks.reconstruction import ConstantReconstruction
 from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
 

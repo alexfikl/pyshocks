@@ -29,16 +29,16 @@ Schemes
 
 from typing import Any, Dict, Tuple, Type
 
-from pyshocks.grid import Grid
-from pyshocks.tools import SpatialFunction
+import jax.numpy as jnp
+
 from pyshocks.continuity.schemes import (
-    Scheme,
     FiniteDifferenceScheme,
     FiniteVolumeScheme,
     Godunov,
+    Scheme,
 )
-
-import jax.numpy as jnp
+from pyshocks.grid import Grid
+from pyshocks.tools import SpatialFunction
 
 # NOTE: just providing an alias for common usage
 Upwind = Godunov

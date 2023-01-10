@@ -7,17 +7,17 @@ from typing import List, Tuple
 import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
+import pytest
 
-from pyshocks import get_logger, set_recommended_matplotlib
 from pyshocks import (
-    SpatialFunction,
     BoundaryType,
+    SpatialFunction,
+    get_logger,
     make_uniform_cell_grid,
     make_uniform_ssweno_grid,
+    set_recommended_matplotlib,
 )
-from pyshocks.reconstruction import WENOJS, reconstruct, make_reconstruction_from_name
-
-import pytest
+from pyshocks.reconstruction import WENOJS, make_reconstruction_from_name, reconstruct
 
 logger = get_logger("test_weno")
 set_recommended_matplotlib()
@@ -202,7 +202,7 @@ def test_weno_vs_pyweno(
 
     grid = make_uniform_cell_grid(a=0, b=2.0 * jnp.pi, n=n, nghosts=rec.stencil_width)
 
-    from pyshocks import make_leggauss_quadrature, cell_average
+    from pyshocks import cell_average, make_leggauss_quadrature
 
     quad = make_leggauss_quadrature(grid, order=order)
     u = cell_average(quad, lambda x: jnp.sin(x))  # pylint: disable=W0108
@@ -216,7 +216,6 @@ def test_weno_vs_pyweno(
     # {{{ compare
 
     from pyshocks import rnorm
-
     from pyshocks.weno import weno_smoothness
 
     betar = weno_smoothness(rec.s, u[::-1])[:, ::-1].T
@@ -307,8 +306,7 @@ def test_weno_smooth_reconstruction_order_cell_values(
     *,
     visualize: bool = False,
 ) -> None:
-    from pyshocks import make_leggauss_quadrature, cell_average
-    from pyshocks import EOCRecorder, rnorm
+    from pyshocks import EOCRecorder, cell_average, make_leggauss_quadrature, rnorm
 
     eoc_l = EOCRecorder(name="ul")
     eoc_r = EOCRecorder(name="ur")
@@ -349,8 +347,7 @@ def test_weno_smooth_reconstruction_order_cell_values(
 def test_ss_weno_242_interpolation(
     bc: BoundaryType, *, order: int = 4, visualize: bool = False
 ) -> None:
-    from pyshocks import make_leggauss_quadrature, cell_average
-    from pyshocks import EOCRecorder, rnorm
+    from pyshocks import EOCRecorder, cell_average, make_leggauss_quadrature, rnorm
 
     is_periodic = bc == BoundaryType.Periodic
     if is_periodic:
@@ -455,8 +452,9 @@ def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
 def test_ss_weno_burgers_two_point_flux(bc: BoundaryType) -> None:
     grid = make_uniform_ssweno_grid(a=-1.0, b=1.0, n=64)
 
-    from pyshocks import sbp
     from dataclasses import replace
+
+    from pyshocks import sbp
 
     q = sbp.make_sbp_42_first_derivative_q_stencil(dtype=grid.dtype)
     q = replace(q, left=None, right=None)

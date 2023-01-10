@@ -7,9 +7,17 @@ from typing import ClassVar
 import jax
 import jax.numpy as jnp
 
-from pyshocks import Grid, Boundary, BoundaryType
-from pyshocks import bind, apply_operator, predict_timestep, flux
-from pyshocks import reconstruction, sbp
+from pyshocks import (
+    Boundary,
+    BoundaryType,
+    Grid,
+    apply_operator,
+    bind,
+    flux,
+    predict_timestep,
+    reconstruction,
+    sbp,
+)
 from pyshocks.burgers.schemes import FiniteDifferenceScheme
 from pyshocks.sbp import Stencil
 
@@ -91,7 +99,7 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
     scheme: SSWENO242, grid: Grid, bc: Boundary
 ) -> SSWENO242:
     from pyshocks import UniformGrid
-    from pyshocks.scalar import SATBoundary, OneSidedBurgersBoundary
+    from pyshocks.scalar import OneSidedBurgersBoundary, SATBoundary
 
     assert isinstance(grid, UniformGrid)
     if bc.boundary_type == BoundaryType.Periodic:

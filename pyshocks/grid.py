@@ -322,8 +322,8 @@ def make_uniform_ssweno_grid(
     else:
         x = jnp.linspace(a, b, n, dtype=dtype)
 
-        from pyshocks.schemes import BoundaryType
         from pyshocks.sbp import make_sbp_42_norm_stencil, make_sbp_matrix_from_stencil
+        from pyshocks.schemes import BoundaryType
 
         p = make_sbp_42_norm_stencil(dtype=dtype)
         p = make_sbp_matrix_from_stencil(BoundaryType.Dirichlet, n, p, weight=1)

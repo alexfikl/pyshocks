@@ -65,7 +65,6 @@ import jax.numpy as jnp
 from pyshocks.grid import Grid
 from pyshocks.reconstruction import Reconstruction
 
-
 # {{{ schemes
 
 

@@ -6,24 +6,21 @@ from typing import ClassVar
 
 import jax.numpy as jnp
 
+import pyshocks.finitedifference as fd
 from pyshocks import (
-    Grid,
-    UniformGrid,
-    SchemeBase,
-    FiniteVolumeSchemeBase,
-    FiniteDifferenceSchemeBase,
     Boundary,
-)
-from pyshocks import (
-    bind,
+    FiniteDifferenceSchemeBase,
+    FiniteVolumeSchemeBase,
+    Grid,
+    SchemeBase,
+    UniformGrid,
     apply_operator,
+    bind,
+    evaluate_boundary,
     numerical_flux,
     predict_timestep,
-    evaluate_boundary,
+    sbp,
 )
-from pyshocks import sbp
-import pyshocks.finitedifference as fd
-
 
 # {{{ base
 
@@ -170,8 +167,8 @@ class ESWENO32(FiniteVolumeScheme):
 def _numerical_flux_advection_esweno32(
     scheme: ESWENO32, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
 ) -> jnp.ndarray:
-    from pyshocks.weno import es_weno_weights
     from pyshocks import reconstruction
+    from pyshocks.weno import es_weno_weights
 
     rec = scheme.rec
 
@@ -304,7 +301,7 @@ def _bind_advection_sbp(  # type: ignore[misc]
 
     # {{{ boundary
 
-    from pyshocks.scalar import SATBoundary, PeriodicBoundary
+    from pyshocks.scalar import PeriodicBoundary, SATBoundary
 
     if isinstance(bc, SATBoundary):
         from pyshocks.scalar import OneSidedAdvectionSATBoundary

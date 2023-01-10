@@ -17,7 +17,6 @@ from typing import Any, Tuple
 
 import jax.numpy as jnp
 
-
 # {{{ stencil
 
 
@@ -55,8 +54,9 @@ class Stencil:
         return repr(self)
 
     def __repr__(self) -> str:
-        import jax
         from fractions import Fraction
+
+        import jax
 
         coeffs = jax.device_get(self.coeffs)
         indices = jax.device_get(self.indices)

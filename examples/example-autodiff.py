@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-import numpy as np
-
 import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
+import numpy as np
 
 from pyshocks import get_logger
 

@@ -5,6 +5,7 @@ all: flake8 pylint
 # {{{ linting
 
 black:
+	$(PYTHON) -m isort pyshocks tests examples docs
 	$(PYTHON) -m black --safe --target-version py38 pyshocks tests examples drivers
 
 flake8:

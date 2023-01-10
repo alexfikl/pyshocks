@@ -24,7 +24,7 @@ Reconstruction
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Any, ClassVar, Dict, Tuple, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
 
 import jax.numpy as jnp
 

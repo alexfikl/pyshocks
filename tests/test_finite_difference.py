@@ -6,12 +6,16 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import jax.random
-
-from pyshocks import EOCRecorder, get_logger, set_recommended_matplotlib
-from pyshocks import advection, continuity
-from pyshocks.finitedifference import Stencil
-
 import pytest
+
+from pyshocks import (
+    EOCRecorder,
+    advection,
+    continuity,
+    get_logger,
+    set_recommended_matplotlib,
+)
+from pyshocks.finitedifference import Stencil
 
 logger = get_logger("test_finite_difference")
 set_recommended_matplotlib()
@@ -39,8 +43,8 @@ def test_advection_vs_continuity(
 
     # {{{ setup
 
+    from pyshocks import Boundary, make_uniform_cell_grid
     from pyshocks.reconstruction import make_reconstruction_from_name
-    from pyshocks import make_uniform_cell_grid, Boundary
 
     rec = make_reconstruction_from_name(rec_name)
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=rec.stencil_width)
@@ -127,8 +131,8 @@ def test_advection_finite_difference_jacobian(
 
     # {{{ setup
 
+    from pyshocks import Boundary, make_uniform_cell_grid
     from pyshocks.reconstruction import make_reconstruction_from_name
-    from pyshocks import make_uniform_cell_grid, Boundary
 
     rec = make_reconstruction_from_name(rec_name)
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=rec.stencil_width)
@@ -242,8 +246,8 @@ def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
             visualize = False
 
     from pyshocks.finitedifference import (
-        make_taylor_approximation,
         make_fornberg_approximation,
+        make_taylor_approximation,
     )
 
     stencils = [

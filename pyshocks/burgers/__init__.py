@@ -36,19 +36,18 @@ Schemes
 from typing import Any, Dict, Tuple, Type
 
 from pyshocks.burgers.schemes import (
-    Scheme,
-    FiniteVolumeScheme,
-    FiniteDifferenceScheme,
-    Godunov,
-    Rusanov,
-    LaxFriedrichs,
-    EngquistOsher,
     ESWENO32,
     SSMUSCL,
+    EngquistOsher,
+    FiniteDifferenceScheme,
+    FiniteVolumeScheme,
     FluxSplitRusanov,
+    Godunov,
+    LaxFriedrichs,
+    Rusanov,
+    Scheme,
 )
 from pyshocks.burgers.ssweno import SSWENO242
-
 
 # {{{ make_scheme_from_name
 

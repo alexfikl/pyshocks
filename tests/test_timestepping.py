@@ -3,13 +3,12 @@
 
 from typing import Type
 
-from pyshocks import get_logger
-from pyshocks import timestepping as ts
-
 import jax
 import jax.numpy as jnp
-
 import pytest
+
+from pyshocks import get_logger
+from pyshocks import timestepping as ts
 
 logger = get_logger("test_timestepping")
 

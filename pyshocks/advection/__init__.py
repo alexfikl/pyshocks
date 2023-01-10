@@ -39,13 +39,13 @@ Schemes
 from typing import Any, Dict, Tuple, Type
 
 from pyshocks.advection.schemes import (
-    Scheme,
-    FiniteVolumeScheme,
-    FiniteDifferenceScheme,
-    Godunov,
     ESWENO32,
     SBPSAT,
+    FiniteDifferenceScheme,
+    FiniteVolumeScheme,
     FluxSplitGodunov,
+    Godunov,
+    Scheme,
 )
 
 # NOTE: just providing an alias for common usage

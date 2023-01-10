@@ -52,8 +52,8 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Iterator,
     Iterable,
+    Iterator,
     List,
     Optional,
     Protocol,
@@ -70,8 +70,8 @@ try:
 except ImportError:
     from typing_extensions import ParamSpec  # type: ignore[assignment]
 
-from types import TracebackType
 import pathlib
+from types import TracebackType
 
 import jax.numpy as jnp
 

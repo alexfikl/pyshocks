@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2020 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from typing import Optional, Union
 import logging
+from typing import Optional, Union
 
 
 def get_logger(

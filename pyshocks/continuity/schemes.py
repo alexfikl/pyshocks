@@ -7,14 +7,15 @@ from typing import Optional
 import jax.numpy as jnp
 
 from pyshocks import (
-    Grid,
     Boundary,
-    SchemeBase,
-    FiniteDifferenceSchemeBase,
     ConservationLawScheme,
+    FiniteDifferenceSchemeBase,
+    Grid,
+    SchemeBase,
+    flux,
+    numerical_flux,
+    predict_timestep,
 )
-from pyshocks import flux, numerical_flux, predict_timestep
-
 
 # {{{ base
 

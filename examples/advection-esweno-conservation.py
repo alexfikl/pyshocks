@@ -7,11 +7,13 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    make_uniform_cell_grid,
+    advection,
     apply_operator,
+    get_logger,
+    make_uniform_cell_grid,
     predict_timestep,
+    reconstruction,
 )
-from pyshocks import advection, reconstruction, get_logger
 
 logger = get_logger("advection")
 
@@ -56,8 +58,8 @@ def main(
 
     # {{{ setup
 
+    from pyshocks import cell_average, make_leggauss_quadrature
     from pyshocks.scalar import PeriodicBoundary
-    from pyshocks import make_leggauss_quadrature, cell_average
 
     grid = make_uniform_cell_grid(a=0.0, b=1.0, n=n, nghosts=3)
     quad = make_leggauss_quadrature(grid, order=5)
@@ -107,8 +109,7 @@ def main(
 
     # {{{ evolution
 
-    from pyshocks import norm
-    from pyshocks import timestepping
+    from pyshocks import norm, timestepping
 
     tfinal = 1.0 * periods
     method = timestepping.SSPRK33(

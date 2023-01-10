@@ -3,8 +3,8 @@
 
 from typing import Optional
 
-import jax.numpy as jnp
 import jax.experimental.sparse as js
+import jax.numpy as jnp
 
 
 def sparse_banded(qi: jnp.ndarray) -> js.BCOO:

@@ -5,23 +5,25 @@ from dataclasses import dataclass
 from functools import partial
 from typing import List, Union
 
-from pyshocks import (
-    SchemeBase,
-    Grid,
-    Boundary,
-    SpatialFunction,
-    timeit,
-    get_logger,
-    set_recommended_matplotlib,
-)
-from pyshocks.reconstruction import make_reconstruction_from_name
-from pyshocks.limiters import make_limiter_from_name
-from pyshocks import funcs, burgers, advection, diffusion
-
 import jax
 import jax.numpy as jnp
-
 import pytest
+
+from pyshocks import (
+    Boundary,
+    Grid,
+    SchemeBase,
+    SpatialFunction,
+    advection,
+    burgers,
+    diffusion,
+    funcs,
+    get_logger,
+    set_recommended_matplotlib,
+    timeit,
+)
+from pyshocks.limiters import make_limiter_from_name
+from pyshocks.reconstruction import make_reconstruction_from_name
 
 logger = get_logger("test_convergence")
 set_recommended_matplotlib()
@@ -78,7 +80,7 @@ class FiniteVolumeTestCase(ConvergenceTestCase):  # pylint: disable=abstract-met
         return make_uniform_cell_grid(a=a, b=b, n=n, nghosts=3)
 
     def cell_average(self, grid: Grid, func: SpatialFunction) -> jnp.ndarray:
-        from pyshocks import make_leggauss_quadrature, cell_average
+        from pyshocks import cell_average, make_leggauss_quadrature
 
         quad = make_leggauss_quadrature(grid, order=5)
         return cell_average(quad, func)
@@ -544,8 +546,8 @@ def test_diffusion_convergence(
     tfinal: float = 0.5,
     visualize: bool = False,
 ) -> None:
-    from pyshocks.timestepping import predict_timestep_from_resolutions
     from pyshocks import EOCRecorder
+    from pyshocks.timestepping import predict_timestep_from_resolutions
 
     eoc = EOCRecorder(name=str(case))
     dt = 0.25 * predict_timestep_from_resolutions(a, b, resolutions, umax=case.d, p=2)

@@ -4,13 +4,11 @@
 from functools import partial
 from typing import Any, Dict
 
-import pytest
-
 import jax
 import jax.numpy as jnp
+import pytest
 
-from pyshocks import get_logger, set_recommended_matplotlib
-from pyshocks import make_uniform_cell_grid
+from pyshocks import get_logger, make_uniform_cell_grid, set_recommended_matplotlib
 from pyshocks.limiters import make_limiter_from_name
 
 logger = get_logger("test_muscl")
@@ -61,7 +59,7 @@ def test_flux_limiters(
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_cell_grid(-1.0, 1.0, n=128, nghosts=1)
 
-    from pyshocks import make_leggauss_quadrature, cell_average
+    from pyshocks import cell_average, make_leggauss_quadrature
 
     quad = make_leggauss_quadrature(grid, order=3)
 
@@ -70,7 +68,7 @@ def test_flux_limiters(
     else:
         u = cell_average(quad, partial(func_step, a=grid.a, b=grid.b))
 
-    from pyshocks.limiters import flux_limit, evaluate
+    from pyshocks.limiters import evaluate, flux_limit
 
     phi = flux_limit(lm, grid, u)
     assert phi.shape == u.shape
@@ -171,9 +169,9 @@ def test_flux_limiters(
 def test_tvd_slope_limiter_burgers(
     lm_name: str, lm_kwargs: Dict[str, Any], *, smooth: bool, visualize: bool = False
 ) -> None:
+    from pyshocks import burgers
     from pyshocks.reconstruction import MUSCL
     from pyshocks.scalar import PeriodicBoundary
-    from pyshocks import burgers
 
     # {{{ setup
 
@@ -184,7 +182,7 @@ def test_tvd_slope_limiter_burgers(
     scheme = burgers.Godunov(rec=rec)
     boundary = PeriodicBoundary()
 
-    from pyshocks import make_leggauss_quadrature, cell_average
+    from pyshocks import cell_average, make_leggauss_quadrature
 
     quad = make_leggauss_quadrature(grid, order=3)
 
@@ -202,7 +200,7 @@ def test_tvd_slope_limiter_burgers(
     def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
-    from pyshocks.timestepping import SSPRK33, step, predict_maxit_from_timestep
+    from pyshocks.timestepping import SSPRK33, predict_maxit_from_timestep, step
 
     dt = 0.1 * grid.dx_min / jnp.max(jnp.abs(u0))
     tfinal = 0.5

@@ -8,15 +8,19 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    Grid,
     Boundary,
-    SchemeBase,
     FiniteVolumeSchemeBase,
+    Grid,
+    SchemeBase,
     VectorFunction,
     apply_operator,
+    burgers,
+    get_logger,
+    limiters,
     predict_timestep,
+    reconstruction,
+    sbp,
 )
-from pyshocks import burgers, limiters, reconstruction, sbp, get_logger
 
 logger = get_logger("burgers")
 
@@ -36,8 +40,8 @@ def ic_func(grid: Grid, t: float, x: jnp.ndarray, *, variant: int = 1) -> jnp.nd
 def make_finite_volume(
     order: float, sw: int, *, a: float, b: float, n: int, periodic: bool = True
 ) -> Tuple[Grid, Boundary, VectorFunction]:
+    from pyshocks import cell_average, make_leggauss_quadrature, make_uniform_cell_grid
     from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
-    from pyshocks import make_uniform_cell_grid, make_leggauss_quadrature, cell_average
 
     order = int(max(order, 1.0)) + 1
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=sw)
@@ -63,8 +67,8 @@ def make_finite_difference(
     n: int,
     periodic: bool = True,
 ) -> Tuple[Grid, Boundary, VectorFunction]:
-    from pyshocks.scalar import PeriodicBoundary, make_burgers_sat_boundary
     from pyshocks import make_uniform_point_grid
+    from pyshocks.scalar import PeriodicBoundary, make_burgers_sat_boundary
 
     if periodic:
         grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=3)

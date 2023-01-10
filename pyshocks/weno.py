@@ -34,7 +34,7 @@ SS-WENO
 """
 
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 import jax.numpy as jnp
 
@@ -493,8 +493,8 @@ def ss_weno_242_boundary_coefficients(
 
 
 def ss_weno_242_interp(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
-    from pyshocks.schemes import BoundaryType
     from pyshocks.convolve import ConvolutionType
+    from pyshocks.schemes import BoundaryType
 
     assert isinstance(sb.bc, BoundaryType)
     if sb.bc == BoundaryType.Periodic:

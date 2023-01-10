@@ -28,9 +28,8 @@ from typing import Callable, ClassVar, Iterator, List, Optional, Tuple
 import jax
 import jax.numpy as jnp
 
-from pyshocks.checkpointing import Checkpoint, save, load
+from pyshocks.checkpointing import Checkpoint, load, save
 from pyshocks.tools import ScalarFunction, VectorFunction
-
 
 # {{{ interface
 

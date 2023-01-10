@@ -1,12 +1,15 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+import jax.numpy as jnp
 import pytest
 
-import jax.numpy as jnp
-
-from pyshocks import get_logger, set_recommended_matplotlib
-from pyshocks import make_uniform_point_grid, BoundaryType
+from pyshocks import (
+    BoundaryType,
+    get_logger,
+    make_uniform_point_grid,
+    set_recommended_matplotlib,
+)
 
 logger = get_logger("test_sbp")
 set_recommended_matplotlib()

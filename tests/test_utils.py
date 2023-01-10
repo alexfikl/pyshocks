@@ -3,11 +3,10 @@
 
 import jax
 import jax.numpy as jnp
+import pytest
 
 from pyshocks import get_logger, set_recommended_matplotlib
 from pyshocks.convolve import ConvolutionType
-
-import pytest
 
 logger = get_logger("test_utils")
 set_recommended_matplotlib()
@@ -28,6 +27,7 @@ set_recommended_matplotlib()
 )
 def test_convolve_vs_scipy(cv: ConvolutionType, *, visualize: bool = False) -> None:
     import numpy as np
+
     from pyshocks.tools import BlockTimer
 
     rng = np.random.default_rng(seed=42)

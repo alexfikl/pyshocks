@@ -54,15 +54,14 @@ import jax.numpy as jnp
 
 from pyshocks.grid import Grid, UniformGrid
 from pyshocks.schemes import (
-    ConservationLawScheme,
-    flux,
     Boundary,
     BoundaryType,
+    ConservationLawScheme,
     apply_boundary,
     evaluate_boundary,
+    flux,
 )
-from pyshocks.tools import TemporalFunction, VectorFunction, SpatialFunction
-
+from pyshocks.tools import SpatialFunction, TemporalFunction, VectorFunction
 
 # {{{ fluxes
 
@@ -158,7 +157,7 @@ def lax_friedrichs_initial_condition_correction(
     if order is None:
         half_u0 = func(half_grid.x)
     else:
-        from pyshocks.grid import make_leggauss_quadrature, cell_average
+        from pyshocks.grid import cell_average, make_leggauss_quadrature
 
         # evaluate cell averages on the half-grid
         quad = make_leggauss_quadrature(half_grid, order=order)

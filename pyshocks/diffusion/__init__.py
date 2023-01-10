@@ -31,13 +31,12 @@ Schemes
 from typing import Any, Dict, Tuple, Type
 
 from pyshocks.diffusion.schemes import (
-    Scheme,
-    FiniteVolumeScheme,
-    FiniteDifferenceScheme,
-    CenteredScheme,
     SBPSAT,
+    CenteredScheme,
+    FiniteDifferenceScheme,
+    FiniteVolumeScheme,
+    Scheme,
 )
-
 
 # {{{ make_scheme_from_name
 

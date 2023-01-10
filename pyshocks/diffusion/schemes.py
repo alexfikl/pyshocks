@@ -7,22 +7,19 @@ from typing import ClassVar
 import jax.numpy as jnp
 
 from pyshocks import (
-    Grid,
-    UniformGrid,
     Boundary,
-    SchemeBase,
-    FiniteDifferenceSchemeBase,
     ConservationLawScheme,
-)
-from pyshocks import (
-    bind,
+    FiniteDifferenceSchemeBase,
+    Grid,
+    SchemeBase,
+    UniformGrid,
     apply_operator,
+    bind,
+    evaluate_boundary,
     numerical_flux,
     predict_timestep,
-    evaluate_boundary,
+    sbp,
 )
-from pyshocks import sbp
-
 
 # {{{ base
 
@@ -143,7 +140,7 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 
     # {{{ boundary
 
-    from pyshocks.scalar import SATBoundary, PeriodicBoundary
+    from pyshocks.scalar import PeriodicBoundary, SATBoundary
 
     if isinstance(bc, SATBoundary):
         from pyshocks.scalar import OneSidedDiffusionSATBoundary

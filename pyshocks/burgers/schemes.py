@@ -6,23 +6,21 @@ from typing import ClassVar
 
 import jax.numpy as jnp
 
+import pyshocks.finitedifference as fd
 from pyshocks import (
-    Grid,
-    UniformGrid,
     Boundary,
-    SchemeBase,
-    FiniteDifferenceSchemeBase,
     ConservationLawScheme,
-)
-from pyshocks import reconstruction
-from pyshocks import (
+    FiniteDifferenceSchemeBase,
+    Grid,
+    SchemeBase,
+    UniformGrid,
+    apply_operator,
     bind,
     flux,
-    apply_operator,
     numerical_flux,
     predict_timestep,
+    reconstruction,
 )
-import pyshocks.finitedifference as fd
 
 # {{{ base
 

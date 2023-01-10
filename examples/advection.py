@@ -8,14 +8,17 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    Grid,
     Boundary,
+    Grid,
     VectorFunction,
-    make_uniform_cell_grid,
+    advection,
     apply_operator,
+    get_logger,
+    limiters,
+    make_uniform_cell_grid,
     predict_timestep,
+    reconstruction,
 )
-from pyshocks import advection, limiters, reconstruction, get_logger
 
 logger = get_logger("advection")
 
@@ -113,7 +116,7 @@ def main(
     boundary = make_boundary_conditions(example_name, solution, a=0.5)
 
     # initial condition
-    from pyshocks import make_leggauss_quadrature, cell_average
+    from pyshocks import cell_average, make_leggauss_quadrature
 
     order = int(max(scheme.order, 1.0)) + 1
     quad = make_leggauss_quadrature(grid, order=order)

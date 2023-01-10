@@ -2,55 +2,56 @@
 # SPDX-License-Identifier: MIT
 
 from importlib import metadata
+
 import jax
 
-from pyshocks.logging import get_logger
-from pyshocks.tools import (
-    T,
-    P,
-    ScalarFunction,
-    VectorFunction,
-    SpatialFunction,
-    TemporalFunction,
-    EOCRecorder,
-    estimate_order_of_convergence,
-    TimeResult,
-    BlockTimer,
-    IterationTimer,
-    timeit,
-    repeatit,
-    profileit,
-    set_recommended_matplotlib,
-)
 from pyshocks.grid import (
     Grid,
     Quadrature,
     UniformGrid,
-    make_leggauss_quadrature,
     cell_average,
+    make_leggauss_quadrature,
     make_uniform_cell_grid,
     make_uniform_point_grid,
     make_uniform_ssweno_grid,
     norm,
     rnorm,
 )
+from pyshocks.logging import get_logger
 from pyshocks.schemes import (
-    SchemeT,
-    SchemeBase,
-    FiniteVolumeSchemeBase,
-    FiniteDifferenceSchemeBase,
-    bind,
-    apply_operator,
-    predict_timestep,
-    CombineScheme,
-    ConservationLawScheme,
-    CombineConservationLawScheme,
-    flux,
-    numerical_flux,
     Boundary,
     BoundaryType,
+    CombineConservationLawScheme,
+    CombineScheme,
+    ConservationLawScheme,
+    FiniteDifferenceSchemeBase,
+    FiniteVolumeSchemeBase,
+    SchemeBase,
+    SchemeT,
     apply_boundary,
+    apply_operator,
+    bind,
     evaluate_boundary,
+    flux,
+    numerical_flux,
+    predict_timestep,
+)
+from pyshocks.tools import (
+    BlockTimer,
+    EOCRecorder,
+    IterationTimer,
+    P,
+    ScalarFunction,
+    SpatialFunction,
+    T,
+    TemporalFunction,
+    TimeResult,
+    VectorFunction,
+    estimate_order_of_convergence,
+    profileit,
+    repeatit,
+    set_recommended_matplotlib,
+    timeit,
 )
 
 # {{{ config

@@ -105,7 +105,6 @@ import jax.numpy as jnp
 from pyshocks.grid import UniformGrid
 from pyshocks.schemes import BoundaryType
 
-
 # {{{ SBP helpers
 
 
