@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=dev --extra=pyweno --output-file=requirements.txt --resolver=backtracking setup.cfg
 #
-astroid==2.12.13
+astroid==2.13.2
     # via pylint
 attrs==22.2.0
     # via
@@ -32,6 +32,7 @@ flake8==6.0.0
     # via
     #   flake8-bugbear
     #   flake8-comprehensions
+    #   flake8-isort
     #   flake8-quotes
     #   pep8-naming
     #   pyshocks (setup.cfg)
@@ -39,12 +40,16 @@ flake8-bugbear==22.12.6
     # via pyshocks (setup.cfg)
 flake8-comprehensions==3.10.1
     # via pyshocks (setup.cfg)
+flake8-isort==6.0.0
+    # via pyshocks (setup.cfg)
 flake8-quotes==3.3.2
     # via pyshocks (setup.cfg)
-iniconfig==1.1.1
+iniconfig==2.0.0
     # via pytest
 isort==5.11.4
-    # via pylint
+    # via
+    #   flake8-isort
+    #   pylint
 jax==0.4.1
     # via pyshocks (setup.cfg)
 jaxlib==0.4.1
@@ -70,7 +75,7 @@ numpy==1.24.1
     #   scipy
 opt-einsum==3.3.0
     # via jax
-packaging==22.0
+packaging==23.0
     # via
     #   build
     #   pytest
@@ -96,7 +101,7 @@ pygments==2.14.0
     # via
     #   doc8
     #   rich
-pylint==2.15.9
+pylint==2.15.10
     # via pyshocks (setup.cfg)
 pytest==7.2.0
     # via pyshocks (setup.cfg)
@@ -106,7 +111,7 @@ regex==2022.10.31
     # via sphinx-lint
 restructuredtext-lint==1.4.0
     # via doc8
-rich==13.0.0
+rich==13.0.1
     # via pyshocks (setup.cfg)
 scipy==1.10.0
     # via
@@ -131,7 +136,9 @@ tomlkit==0.11.6
 types-dataclasses==0.6.6
     # via pyshocks (setup.cfg)
 typing-extensions==4.4.0
-    # via mypy
+    # via
+    #   astroid
+    #   mypy
 wheel==0.38.4
     # via pip-tools
 wrapt==1.14.1
