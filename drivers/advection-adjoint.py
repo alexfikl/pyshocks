@@ -8,10 +8,17 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from pyshocks import Grid, Boundary, timeit
-from pyshocks import advection, reconstruction, limiters, get_logger
+from pyshocks import (
+    Boundary,
+    Grid,
+    advection,
+    get_logger,
+    limiters,
+    reconstruction,
+    timeit,
+)
 from pyshocks.checkpointing import InMemoryCheckpoint
-from pyshocks.timestepping import Stepper, step, adjoint_step
+from pyshocks.timestepping import Stepper, adjoint_step, step
 
 logger = get_logger("advection-adjoint")
 
@@ -232,14 +239,13 @@ def main(
 
     # {{{ geometry
 
-    from pyshocks import funcs
-    from pyshocks import make_uniform_cell_grid
+    from pyshocks import funcs, make_uniform_cell_grid
 
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     func_velocity = partial(funcs.ic_constant, grid, c=c_velocity)
     func_ic = partial(funcs.ic_sine, grid, k=1)
 
-    from pyshocks import make_leggauss_quadrature, cell_average
+    from pyshocks import cell_average, make_leggauss_quadrature
 
     order = int(max(scheme.order, 1.0)) + 1
     quad = make_leggauss_quadrature(grid, order=order)
@@ -269,7 +275,7 @@ def main(
 
     # {{{ forward time stepping
 
-    from pyshocks import predict_timestep, apply_operator
+    from pyshocks import apply_operator, predict_timestep
 
     def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return theta * predict_timestep(scheme, grid, boundary, _t, _u)

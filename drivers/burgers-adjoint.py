@@ -8,16 +8,20 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import (
-    Grid,
     Boundary,
-    SchemeBase,
     FiniteVolumeSchemeBase,
-    timeit,
+    Grid,
+    SchemeBase,
     bind,
+    burgers,
+    get_logger,
+    limiters,
+    reconstruction,
+    sbp,
+    timeit,
 )
-from pyshocks import burgers, sbp, reconstruction, limiters, get_logger
 from pyshocks.checkpointing import InMemoryCheckpoint
-from pyshocks.timestepping import step, adjoint_step, Stepper
+from pyshocks.timestepping import Stepper, adjoint_step, step
 
 logger = get_logger("burgers-adjoint")
 
@@ -41,7 +45,7 @@ class Simulation:
 def make_time_stepper(
     scheme: SchemeBase, grid: Grid, bc: Boundary, *, theta: float
 ) -> Stepper:
-    from pyshocks import predict_timestep, apply_operator
+    from pyshocks import apply_operator, predict_timestep
 
     def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
         return theta * predict_timestep(scheme, grid, bc, _t, _u)
@@ -69,14 +73,13 @@ def make_finite_volume_simulation(
 ) -> Simulation:
     assert isinstance(scheme, FiniteVolumeSchemeBase)
 
-    from pyshocks import make_uniform_cell_grid, make_leggauss_quadrature
+    from pyshocks import make_leggauss_quadrature, make_uniform_cell_grid
 
     order = int(max(scheme.order, 1)) + 1
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=scheme.stencil_width)
     quad = make_leggauss_quadrature(grid, order=order)
 
-    from pyshocks import funcs
-    from pyshocks import cell_average
+    from pyshocks import cell_average, funcs
 
     u0 = cell_average(quad, lambda x: funcs.burgers_tophat(grid, 0.0, x))
 

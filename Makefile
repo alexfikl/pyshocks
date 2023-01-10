@@ -5,7 +5,9 @@ all: flake8 pylint
 # {{{ linting
 
 black:
-	$(PYTHON) -m isort pyshocks tests examples docs
+	$(PYTHON) -m setup_cfg_fmt --include-version-classifiers setup.cfg
+	$(PYTHON) -m pyproject_fmt --indent 4 pyproject.toml
+	$(PYTHON) -m isort pyshocks tests examples docs drivers
 	$(PYTHON) -m black --safe --target-version py38 pyshocks tests examples drivers
 
 flake8:
