@@ -563,7 +563,7 @@ not going to be stable. This is obvious, as it does not perform proper upwinding
 To achieve this, a form a flux splitting is used through the decomposition
 (see e.g. \cite{Fisher2012})
 \[
-f = f^+ + f^-,
+f(u) = f^+(u) + f^-(u),
 \]
 where
 \[
@@ -575,15 +575,63 @@ where
 The choice of splitting used in~\cite{Fisher2012} is the standard Lax-Friedrichs
 splitting
 \[
-f^\pm_i \triangleq \frac{1}{2} (f_i \pm a_i u_i),
+f^\pm(u) \triangleq \frac{1}{2} (f(u) \pm a u),
 \]
-where $a_i$ is a measure of the flux Jacobian eigenvalue magnitude at the point
-$x_i$. The common choice is to take $a_i \triangleq |u_i|$ for Burgers' equation. In~\cite{Fisher2012}, the authors take
+where $a$ is a measure of the flux Jacobian eigenvalue magnitude at the point
+$x_i$. The common choice is to take $a \triangleq |u|$ for Burgers' equation.
+Numerically, we want to take a maximum over the whole stencil, so
+in~\cite{Fisher2012} the authors take
 \[
 a_i = \max_{j \in K_i} |u_j|,
 \]
-for all the points $j \in K_i$ the stencil used to reconstruct the flux. To
-tie the flux splitting into the WENO reconstruction, we say that
+for all the points $j \in K_i$ the stencil used to reconstruct the flux. In
+general, the $f^+$ flux uses a stencil that is biased to the left, while the
+$f^-$ stencil should use a stencil biased towards the left. These stencils
+can be seen for the standard third-order WENO scheme and the current fourth-order
+scheme in~\Cref{fig:weno:fluxes}.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=1.5]
+\newcommand {\wenogrid} [1] {
+    \draw[thick] (1, #1) -- (8, #1);
+    \foreach \x in {2, 3, ..., 7} {
+        \fill (\x, #1) circle [radius=0.08];
+    }
+    \foreach \x in {1.5, 2.5, ..., 7.5} {
+        \fill[red!70] (\x - 0.05, #1 - 0.05)
+            rectangle (\x + 0.05, #1 + 0.05);
+    }
+    \fill (2, #1) node [below] {$x_{i - 3}$};
+    \fill (3, #1) node [below] {$x_{i - 2}$};
+    \fill (4, #1) node [below] {$x_{i - 1}$};
+    \fill (5, #1) node [below] {$x_{i}$};
+    \fill (6, #1) node [below] {$x_{i + 1}$};
+    \fill (7, #1) node [below] {$x_{i + 2}$};
+    \fill (3.5, #1) node [above] {$\bar{x}_{i - 1}$};
+    \fill (4.5, #1) node [above] {$\bar{x}_{i}$};
+    \fill (5.5, #1) node [above] {$\bar{x}_{i + 1}$};
+}
+
+% WENOJS32
+\wenogrid{0};
+\node at (0.5, 0) [left] {$(b)$};
+\draw[dashed] (5, 0) -- (5, 1) -- node [above] {$f^+$} (3, 1) -- (3, 0);
+\draw[dashed] (6, 0) -- (6, -1) -- node [below] {$f^-$} (4, -1) -- (4, 0);
+
+% SSWENO242
+\wenogrid{3.5};
+\draw[dashed] (6, 3.5) -- (6, 4.5) -- node [above] {$f^+$} (3, 4.5) -- (3, 3.5);
+\draw[dashed] (6, 3.5) -- (6, 2.5) -- node [below] {$f^-$} (3, 2.5) -- (3, 3.5);
+\node at (0.5, 3.5) [left] {$(a)$};
+\end{tikzpicture}
+\caption{
+    (a) SS-WENO fourth-order flux and
+    (b) third-order WENO flux reconstruction.}
+\label{fig:weno:fluxes}
+\end{figure}
+
+To tie the flux splitting into the WENO reconstruction, we say that
 \[
 \begin{aligned}
 \bar{f}^{(k), +}_i =\,\, & \sum_{k = LL}^{RR} \omega^{(k), +}_i \bar{f}^+_i, \\
@@ -591,7 +639,9 @@ tie the flux splitting into the WENO reconstruction, we say that
 \end{aligned}
 \]
 where the downwind stencil for the $f^-$ reconstruction is obviously mirrored
-from the one in~\Cref{ssc:weno:weights}.
+from the one in~\Cref{ssc:weno:weights}. Unlike the standard WENO scheme,
+for the fourth-order scheme is centered around $\bar{x}_i$, so the upwinding
+is performed by weighing the stencils, as described in~\Cref{ssc:weno:weights}.
 
 % }}}
 
