@@ -168,10 +168,10 @@ def make_uniform_cell_grid(
     :arg nghosts: number of ghost cells on each side of the domain.
     """
     if b < a:
-        raise ValueError(f"incorrect interval a > b: '{a}' > '{b}'")
+        raise ValueError(f"Incorrect interval a > b: {a!r} > {b!r}.")
 
     if n <= 0:
-        raise ValueError(f"number of cells should be > 0: '{n}'")
+        raise ValueError(f"Number of cells should be > 0: {n!r} <= 0.")
 
     assert n >= 0
     assert nghosts >= 0
@@ -226,10 +226,10 @@ def make_uniform_point_grid(
     :arg nghosts: number of ghost points on each side of the domain.
     """
     if b < a:
-        raise ValueError(f"incorrect interval a > b: '{a}' > '{b}'")
+        raise ValueError(f"Incorrect interval a > b: {a!r} > {b!r}.")
 
     if n <= 0:
-        raise ValueError(f"number of cells should be > 0: '{n}'")
+        raise ValueError(f"Number of cells should be > 0: {n!r} <= 0.")
 
     assert n >= 0
     assert nghosts >= 0
@@ -301,10 +301,10 @@ def make_uniform_ssweno_grid(
     :arg n: number of points that discretize the domain.
     """
     if b < a:
-        raise ValueError(f"incorrect interval a > b: '{a}' > '{b}'")
+        raise ValueError(f"Incorrect interval a > b: {a!r} > {b!r}.")
 
     if n <= 0:
-        raise ValueError(f"number of cells should be > 0: '{n}'")
+        raise ValueError(f"Number of cells should be > 0: {n!r} <= 0.")
 
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
@@ -401,7 +401,7 @@ class Quadrature:
         if self.x.shape != self.w.shape:
             raise ValueError(
                 "'x' and 'w' should have the same shape: "
-                f"got {self.x.shape} and {self.w.shape}"
+                f"got {self.x.shape} and {self.w.shape}."
             )
 
     @property
@@ -421,7 +421,7 @@ class Quadrature:
         """
 
         if axis not in (0, None):
-            raise ValueError(f"unsupported axis value: '{axis}'")
+            raise ValueError(f"Unsupported axis value: {axis!r}.")
 
         return jnp.sum(fn(self.x) * self.w, axis=axis)
 
@@ -429,7 +429,7 @@ class Quadrature:
 def make_leggauss_quadrature(grid: Grid, order: int) -> Quadrature:
     """Construct a Gauss-Legendre quadrature"""
     if order < 1:
-        raise ValueError(f"invalid order: '{order}'")
+        raise ValueError(f"Invalid order: {order!r}.")
 
     if grid.is_periodic and grid.nghosts == 0:
         f = jnp.pad(grid.f, (1, 0), constant_values=grid.x[0] - grid.dx[0] / 2)
@@ -498,11 +498,11 @@ def _norm(u: jnp.ndarray, dx: jnp.ndarray, p: Union[str, float]) -> jnp.ndarray:
 
     if isinstance(p, (int, float)):
         if p <= 0:
-            raise ValueError(f"'p' must be a positive float: {p}")
+            raise ValueError(f"'p' must be a positive float: {p!r} <= 0.")
 
         return jnp.sum(u**p * dx) ** (-1.0 / p)
 
-    raise ValueError(f"unrecognized 'p': {p}")
+    raise ValueError(f"Unrecognized norm order 'p': {p!r}.")
 
 
 def norm(

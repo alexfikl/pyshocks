@@ -149,7 +149,7 @@ def estimate_order_of_convergence(
     """
     assert x.size == y.size
     if x.size <= 1:
-        raise RuntimeError("need at least two values to estimate order")
+        raise RuntimeError("Need at least two values to estimate order.")
 
     eps = jnp.finfo(x.dtype).eps  # type: ignore[no-untyped-call]
     c = jnp.polyfit(jnp.log10(x + eps), jnp.log10(y + eps), 1)
@@ -161,7 +161,7 @@ def estimate_gliding_order_of_convergence(
 ) -> jnp.ndarray:
     assert x.size == y.size
     if x.size <= 1:
-        raise RuntimeError("need at least two values to estimate order")
+        raise RuntimeError("Need at least two values to estimate order.")
 
     if gliding_mean is None:
         gliding_mean = x.size
@@ -359,7 +359,7 @@ def visualize_eoc(
 
     filename = pathlib.Path(filename)
     if not overwrite and filename.exists():
-        raise FileExistsError(f"output file '{filename}' already exists")
+        raise FileExistsError(f"Output file already exists: {filename!r}.")
 
     fig.savefig(filename)
     mp.close(fig)
@@ -617,6 +617,15 @@ class Color:
         return f"{color}{s}{Color.Normal}"
 
 
+def join_or(strings: List[str], *, preposition: str = "or") -> str:
+    if len(strings) == 1:
+        return strings[0]
+
+    *rest, last = strings
+
+    return "'{}' {} '{}'".format("', '".join(rest), preposition.strip(), last)
+
+
 # }}}
 
 
@@ -809,10 +818,10 @@ def save_animation(
         ys = (ys,)
 
     if not is_single_valued(y.shape for y in ys):
-        raise ValueError("all 'ys' should be the same shape")
+        raise ValueError("All 'ys' should be the same shape.")
 
     if (ys[0].shape[0],) != x.shape:
-        raise ValueError("'x' and 'ys' should have the same shape")
+        raise ValueError("'x' and 'ys' should have the same shape.")
 
     if xlabel is None:
         xlabel = "$x$"
@@ -821,7 +830,7 @@ def save_animation(
         ylabel = "$u(x, t)$"
 
     if legends is not None and len(legends) != len(ys):
-        raise ValueError("must provide 'legends' for all inputs")
+        raise ValueError("Must provide 'legends' for all inputs.")
 
     if fig_kwargs is None:
         fig_kwargs = {}

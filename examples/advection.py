@@ -57,7 +57,7 @@ def make_solution(
             return a * funcs.ic_sign(grid, x)
 
     else:
-        raise ValueError(f"unknown example: '{name}'")
+        raise ValueError(f"Unknown example: {name!r}.")
 
     return jax.jit(velocity), jax.jit(solution)
 
@@ -73,7 +73,7 @@ def make_boundary_conditions(
     elif name in ["sign", "double_sign"]:
         bc = make_dirichlet_boundary(ga=jax.jit(solution))
     else:
-        raise ValueError(f"unknown example: '{name}'")
+        raise ValueError(f"Unknown example: {name!r}.")
 
     return bc
 

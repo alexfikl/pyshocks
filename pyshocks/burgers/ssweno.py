@@ -83,7 +83,7 @@ class SSWENO242(FiniteDifferenceScheme):
 
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.SSWENO242):
-            raise TypeError("SSWENO242 scheme requires the SSWENO242 reconstruction")
+            raise TypeError("SSWENO242 scheme requires the SSWENO242 reconstruction.")
 
     @property
     def order(self) -> int:

@@ -218,7 +218,7 @@ class ESWENO32(FiniteVolumeScheme):
 
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.ESWENO32):
-            raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction")
+            raise TypeError("ESWENO32 scheme requires the ESWENO32 reconstruction.")
 
 
 @bind.register(ESWENO32)

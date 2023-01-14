@@ -183,7 +183,7 @@ class MINMODLimiter(Limiter):
 
     def __post_init__(self) -> None:
         if self.theta < 1.0 or self.theta > 2.0:
-            raise ValueError(f"'theta' must be in [1, 2]: {self.theta}")
+            raise ValueError(f"'theta' must be in [1, 2]: {self.theta!r}.")
 
     @property
     def is_symmetric(self) -> bool:
@@ -428,7 +428,11 @@ def make_limiter_from_name(name: str, **kwargs: Any) -> Limiter:
     """
     cls = _LIMITERS.get(name)
     if cls is None:
-        raise ValueError(f"flux limiter '{name}' not found; try one of {limiter_ids()}")
+        from pyshocks.tools import join_or
+
+        raise ValueError(
+            f"Flux limiter {name!r} not found. Try one of {join_or(limiter_ids())}."
+        )
 
     from dataclasses import fields
 

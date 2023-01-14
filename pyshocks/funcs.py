@@ -162,13 +162,13 @@ def ic_cut_sine(
         xb = xm + 0.25 * dx
 
     if xa >= xb:
-        raise ValueError("invalid sides (must be xa < xb)")
+        raise ValueError("Invalid sides (must be xa < xb).")
 
     if not grid.a < xa < grid.b:
-        raise ValueError("xa must be in the domain [a, b]")
+        raise ValueError("'xa' must be in the domain [a, b].")
 
     if not grid.a < xb < grid.b:
-        raise ValueError("xb must be in the domain [a, b]")
+        raise ValueError("'xb' must be in the domain [a, b].")
 
     return jnp.where(
         jnp.logical_and(xa < x, x < xb),  # type: ignore[no-untyped-call]
@@ -334,7 +334,7 @@ def burgers_riemann(
         x0 = 0.5 * (grid.a + grid.b)
 
     if not grid.a < x0 < grid.b:
-        raise ValueError("x0 must be in the domain [a, b]")
+        raise ValueError("'x0' must be in the domain [a, b].")
 
     if ul <= ur:
         h_l = (x < x0 + ul * t).astype(x.dtype)
@@ -387,16 +387,16 @@ def burgers_linear_shock(
         xb = xm + 0.125 * dx
 
     if xa >= xb:
-        raise ValueError("invalid sides (must be xa < xb)")
+        raise ValueError("Invalid sides (must be xa < xb).")
 
     if not grid.a < xa < grid.b:
-        raise ValueError("xa must be in the domain [a, b]")
+        raise ValueError("'xa' must be in the domain [a, b].")
 
     if not grid.a < xb < grid.b:
-        raise ValueError("xb must be in the domain [a, b]")
+        raise ValueError("'xb' must be in the domain [a, b].")
 
     if ul <= ur:
-        raise NotImplementedError
+        raise NotImplementedError("Expansion wave case with ul < ur.")
 
     # line is given by `a * x + b`
     a = (ul - ur) / (xb - xa)
@@ -455,16 +455,16 @@ def burgers_tophat(
         xb = xm + 0.25 * dx
 
     if xa >= xb:
-        raise ValueError("invalid sides (must be xa < xb)")
+        raise ValueError("Invalid sides (must be xa < xb).")
 
     if not grid.a < xa < grid.b:
-        raise ValueError("xa must be in the domain [a, b]")
+        raise ValueError("'xa' must be in the domain [a, b].")
 
     if not grid.a < xb < grid.b:
-        raise ValueError("xb must be in the domain [a, b]")
+        raise ValueError("'xb' must be in the domain [a, b].")
 
     if uc <= us:
-        raise NotImplementedError
+        raise NotImplementedError("Inverse case with uc < us.")
 
     # shock velocity
     s = (uc + us) / 2

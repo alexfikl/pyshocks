@@ -342,7 +342,7 @@ def sbp_matrix_from_name(
         func = globals()[f"make_sbp_{op.ids}_second_derivative_r_matrix"]
         return func(bc, jnp.ones_like(grid.x), dx=grid.dx_min)
 
-    raise ValueError(f"unknown SBP matrix name: '{name}'")
+    raise ValueError(f"Unknown SBP matrix name: {name!r}.")
 
 
 def make_sbp_mattsson2012_second_derivative(
@@ -506,7 +506,7 @@ def _sbp_21_second_derivative_matrix(
     elif isinstance(b, Number):
         b = jnp.full_like(grid.x, jnp.array(b), dtype=grid.dtype)
     else:
-        raise TypeError(f"unknown coefficient type: '{type(b).__name__}'")
+        raise TypeError(f"Unknown coefficient type: {type(b).__name__!r}.")
 
     assert isinstance(grid, UniformGrid)
     assert b.shape == (grid.n,)
@@ -746,7 +746,7 @@ def _sbp_42_second_derivative_matrix(
     elif isinstance(b, Number):
         b = jnp.full_like(grid.x, jnp.array(b), dtype=grid.dtype)
     else:
-        raise TypeError(f"unknown diffusivity coefficient: '{type(b).__name__}'")
+        raise TypeError(f"Unknown diffusivity coefficient: {type(b).__name__!r}.")
 
     assert isinstance(grid, UniformGrid)
     assert b.shape == (grid.n,)
@@ -1341,7 +1341,11 @@ def make_operator_from_name(name: str, **kwargs: Any) -> SBPOperator:
 
     cls = _OPERATORS.get(name)
     if cls is None:
-        raise ValueError(f"scheme '{name}' not found; try one of {operator_ids()}")
+        from pyshocks.tools import join_or
+
+        raise ValueError(
+            f"Scheme {name!r} not found. Try one of {join_or(operator_ids())}."
+        )
 
     from dataclasses import fields
 

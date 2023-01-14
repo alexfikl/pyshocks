@@ -276,7 +276,7 @@ def get_function(name: str) -> SpatialFunction:
     if name == "cubic":
         return lambda x: x**3 - 1
 
-    raise ValueError(f"unknown function name: '{name}'")
+    raise ValueError(f"Unknown function name: {name!r}.")
 
 
 @pytest.mark.parametrize(

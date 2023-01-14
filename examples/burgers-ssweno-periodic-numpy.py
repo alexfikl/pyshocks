@@ -496,7 +496,7 @@ def main(
     elif ic == "sine":
         u0 = ic_sine(x, k=2, dx=b - a)
     else:
-        raise ValueError(f"unknown initial condition: '{ic}'")
+        raise ValueError(f"Unknown initial condition: {ic!r}.")
 
     epsilon = dx**4 * np.max(np.abs(u0))
     # epsilon = None
@@ -577,7 +577,7 @@ def main(
         logger.info("Starting 'ckrk45' ...")
         solution = ckrk45(rhs_func, u0, t_eval=tspan, callback=callback)
     else:
-        raise ValueError(f"unknown ivp: '{ivp}'")
+        raise ValueError(f"Unknown ivp: {ivp!r}.")
 
     logger.info("Done ...")
 

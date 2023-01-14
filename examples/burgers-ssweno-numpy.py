@@ -779,7 +779,7 @@ def burgers_rhs(
         fssw = fw + delta * (fs - fw)
         assert np.all((w[1:] - w[:-1]) * (fssw[1:-1] - fs[1:-1]) <= 0.0)
     else:
-        raise ValueError(f"unknown method: '{method}'")
+        raise ValueError(f"Unknown method: {method!r}.")
 
     g = ssweno_boundary(t, u, ul=ul, ur=ur, method=method)
     return -(fssw[1:] - fssw[:-1]) / dx + g / dx
@@ -843,7 +843,7 @@ def main(
     elif ic == "sine":
         u0 = ic_sine(x, k=2, dx=b - a)
     else:
-        raise ValueError(f"unknown initial condition: '{ic}'")
+        raise ValueError(f"Unknown initial condition: {ic!r}.")
 
     epsilon = dx**4 * np.sqrt(u0 @ (P * u0))
     cfl_dt = 0.5 * theta * dx / np.max(np.abs(u0))
@@ -932,7 +932,7 @@ def main(
         logger.info("Starting 'ckrk45' ...")
         solution = ckrk45(rhs_func, u0, t_eval=tspan, callback=callback)
     else:
-        raise ValueError(f"unknown ivp: '{ivp}'")
+        raise ValueError(f"Unknown ivp: {ivp!r}.")
 
     logger.info("Done ...")
 

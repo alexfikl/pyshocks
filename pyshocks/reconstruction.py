@@ -224,7 +224,7 @@ def _reconstruct_muscl(
     # FIXME: would this work on non-uniform grids? may need to change the
     # limiters a bit to also contain the dx slopes?
     if not isinstance(grid, UniformGrid):
-        raise NotImplementedError("MUSCL is only implemented for uniform grids")
+        raise NotImplementedError("MUSCL is only implemented for uniform grids.")
 
     assert grid.nghosts >= rec.stencil_width
 
@@ -283,7 +283,7 @@ def _reconstruct_muscls(
     # FIXME: would this work on non-uniform grids? may need to change the
     # limiters a bit to also contain the dx slopes?
     if not isinstance(grid, UniformGrid):
-        raise NotImplementedError("MUSCL is only implemented for uniform grids")
+        raise NotImplementedError("MUSCL is only implemented for uniform grids.")
 
     assert grid.nghosts >= rec.stencil_width
 
@@ -373,7 +373,7 @@ def _reconstruct_wenojs(
     assert grid.nghosts >= rec.stencil_width
 
     if not isinstance(grid, UniformGrid):
-        raise NotImplementedError("WENO-JS is only implemented for uniform grids")
+        raise NotImplementedError("WENO-JS is only implemented for uniform grids.")
 
     ur = _reconstruct_weno_js_side(rec, f)
     ul = _reconstruct_weno_js_side(rec, f[::-1])[::-1]
@@ -435,7 +435,7 @@ def _reconstruct_esweno32(
     assert grid.nghosts >= rec.stencil_width
 
     if not isinstance(grid, UniformGrid):
-        raise NotImplementedError("ESWENO is only implemented for uniform grids")
+        raise NotImplementedError("ES-WENO is only implemented for uniform grids.")
 
     ur = _reconstruct_es_weno_side(rec, f)
     ul = _reconstruct_es_weno_side(rec, f[::-1])[::-1]
@@ -516,7 +516,7 @@ def _reconstruct_ssweno242(
     from pyshocks import UniformGrid
 
     if not isinstance(grid, UniformGrid):
-        raise NotImplementedError("SSWENO is only implemented for uniform grids")
+        raise NotImplementedError("SS-WENO is only implemented for uniform grids.")
 
     ur = _reconstruct_ss_weno_side(rec, grid, bc, f)
     ul = _reconstruct_ss_weno_side(rec, grid, bc, f[::-1])[::-1]
@@ -556,8 +556,11 @@ def make_reconstruction_from_name(name: str, **kwargs: Any) -> Reconstruction:
     """
     cls = _RECONSTRUCTION.get(name)
     if cls is None:
+        from pyshocks.tools import join_or
+
         raise ValueError(
-            f"flux limiter '{name}' not found; try one of {reconstruction_ids()}"
+            f"Flux limiter {name!r} not found. Try one of "
+            + f"{join_or(reconstruction_ids())}."
         )
 
     from dataclasses import fields

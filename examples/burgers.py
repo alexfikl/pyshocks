@@ -34,7 +34,7 @@ def ic_func(grid: Grid, t: float, x: jnp.ndarray, *, variant: int = 1) -> jnp.nd
     if variant == 2:
         return 0.5 - funcs.ic_sine(grid, x)
 
-    raise ValueError(f"unknown initial condition: '{variant}'")
+    raise ValueError(f"Unknown initial condition: {variant!r}.")
 
 
 def make_finite_volume(

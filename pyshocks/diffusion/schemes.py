@@ -161,7 +161,7 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
     elif isinstance(bc, PeriodicBoundary):
         pass
     else:
-        raise TypeError(f"unsupported boundary type: '{type(bc).__name__}'")
+        raise TypeError(f"Unsupported boundary type: {type(bc).__name__!r}.")
 
     # }}}
 

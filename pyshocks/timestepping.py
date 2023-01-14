@@ -138,7 +138,7 @@ def step(
         dt = stepper.predict_timestep(t, u)
         dt = min(dt, tfinal - t) + 1.0e-15
         if not jnp.isfinite(dt):
-            raise ValueError(f"time step is not finite: {dt}")
+            raise ValueError(f"Time step is not finite: {dt!r}.")
 
         u = advance(stepper, dt, t, u)
 
@@ -158,7 +158,7 @@ def adjoint_step(
     ] = None,
 ) -> Iterator[AdjointStepCompleted]:
     if stepper.checkpoint is None:
-        raise ValueError("adjoint time stepping requires a checkpoint")
+        raise ValueError("Adjoint time stepping requires a checkpoint.")
 
     # {{{ construct jacobian
 

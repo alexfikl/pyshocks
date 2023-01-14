@@ -135,10 +135,10 @@ def lax_friedrichs_initial_condition_correction(
         values are used.
     """
     if grid.x.size % 2 != 0 and grid.nghosts % 2 == 0:
-        raise ValueError("only grids with even number of cells are supported")
+        raise ValueError("Only grids with even number of cells are supported.")
 
     if grid.is_periodic:
-        raise ValueError("periodic grids are not supported")
+        raise ValueError("Periodic grids are not supported.")
 
     half_grid = type(grid)(
         a=grid.a,
@@ -341,15 +341,15 @@ class TwoSidedBoundary(Boundary):
         assert isinstance(self.right, OneSidedBoundary)
 
         if self.left.side != -1:
-            raise ValueError("left boundary has incorrect side")
+            raise ValueError("Left boundary has incorrect side.")
 
         if self.right.side != +1:
-            raise ValueError("right boundary has incorrect side")
+            raise ValueError("Right boundary has incorrect side.")
 
     @property
     def boundary_type(self) -> BoundaryType:
         if self.left.boundary_type != self.right.boundary_type:
-            raise NotImplementedError()
+            raise NotImplementedError("Different boundaries on each side.")
 
         return self.left.boundary_type
 

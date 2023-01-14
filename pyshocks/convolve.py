@@ -70,7 +70,7 @@ def boundary_type_to_mode(bc: BoundaryType) -> ConvolutionType:
         appropriate.
     """
     if bc not in _BOUNDARY_TYPE_TO_CONVOLUTION_TYPE:
-        raise ValueError(f"unknown boundary type: {bc}")
+        raise ValueError(f"Unknown boundary type: {bc!r}.")
 
     return _BOUNDARY_TYPE_TO_CONVOLUTION_TYPE[bc]
 
@@ -81,7 +81,7 @@ def convolution_type_to_pad_mode(cv: ConvolutionType) -> str:
     :returns: a string that corresponds to the padding mode.
     """
     if cv not in _CONVOLUTION_TYPE_TO_PAD_MODE:
-        raise ValueError(f"unsupported convolution type: {cv}")
+        raise ValueError(f"Unsupported convolution type: {cv!r}.")
 
     return _CONVOLUTION_TYPE_TO_PAD_MODE[cv]
 

@@ -16,6 +16,7 @@ Checkpointing
 """
 
 import pathlib
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import singledispatch
 from typing import Any, Dict, Hashable, Optional, Tuple
@@ -24,7 +25,7 @@ import jax.numpy as jnp
 
 
 @dataclass(frozen=True)
-class Checkpoint:
+class Checkpoint(ABC):
     """A generic checkpointing mechanism.
 
     The basic idea is that a user can call :func:`save` with a given index and
@@ -57,14 +58,15 @@ class Checkpoint:
 
     basename: str
 
+    @abstractmethod
     def index_to_key(self, i: int) -> Hashable:
         """
         :arg i: an index used to denote the checkpoint.
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def __contains__(self, i: int) -> bool:
-        raise NotImplementedError
+        pass
 
 
 @singledispatch
@@ -110,7 +112,7 @@ class InMemoryCheckpoint(Checkpoint):
 def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]) -> None:
     key = chk.index_to_key(idx)
     if key in chk.storage:
-        raise KeyError(f"cannot set existing checkpoint at '{idx}'")
+        raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
 
     chk.storage[key] = values
 
@@ -121,7 +123,7 @@ def _load_in_memory(
 ) -> Dict[str, Any]:
     key = chk.index_to_key(idx)
     if key not in chk.storage:
-        raise KeyError(f"cannot find checkpoint at index '{idx}'")
+        raise KeyError(f"Cannot find checkpoint at index {idx!r}.")
 
     if include is None:
         return chk.storage[key]
@@ -158,7 +160,7 @@ class PickleCheckpoint(Checkpoint):
 def _save_pickle(chk: PickleCheckpoint, idx: int, values: Dict[str, Any]) -> None:
     filename = chk.index_to_key(idx)
     if not filename.exists():
-        raise KeyError(f"cannot set existing checkpoint at '{idx}'")
+        raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
 
     try:
         import cloudpickle as pickle
@@ -180,7 +182,7 @@ def _load_pickle(
 ) -> Dict[str, Any]:
     filename = chk.index_to_key(idx)
     if not filename.exists():
-        raise KeyError(f"cannot find checkpoint at index '{idx}'")
+        raise KeyError(f"Cannot find checkpoint at index {idx!r}.")
 
     try:
         import cloudpickle as pickle
@@ -230,7 +232,7 @@ class NumpyCheckpoint(Checkpoint):
 def _save_npz(chk: NumpyCheckpoint, idx: int, values: Dict[str, Any]) -> None:
     filename = chk.index_to_key(idx)
     if not filename.exists():
-        raise KeyError(f"cannot set existing checkpoint at '{idx}'")
+        raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
 
     jnp.savez(filename, **values)
 
@@ -244,7 +246,7 @@ def _load_npz(
 ) -> Dict[str, Any]:
     filename = chk.index_to_key(idx)
     if not filename.exists():
-        raise KeyError(f"cannot find checkpoint at index '{idx}'")
+        raise KeyError(f"Cannot find checkpoint at index {idx!r}.")
 
     values = jnp.load(filename, allow_pickle=False)
     if include is None:

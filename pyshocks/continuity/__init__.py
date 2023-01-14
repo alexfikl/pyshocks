@@ -69,7 +69,11 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 
     cls = _SCHEMES.get(name)
     if cls is None:
-        raise ValueError(f"scheme '{name}' not found; try one of {scheme_ids()}")
+        from pyshocks.tools import join_or
+
+        raise ValueError(
+            f"Scheme {name!r} not found. Try one of {join_or(scheme_ids())}."
+        )
 
     from dataclasses import fields
 
