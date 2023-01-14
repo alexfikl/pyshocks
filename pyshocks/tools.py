@@ -299,7 +299,7 @@ def stringify_eoc(*eocs: EOCRecorder) -> str:
     )
 
     widths = [max(len(line[i]) for line in lines) for i in range(ncolumns)]
-    formats = ["{:%s}" % w for w in widths]  # pylint: disable=C0209
+    formats = ["{:%s}" % w for w in widths]
 
     return "\n".join(
         [
