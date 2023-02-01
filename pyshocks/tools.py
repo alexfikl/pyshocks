@@ -617,7 +617,7 @@ class Color:
         return f"{color}{s}{Color.Normal}"
 
 
-def join_or(strings: List[str], *, preposition: str = "or") -> str:
+def join_or(strings: Sequence[str], *, preposition: str = "or") -> str:
     if len(strings) == 1:
         return strings[0]
 

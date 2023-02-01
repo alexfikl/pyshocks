@@ -36,7 +36,7 @@ mypy:			## Run mypy checks over the source code
 .PHONY: mypy
 
 doc8:			## Run doc8 checks over the source code
-	$(PYTHON) -m doc8 pyshocks docs
+	PYTHONWARNINGS=ignore $(PYTHON) -m doc8 pyshocks docs
 	@echo -e "\e[1;32mdoc8 clean!\e[0m"
 .PHONY: doc8
 
