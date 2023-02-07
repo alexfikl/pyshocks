@@ -7,6 +7,7 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks import Boundary, ConservationLawScheme, Grid, flux, numerical_flux
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 
 @dataclass(frozen=True)
@@ -17,10 +18,10 @@ class TrafficFlowScheme(ConservationLawScheme):
 @flux.register(TrafficFlowScheme)
 def _flux_traffic_flow(
     scheme: TrafficFlowScheme,
-    t: float,
-    x: jnp.ndarray,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    x: Array,
+    u: Array,
+) -> Array:
     return (1 - u) * u
 
 
@@ -29,9 +30,9 @@ def _numerical_flux_traffic_flow(
     scheme: TrafficFlowScheme,
     grid: Grid,
     bc: Boundary,
-    t: float,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    u: Array,
+) -> Array:
     u_avg = (u[1:] + u[:-1]) / 2
     f = (1 - u_avg) * u[:-1]
 
@@ -70,13 +71,16 @@ def main(
 
     from pyshocks import apply_operator
 
-    def right_hand_side(t: float, u: jnp.ndarray) -> jnp.ndarray:
+    def predict_timestep(t: ScalarLike, u: Array) -> Scalar:
+        return jnp.array(1.0e-2)
+
+    def right_hand_side(t: ScalarLike, u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, t, u)
 
     from pyshocks import timestepping
 
     integrator = timestepping.ForwardEuler(
-        predict_timestep=lambda t, u: 1.0e-2,
+        predict_timestep=jax.jit(predict_timestep),
         source=jax.jit(right_hand_side),
         checkpoint=None,
     )

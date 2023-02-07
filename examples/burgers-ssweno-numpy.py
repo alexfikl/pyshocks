@@ -974,7 +974,7 @@ def main(
         save_animation(
             # f"burgers_ssweno_{suffix}.mp4",
             None,
-            x,
+            x,  # type: ignore[arg-type]
             (solution.y,),
             fig_kwargs={"dpi": 100, "layout": "tight"},
             plot_kwargs={"linewidth": 2},
@@ -1244,10 +1244,10 @@ def test_weno_242_smoothness(
         for s in (LL, L, C, R, RR):
             du_norm = la.norm(du[s, mask[s]], ord=1)
             error = la.norm(du[s, mask[s]] - beta[s, mask[s]], ord=1) / du_norm
-            eocs[s].add_data_point(h, error)
+            eocs[s].add_data_point(float(h), float(error))
 
         error = la.norm(tau[1:-1] - ddu[1:-1], ord=1) / la.norm(ddu[1:-1], ord=1)
-        eocs[-1].add_data_point(h, error)
+        eocs[-1].add_data_point(float(h), float(error))
 
         if visualize:
             du = du * mask
@@ -1307,16 +1307,16 @@ def test_weno_242_interp(
         for s in (L, C, R, RR):
             fbar_norm = la.norm(fbar[mask[s]], ord=1)
             error = la.norm(fbar[mask[s]] - fhat[s, mask[s]], ord=1) / fbar_norm
-            eocs[s].add_data_point(dx, error)
+            eocs[s].add_data_point(float(dx), float(error))
 
         error = abs(fbar[4] - fhat[LL, 3])
-        eocs[LL].add_data_point(dx, error)
+        eocs[LL].add_data_point(float(dx), float(error))
 
         fhathat = weno_242_reconstruct(f, f, epsilon=dx**2)
         error = la.norm(fbar - fhathat, ord=1) / la.norm(fbar, ord=1)
         # j = 10
         # error = abs(fbar[j] - fhathat[j])
-        eocs[-1].add_data_point(dx, error)
+        eocs[-1].add_data_point(float(dx), float(error))
 
         if visualize:
             # print((fbar * mask[LL])[:10])

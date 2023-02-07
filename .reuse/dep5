@@ -10,3 +10,7 @@ License: CC0-1.0
 Files: .gitignore .readthedocs.yml pyproject.toml .github/* .codespell-ignore .pre-commit-config.yaml
 Copyright: 2022 Alexandru Fikl <alexfikl@gmail.com>
 License: CC0-1.0
+
+Files: scribbles/ss-weno.tex
+Copyright: 2022 Alexandru Fikl <alexfikl@gmail.com>
+License: CC0-1.0

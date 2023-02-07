@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from typing import Union
+
 import jax.numpy as jnp
 import pytest
 
@@ -10,6 +12,7 @@ from pyshocks import (
     make_uniform_point_grid,
     set_recommended_matplotlib,
 )
+from pyshocks.tools import Array, Scalar
 
 logger = get_logger("test_sbp")
 set_recommended_matplotlib()
@@ -92,7 +95,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
     P = sbp.sbp_norm_matrix(op, grid, bc)
     assert P.shape == (n,)
 
-    def dotp(x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
+    def dotp(x: Array, y: Array) -> Array:
         return x @ (P * y)
 
     # }}}
@@ -102,7 +105,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
     logger.info("D1")
 
     D1 = sbp.sbp_first_derivative_matrix(op, grid, bc)
-    D1.block_until_ready()
+    D1.block_until_ready()  # type: ignore[attr-defined]
 
     assert D1.shape == (n, n)
     assert D1.dtype == dtype
@@ -168,7 +171,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
     logger.info("D2")
 
     D2 = sbp.sbp_second_derivative_matrix(op, grid, bc, 1.0)
-    D2.block_until_ready()
+    D2.block_until_ready()  # type: ignore[attr-defined]
 
     assert D2.shape == (n, n)
     assert D2.dtype == dtype
@@ -222,9 +225,9 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
 # {{{ test_sbp_matrices_convergence
 
 
-def _sbp_rnorm(P: jnp.ndarray, x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
-    if x.shape == ():
-        return abs(x - y) / abs(y)
+def _sbp_rnorm(P: Array, x: Union[float, Array], y: Union[float, Array]) -> Scalar:
+    if isinstance(x, float) or x.shape == ():
+        return jnp.array(jnp.abs(x - y) / jnp.abs(y))
 
     z = x - y
     return jnp.sqrt((P * z) @ z) / jnp.sqrt((P * y) @ y)

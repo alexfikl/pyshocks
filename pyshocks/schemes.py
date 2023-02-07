@@ -64,6 +64,7 @@ import jax.numpy as jnp
 
 from pyshocks.grid import Grid
 from pyshocks.reconstruction import Reconstruction
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 # {{{ schemes
 
@@ -143,8 +144,8 @@ def bind(scheme: SchemeT, grid: Grid, bc: "Boundary") -> SchemeT:
 
 @singledispatch
 def apply_operator(
-    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+) -> Array:
     r"""Applies right-hand side operator for a "Method of Lines" approach.
     For any PDE, we have that
 
@@ -170,8 +171,8 @@ def apply_operator(
 
 @singledispatch
 def predict_timestep(
-    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+) -> Scalar:
     r"""Estimate the time step based on the current solution. This time step
     prediction can then be used together with a Courant number to give
     the final time step
@@ -256,14 +257,14 @@ class CombineScheme(SchemeBase):
 
 @predict_timestep.register(CombineScheme)
 def _predict_timestep_combine(
-    scheme: CombineScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: CombineScheme, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+) -> Scalar:
     from functools import reduce
 
     return reduce(
         jnp.minimum,
         [predict_timestep(s, grid, bc, t, u) for s in scheme.schemes],
-        jnp.inf,
+        jnp.array(jnp.inf, dtype=u.dtype),
     )
 
 
@@ -272,10 +273,14 @@ def _apply_operator_combine(
     scheme: CombineScheme,
     grid: Grid,
     bc: "Boundary",
-    t: float,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
-    return sum(apply_operator(s, grid, bc, t, u) for s in scheme.schemes)
+    t: ScalarLike,
+    u: Array,
+) -> Array:
+    result = apply_operator(scheme.schemes[0], grid, bc, t, u)
+    for s in scheme.schemes[1:]:
+        result = result + apply_operator(s, grid, bc, t, u)
+
+    return result
 
 
 # }}}
@@ -303,7 +308,7 @@ class ConservationLawScheme(FiniteVolumeSchemeBase):
 
 
 @singledispatch
-def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+def flux(scheme: SchemeBase, t: ScalarLike, x: Array, u: Array) -> Array:
     """Evaluate the physical flux at the given parameters.
 
     :arg scheme: scheme for which to compute the (physical) flux. The
@@ -320,8 +325,8 @@ def flux(scheme: SchemeBase, t: float, x: jnp.ndarray, u: jnp.ndarray) -> jnp.nd
 
 @singledispatch
 def numerical_flux(
-    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+) -> Array:
     """Approximate the flux at each cell-cell interface.
 
     :arg scheme: scheme for which to compute the (numerical) flux.
@@ -338,8 +343,8 @@ def numerical_flux(
 
 @apply_operator.register(ConservationLawScheme)
 def _apply_operator_conservation_law(
-    scheme: ConservationLawScheme, grid: Grid, bc: "Boundary", t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: ConservationLawScheme, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+) -> Array:
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, bc, t, u)
 
@@ -360,9 +365,9 @@ def _numerical_flux_combine_conversation_law(
     scheme: CombineConservationLawScheme,
     grid: Grid,
     bc: "Boundary",
-    t: float,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    u: Array,
+) -> Array:
     f = numerical_flux(scheme.schemes[0], grid, bc, t, u)
     for s in scheme.schemes[1:]:
         f = f + numerical_flux(s, grid, bc, t, u)
@@ -375,9 +380,9 @@ def _apply_operator_combine_conservation_law(
     scheme: CombineConservationLawScheme,
     grid: Grid,
     bc: "Boundary",
-    t: float,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    u: Array,
+) -> Array:
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, bc, t, u)
 
@@ -430,7 +435,7 @@ class Boundary(ABC):
 
 
 @singledispatch
-def apply_boundary(bc: Boundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.ndarray:
+def apply_boundary(bc: Boundary, grid: Grid, t: ScalarLike, u: Array) -> Array:
     """Apply boundary conditions in the ghost layer of the solution *u*.
 
     :arg bc: boundary condition description.
@@ -444,9 +449,7 @@ def apply_boundary(bc: Boundary, grid: Grid, t: float, u: jnp.ndarray) -> jnp.nd
 
 
 @singledispatch
-def evaluate_boundary(
-    bc: Boundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+def evaluate_boundary(bc: Boundary, grid: Grid, t: ScalarLike, u: Array) -> Array:
     """Evaluate the boundary conditions at domain boundaries.
 
     Unlike :func:`apply_boundary`, this function simply returns a set of

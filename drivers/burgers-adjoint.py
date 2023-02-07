@@ -3,6 +3,7 @@
 
 import pathlib
 from dataclasses import dataclass
+from typing import Tuple
 
 import jax
 import jax.numpy as jnp
@@ -22,6 +23,7 @@ from pyshocks import (
 )
 from pyshocks.checkpointing import InMemoryCheckpoint
 from pyshocks.timestepping import Stepper, adjoint_step, step
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 logger = get_logger("burgers-adjoint")
 
@@ -33,7 +35,7 @@ class Simulation:
     bc: Boundary
     stepper: Stepper
 
-    u0: jnp.ndarray
+    u0: Array
     tfinal: float
 
     @property
@@ -47,10 +49,10 @@ def make_time_stepper(
 ) -> Stepper:
     from pyshocks import apply_operator, predict_timestep
 
-    def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def forward_predict_timestep(_t: ScalarLike, _u: Array) -> Array:
         return theta * predict_timestep(scheme, grid, bc, _t, _u)
 
-    def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def forward_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, bc, _t, _u)
 
     from pyshocks.timestepping import SSPRK33
@@ -123,12 +125,12 @@ def make_finite_difference_simulation(
 @timeit
 def evolve_forward(
     sim: Simulation,
-    u0: jnp.ndarray,
+    u0: Array,
     *,
     dirname: pathlib.Path,
     interactive: bool,
     visualize: bool,
-) -> jnp.ndarray:
+) -> Tuple[Array, int]:
     grid = sim.grid
     stepper = sim.stepper
 
@@ -183,14 +185,14 @@ def evolve_forward(
 @timeit
 def evolve_adjoint(
     sim: Simulation,
-    uf: jnp.ndarray,
-    p0: jnp.ndarray,
+    uf: Array,
+    p0: Array,
     *,
     dirname: pathlib.Path,
     maxit: int,
     interactive: bool,
     visualize: bool,
-) -> jnp.ndarray:
+) -> Array:
     grid = sim.grid
     stepper = sim.stepper
 
@@ -199,10 +201,13 @@ def evolve_adjoint(
     from pyshocks import apply_boundary
     from pyshocks.scalar import make_neumann_boundary
 
-    bc = make_neumann_boundary(lambda t: 0.0)
+    def bc_func(t: ScalarLike) -> Scalar:
+        return jnp.array(0.0)
+
+    bc = make_neumann_boundary(bc_func)
 
     @jax.jit
-    def _apply_boundary(t: float, u: jnp.ndarray, p: jnp.ndarray) -> jnp.ndarray:
+    def _apply_boundary(t: ScalarLike, u: Array, p: Array) -> Array:
         return apply_boundary(bc, grid, t, p)
 
     # }}}

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, cast
 
 import jax
 import jax.numpy as jnp
@@ -20,16 +20,17 @@ from pyshocks import (
 )
 from pyshocks.burgers.schemes import FiniteDifferenceScheme
 from pyshocks.sbp import Stencil
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 # {{{ two-point entropy conservative flux
 
 
 @jax.jit
-def two_point_entropy_flux_42(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
+def two_point_entropy_flux_42(qi: Array, u: Array) -> Array:
     # FIXME: this only works for the 4-2 scheme
     # FIXME: boundary stencil is just plain old wrong
 
-    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+    def fs(ul: Scalar, ur: Scalar) -> Scalar:
         return (ul * ul + ul * ur + ur * ur) / 6
 
     qr = qi[qi.size // 2 + 1 :]
@@ -44,14 +45,18 @@ def two_point_entropy_flux_42(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
         2 * qr[0] * fs(u[i - 1], u[i + 1]) + 2 * qr[1] * fs(u[i - 2], u[i + 1])
     )
 
-    def body(i: int, fss: jnp.ndarray) -> jnp.ndarray:
-        return fss.at[i].set(
+    def body(i: int, fss: Array) -> Array:
+        result = fss.at[i].set(
             2 * qr[1] * fs(u[i - 2], u[i])
             + 2 * qr[0] * fs(u[i - 1], u[i])
             + 2 * qr[1] * fs(u[i - 1], u[i + 1])
         )
+        return cast(Array, result)
 
-    return jax.lax.fori_loop(2, u.size - 1, body, fss)
+    return cast(
+        Array,
+        jax.lax.fori_loop(2, u.size - 1, body, fss),  # type: ignore[no-untyped-call]
+    )
 
 
 # }}}
@@ -73,13 +78,13 @@ class SSWENO242(FiniteDifferenceScheme):
     rec: reconstruction.SSWENO242
     sbp: sbp.SBP42
 
-    nu: float = 0.0
-    c: float = 1.0e-12
+    nu: ScalarLike = 0.0
+    c: ScalarLike = 1.0e-12
 
     # sbp operators
-    P: ClassVar[jnp.ndarray]
+    P: ClassVar[Array]
     q: ClassVar[Stencil]
-    DD: ClassVar[jnp.ndarray]
+    DD: ClassVar[Array]
 
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.SSWENO242):
@@ -125,15 +130,15 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 
 @flux.register(SSWENO242)
 def _flux_burgers_ssweno242(
-    scheme: SSWENO242, t: float, x: jnp.ndarray, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SSWENO242, t: ScalarLike, x: Array, u: Array
+) -> Array:
     return flux.dispatch(FiniteDifferenceScheme)(scheme, t, x, u)
 
 
 @predict_timestep.register(SSWENO242)
 def _predict_timestep_burgers_ssweno242(
-    scheme: SSWENO242, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SSWENO242, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Scalar:
     dt = predict_timestep.dispatch(FiniteDifferenceScheme)(scheme, grid, bc, t, u)
 
     if scheme.nu > 0:
@@ -147,9 +152,9 @@ def _apply_operator_burgers_ssweno242(
     scheme: SSWENO242,
     grid: Grid,
     bc: Boundary,
-    t: float,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    u: Array,
+) -> Array:
     assert u.shape == grid.x.shape
 
     from pyshocks.reconstruction import reconstruct
@@ -173,7 +178,7 @@ def _apply_operator_burgers_ssweno242(
     fw = jnp.pad(fp[1:] + fm[:-1], 1)
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = two_point_entropy_flux_42(scheme.q.int, u)
+    fs = cast(Array, two_point_entropy_flux_42(scheme.q.int, u))
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)
@@ -192,7 +197,7 @@ def _apply_operator_burgers_ssweno242(
     if scheme.nu > 0:
         gssw = scheme.DD @ w
     else:
-        gssw = 0.0
+        gssw = jnp.array(0.0)
 
     # }}}
 

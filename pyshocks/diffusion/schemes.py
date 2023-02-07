@@ -20,6 +20,7 @@ from pyshocks import (
     predict_timestep,
     sbp,
 )
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 # {{{ base
 
@@ -30,13 +31,13 @@ class Scheme(SchemeBase):
     .. attribute:: diffusivity
     """
 
-    diffusivity: jnp.ndarray
+    diffusivity: Array
 
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_diffusion(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Scalar:
     assert scheme.diffusivity is not None
 
     dmax = jnp.max(jnp.abs(scheme.diffusivity[grid.i_]))
@@ -72,8 +73,8 @@ class CenteredScheme(FiniteVolumeScheme):
 
 @numerical_flux.register(CenteredScheme)
 def _numerical_flux_diffusion_centered_scheme(
-    scheme: CenteredScheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: CenteredScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     assert scheme.diffusivity is not None
 
     # FIXME: higher order?
@@ -102,8 +103,8 @@ class SBPSAT(FiniteDifferenceScheme):
 
     op: sbp.SBPOperator
 
-    P: ClassVar[jnp.ndarray]
-    D2: ClassVar[jnp.ndarray]
+    P: ClassVar[Array]
+    D2: ClassVar[Array]
 
     @property
     def name(self) -> str:
@@ -170,8 +171,8 @@ def _bind_diffusion_sbp(  # type: ignore[misc]
 
 @apply_operator.register(SBPSAT)
 def _apply_operator_diffusion_sbp(
-    scheme: SBPSAT, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SBPSAT, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     gb = evaluate_boundary(bc, grid, t, u)
     return scheme.D2 @ u - gb / scheme.P
 

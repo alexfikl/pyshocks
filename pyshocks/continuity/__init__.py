@@ -38,7 +38,7 @@ from pyshocks.continuity.schemes import (
     Scheme,
 )
 from pyshocks.grid import Grid
-from pyshocks.tools import SpatialFunction
+from pyshocks.tools import Scalar, SpatialFunction
 
 # NOTE: just providing an alias for common usage
 Upwind = Godunov
@@ -89,7 +89,7 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 # {{{ check_oslc
 
 
-def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> jnp.ndarray:
+def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> Scalar:
     r"""Check the One-sided Lipschitz Continuous condition.
 
     A function :math:`f(t, x)` is called one-sided Lipschitz continuous if

@@ -625,7 +625,7 @@ def main(
         save_animation(
             # f"burgers_ssweno_{suffix}.mp4",
             None,
-            x,
+            x,  # type: ignore[arg-type]
             plotted_solution,
             fig_kwargs={"dpi": 200, "layout": "tight"},
             plot_kwargs={"linewidth": 2, "markersize": 5},
@@ -652,8 +652,8 @@ def main(
         save_animation(
             # f"burgers_ssweno_{suffix}_weights.mp4",
             None,
-            x,
-            omegas,
+            x,  # type: ignore[arg-type]
+            omegas,  # type: ignore[arg-type]
             legends=(r"$\omega^L$", r"$\omega^C$", r"$\omega^R$"),
             fig_kwargs={"dpi": 100, "layout": "tight"},
             plot_kwargs={"linewidth": 2},
@@ -857,7 +857,7 @@ def test_interpolation(visualize: bool = True) -> None:
         fhathat = weno_242_reconstruct(f, f, epsilon=dx**4)
 
         error_f = la.norm(fbar - fhathat, ord=np.inf) / la.norm(fbar, ord=np.inf)
-        eoc[-1].add_data_point(dx, error_f)
+        eoc[-1].add_data_point(float(dx), float(error_f))
 
     logger.info("\n%s\n%s\n%s\n%s", *eoc)
 

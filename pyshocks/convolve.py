@@ -15,11 +15,12 @@ Convolutions
 .. autofunction:: convolve1d
 """
 import enum
-from typing import Optional
+from typing import Optional, cast
 
 import jax.numpy as jnp
 
 from pyshocks.schemes import BoundaryType
+from pyshocks.tools import Array
 
 
 @enum.unique
@@ -87,11 +88,11 @@ def convolution_type_to_pad_mode(cv: ConvolutionType) -> str:
 
 
 def convolve1d(
-    ary: jnp.ndarray,
-    weights: jnp.ndarray,
+    ary: Array,
+    weights: Array,
     *,
     mode: Optional[ConvolutionType] = None,
-) -> jnp.ndarray:
+) -> Array:
     """Perform a convolution of one-dimensional arrays.
 
     Should perform identically to :func:`scipy.ndimage.convolve1d`. Performance
@@ -119,4 +120,4 @@ def convolve1d(
         result = u[n:-n]
 
     assert result.shape == ary.shape
-    return result
+    return cast(Array, result)

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, cast
 
 import jax.numpy as jnp
 
@@ -21,6 +21,7 @@ from pyshocks import (
     predict_timestep,
     sbp,
 )
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 # {{{ base
 
@@ -29,9 +30,9 @@ from pyshocks import (
 class SpatialVelocity:
     """A placeholder for a spatially-varying velocity field."""
 
-    velocity: jnp.ndarray
+    velocity: Array
 
-    def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, t: ScalarLike, x: Array) -> Array:
         assert self.velocity.shape == x.shape
         return self.velocity
 
@@ -47,13 +48,13 @@ class Scheme(SchemeBase):
     .. automethod:: __init__
     """
 
-    velocity: jnp.ndarray
+    velocity: Array
 
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_advection(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Scalar:
     assert scheme.velocity is not None
 
     # NOTE: keep in sync with pyshocks.continuity.schemes.predict_timestep
@@ -63,8 +64,8 @@ def _predict_timestep_advection(
 
 @apply_operator.register(Scheme)
 def _apply_operator_advection(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     assert scheme.velocity is not None
 
     from pyshocks import apply_boundary
@@ -99,9 +100,7 @@ class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
 # {{{ godunov
 
 
-def upwind_flux(
-    scheme: Scheme, grid: Grid, bc: Boundary, u: jnp.ndarray
-) -> jnp.ndarray:
+def upwind_flux(scheme: Scheme, grid: Grid, bc: Boundary, u: Array) -> Array:
     assert scheme.velocity is not None
     assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
@@ -128,8 +127,8 @@ class Godunov(FiniteVolumeScheme):
 
 @numerical_flux.register(Godunov)
 def _numerical_flux_advection_godunov(
-    scheme: Godunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Godunov, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     return upwind_flux(scheme, grid, bc, u)
 
 
@@ -139,9 +138,7 @@ def _numerical_flux_advection_godunov(
 # {{{ ESWENO
 
 
-def esweno_lf_flux(
-    scheme: Scheme, grid: Grid, bc: Boundary, u: jnp.ndarray
-) -> jnp.ndarray:
+def esweno_lf_flux(scheme: Scheme, grid: Grid, bc: Boundary, u: Array) -> Array:
     assert scheme.velocity is not None
     assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
@@ -165,8 +162,8 @@ class ESWENO32(FiniteVolumeScheme):
 
 @numerical_flux.register(ESWENO32)
 def _numerical_flux_advection_esweno32(
-    scheme: ESWENO32, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: ESWENO32, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     from pyshocks import reconstruction
     from pyshocks.weno import es_weno_weights
 
@@ -188,9 +185,9 @@ def _numerical_flux_advection_esweno32(
 
         # }}}
     else:
-        gnum = 0.0
+        gnum = jnp.array(0.0)
 
-    return esweno_lf_flux(scheme, grid, bc, u) + gnum
+    return cast(Array, esweno_lf_flux(scheme, grid, bc, u) + gnum)
 
 
 # }}}
@@ -239,8 +236,8 @@ def _bind_advection_flux_split_godunov(  # type: ignore[misc]
 
 @apply_operator.register(FluxSplitGodunov)
 def _apply_operator_flux_split_godunov(
-    scheme: FluxSplitGodunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: FluxSplitGodunov, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     assert scheme.velocity is not None
 
     from pyshocks import apply_boundary
@@ -265,8 +262,8 @@ def _apply_operator_flux_split_godunov(
 class SBPSAT(FiniteDifferenceScheme):
     op: sbp.SBPOperator
 
-    P: ClassVar[jnp.ndarray]
-    D1: ClassVar[jnp.ndarray]
+    P: ClassVar[Array]
+    D1: ClassVar[Array]
 
     @property
     def name(self) -> str:
@@ -325,8 +322,8 @@ def _bind_advection_sbp(  # type: ignore[misc]
 
 @apply_operator.register(SBPSAT)
 def _apply_operator_sbp_sat_21(
-    scheme: SBPSAT, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SBPSAT, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     gb = evaluate_boundary(bc, grid, t, u)
     return -scheme.velocity * (scheme.D1 @ u) - gb / scheme.P
 

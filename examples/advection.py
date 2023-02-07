@@ -19,6 +19,7 @@ from pyshocks import (
     predict_timestep,
     reconstruction,
 )
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("advection")
 
@@ -30,30 +31,30 @@ def make_solution(
 
     if name == "const":
 
-        def ic_sine(x: jnp.ndarray) -> jnp.ndarray:
+        def ic_sine(x: Array) -> Array:
             return offset + funcs.ic_sine(grid, x, k=1)
 
-        def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        def velocity(t: ScalarLike, x: Array) -> Array:
             return funcs.ic_constant(grid, x, c=a)
 
-        def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        def solution(t: ScalarLike, x: Array) -> Array:
             return ic_sine(x - a * t)
 
     elif name == "sign":
 
-        def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        def velocity(t: ScalarLike, x: Array) -> Array:
             return a * funcs.ic_sign(grid, x)
 
-        def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        def solution(t: ScalarLike, x: Array) -> Array:
             # FIXME: this has an known solution for all time!
             return offset + funcs.ic_sine(grid, x, k=1)
 
     elif name == "double_sign":
 
-        def velocity(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        def velocity(t: ScalarLike, x: Array) -> Array:
             return a * funcs.ic_sign(grid, x)
 
-        def solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
+        def solution(t: ScalarLike, x: Array) -> Array:
             return a * funcs.ic_sign(grid, x)
 
     else:
@@ -91,7 +92,7 @@ def main(
     interactive: bool = False,
     visualize: bool = False,
     verbose: bool = True,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+) -> Tuple[Array, Array, Array]:
     r"""
     :arg a: left boundary of the domain :math:`[a, b]`.
     :arg b: right boundary of the domain :math:`[a, b]`.
@@ -147,10 +148,10 @@ def main(
 
     # {{{ right-hand side
 
-    def _predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _predict_timestep(_t: ScalarLike, _u: Array) -> Array:
         return theta * predict_timestep(scheme, grid, boundary, _t, _u)
 
-    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}

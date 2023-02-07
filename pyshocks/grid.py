@@ -35,7 +35,7 @@ from typing import Any, Optional, Tuple, Union
 import jax
 import jax.numpy as jnp
 
-from pyshocks.tools import SpatialFunction
+from pyshocks.tools import Array, Scalar, ScalarLike, SpatialFunction
 
 # {{{ grids
 
@@ -100,18 +100,18 @@ class Grid:
         points.
     """
 
-    a: float
-    b: float
+    a: ScalarLike
+    b: ScalarLike
     nghosts: int
 
-    x: jnp.ndarray
-    dx: jnp.ndarray
+    x: Array
+    dx: Array
 
-    f: jnp.ndarray
-    df: jnp.ndarray
+    f: Array
+    df: Array
 
-    dx_min: float
-    dx_max: float
+    dx_min: Scalar
+    dx_max: Scalar
 
     is_periodic: bool
 
@@ -154,8 +154,8 @@ class UniformGrid(Grid):
 
 
 def make_uniform_cell_grid(
-    a: float,
-    b: float,
+    a: ScalarLike,
+    b: ScalarLike,
     n: int,
     *,
     nghosts: int = 1,
@@ -198,8 +198,8 @@ def make_uniform_cell_grid(
         nghosts=nghosts,
         dx=dx,
         df=df,
-        dx_min=h,
-        dx_max=h,
+        dx_min=jnp.array(h, dtype=x.dtype),
+        dx_max=jnp.array(h, dtype=x.dtype),
         is_periodic=False,
     )
 
@@ -211,8 +211,8 @@ def make_uniform_cell_grid(
 
 
 def make_uniform_point_grid(
-    a: float,
-    b: float,
+    a: ScalarLike,
+    b: ScalarLike,
     n: int,
     *,
     nghosts: int = 0,
@@ -271,8 +271,8 @@ def make_uniform_point_grid(
         dx=dx,
         f=f,
         df=df,
-        dx_min=h,
-        dx_max=h,
+        dx_min=jnp.array(h, dtype=x.dtype),
+        dx_max=jnp.array(h, dtype=x.dtype),
         is_periodic=is_periodic,
     )
 
@@ -284,8 +284,8 @@ def make_uniform_point_grid(
 
 
 def make_uniform_ssweno_grid(
-    a: float,
-    b: float,
+    a: ScalarLike,
+    b: ScalarLike,
     n: int,
     *,
     is_periodic: bool = False,
@@ -325,8 +325,12 @@ def make_uniform_ssweno_grid(
         from pyshocks.sbp import make_sbp_42_norm_stencil, make_sbp_matrix_from_stencil
         from pyshocks.schemes import BoundaryType
 
-        p = make_sbp_42_norm_stencil(dtype=dtype)
-        p = make_sbp_matrix_from_stencil(BoundaryType.Dirichlet, n, p, weight=1)
+        p = make_sbp_matrix_from_stencil(
+            BoundaryType.Dirichlet,
+            n,
+            make_sbp_42_norm_stencil(dtype=dtype),
+            weight=1,
+        )
 
         f = jnp.zeros(n + 1, dtype=dtype)
         f = f.at[0].set(x[0])
@@ -346,8 +350,8 @@ def make_uniform_ssweno_grid(
         dx=dx,
         f=f,
         df=df,
-        dx_min=h,
-        dx_max=h,
+        dx_min=jnp.array(h, dtype=x.dtype),
+        dx_max=jnp.array(h, dtype=x.dtype),
         is_periodic=is_periodic,
     )
 
@@ -392,10 +396,10 @@ class Quadrature:
     """
 
     order: int
-    x: jnp.ndarray
-    w: jnp.ndarray
+    x: Array
+    w: Array
 
-    dx: jnp.ndarray
+    dx: Array
 
     def __post_init__(self) -> None:
         if self.x.shape != self.w.shape:
@@ -412,7 +416,7 @@ class Quadrature:
     def ncells(self) -> int:
         return int(self.x.shape[1])
 
-    def __call__(self, fn: SpatialFunction, axis: Optional[int] = None) -> jnp.ndarray:
+    def __call__(self, fn: SpatialFunction, axis: Optional[int] = None) -> Array:
         """Integral over the grid of the function.
 
         :arg axis: If *None*, this computes the integral over the full grid.
@@ -439,7 +443,7 @@ def make_leggauss_quadrature(grid: Grid, order: int) -> Quadrature:
     return make_leggauss_quadrature_from_points(f, order)
 
 
-def make_leggauss_quadrature_from_points(x: jnp.ndarray, order: int) -> Quadrature:
+def make_leggauss_quadrature_from_points(x: Array, order: int) -> Quadrature:
     # get Gauss-Legendre quadrature nodes and weights
     from numpy.polynomial.legendre import leggauss
 
@@ -459,7 +463,7 @@ def make_leggauss_quadrature_from_points(x: jnp.ndarray, order: int) -> Quadratu
     return Quadrature(order=order, x=xi, w=wi, dx=dx)
 
 
-def cell_average(quad: Quadrature, fn: SpatialFunction) -> jnp.ndarray:
+def cell_average(quad: Quadrature, fn: SpatialFunction) -> Array:
     r"""Computes the cell average of the callable *fn* as
 
     .. math::
@@ -478,7 +482,7 @@ def cell_average(quad: Quadrature, fn: SpatialFunction) -> jnp.ndarray:
 
 
 @partial(jax.jit, static_argnums=(2,))
-def _norm(u: jnp.ndarray, dx: jnp.ndarray, p: Union[str, float]) -> jnp.ndarray:
+def _norm(u: Array, dx: Array, p: Union[str, ScalarLike]) -> Scalar:
     u = jnp.abs(u)
 
     if p == 1:
@@ -496,7 +500,8 @@ def _norm(u: jnp.ndarray, dx: jnp.ndarray, p: Union[str, float]) -> jnp.ndarray:
     if p == "tvd":
         return jnp.sum(jnp.abs(jnp.diff(u)))
 
-    if isinstance(p, (int, float)):
+    if isinstance(p, (int, float, jnp.ndarray)):
+        p = float(p)
         if p <= 0:
             raise ValueError(f"'p' must be a positive float: {p!r} <= 0.")
 
@@ -506,8 +511,12 @@ def _norm(u: jnp.ndarray, dx: jnp.ndarray, p: Union[str, float]) -> jnp.ndarray:
 
 
 def norm(
-    grid: Grid, u: jnp.ndarray, *, p: Union[str, float] = 1, weighted: bool = False
-) -> jnp.ndarray:
+    grid: Grid,
+    u: Union[float, Array],
+    *,
+    p: Union[str, ScalarLike] = 1,
+    weighted: bool = False,
+) -> Scalar:
     r"""Computes the interior :math:`\ell^p` norm of *u*.
 
     Note that the weighted :math:`\ell^p` norm actually results in the
@@ -520,19 +529,26 @@ def norm(
     :arg weighted: if *True*, the standard :math:`p` are weighted by the cell
         sizes.
     """
+    from numbers import Number
+
+    if isinstance(u, (float, Number)) or u.shape == ():
+        return jnp.array(jnp.abs(u), dtype=grid.x.dtype)
+
+    assert u.shape[:1] == grid.x.shape
+
     dx = grid.dx[grid.i_] if weighted else 1.0
-    return _norm(u[grid.i_], dx, p)
+    return jnp.array(_norm(u[grid.i_], dx, p), dtype=u.dtype)
 
 
 def rnorm(
     grid: Grid,
-    u: jnp.ndarray,
-    v: jnp.ndarray,
+    u: Union[float, Array],
+    v: Union[float, Array],
     *,
-    p: Union[str, float] = 1,
+    p: Union[str, ScalarLike] = 1,
     weighted: bool = False,
-    atol: float = 1.0e-14,
-) -> jnp.ndarray:
+    atol: ScalarLike = 1.0e-14,
+) -> Scalar:
     r"""Computes the interior :math:`\ell^p` relative error norm of *u* and *v*
     as
 
@@ -544,7 +560,7 @@ def rnorm(
     """
     vnorm = norm(grid, v, p=p, weighted=weighted)
     if vnorm < atol:
-        vnorm = 1.0
+        vnorm = jnp.array(1.0, dtype=grid.x.dtype)
 
     return norm(grid, u - v, p=p, weighted=weighted) / vnorm
 

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from itertools import product
-from typing import List, Tuple
+from typing import List, Tuple, cast
 
 import jax
 import jax.numpy as jnp
@@ -18,6 +18,7 @@ from pyshocks import (
     set_recommended_matplotlib,
 )
 from pyshocks.reconstruction import WENOJS, make_reconstruction_from_name, reconstruct
+from pyshocks.tools import Array, Scalar
 
 logger = get_logger("test_weno")
 set_recommended_matplotlib()
@@ -42,6 +43,7 @@ def test_weno_smoothness_indicator_vectorization(
     a = rec.s.a
     b = rec.s.b
     c = rec.s.c
+    assert a is not None and b is not None
 
     nghosts = b.shape[-1] // 2
     nstencils = b.shape[0]
@@ -117,6 +119,7 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, *, is_smooth: bool) ->
     assert isinstance(rec, WENOJS)
 
     b = rec.s.b
+    assert b is not None
 
     nghosts = b.shape[-1] // 2
     n = n + 2 * nghosts
@@ -163,9 +166,7 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, *, is_smooth: bool) ->
 # {{{ test_weno_vs_pyweno
 
 
-def _pyweno_reconstruct(
-    u: jnp.ndarray, order: int, side: str
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def _pyweno_reconstruct(u: Array, order: int, side: str) -> Tuple[Array, Array]:
     import pyweno
 
     ul, sl = pyweno.weno.reconstruct(
@@ -358,8 +359,6 @@ def test_ss_weno_242_interpolation(
         stencils = ("LL", "L", "C", "R", "RR")
 
     eocs = [EOCRecorder(name=f"u_{stencils[i]}") for i in range(nstencils)]
-    errors = [None] * nstencils
-
     from pyshocks import weno
 
     func = get_function("sine")
@@ -376,16 +375,14 @@ def test_ss_weno_242_interpolation(
         print(uhat[3], ubar[0, 3])
 
         for i in range(1, nstencils):
-            errors[i] = rnorm(
-                grid, uhat * mask[i], ubar[i] * mask[i], p=1, weighted=False
-            )
-            eocs[i].add_data_point(grid.dx_max, errors[i])
+            error = rnorm(grid, uhat * mask[i], ubar[i] * mask[i], p=1, weighted=False)
+            eocs[i].add_data_point(grid.dx_max, error)
 
-            logger.info("error: n %4d u[%2s] %.12e", n, stencils[i], errors[i])
+            logger.info("error: n %4d u[%2s] %.12e", n, stencils[i], error)
 
-        errors[0] = abs(uhat[3] - ubar[0, 3]) / abs(uhat[3])
-        eocs[0].add_data_point(grid.dx_max, errors[0])
-        logger.info("error: n %4d u[%2s] %.12e", n, stencils[0], errors[0])
+        error = abs(uhat[3] - ubar[0, 3]) / abs(uhat[3])
+        eocs[0].add_data_point(grid.dx_max, error)
+        logger.info("error: n %4d u[%2s] %.12e", n, stencils[0], error)
 
     from pyshocks.tools import stringify_eoc
 
@@ -401,8 +398,8 @@ def test_ss_weno_242_interpolation(
 
 
 @jax.jit
-def two_point_entropy_flux_21(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
-    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+def two_point_entropy_flux_21(qi: Array, u: Array) -> Array:
+    def fs(ul: Scalar, ur: Scalar) -> Scalar:
         return (ul * ul + ul * ur + ur * ur) / 6
 
     qr = qi[qi.size // 2 + 1 :]
@@ -413,10 +410,14 @@ def two_point_entropy_flux_21(qi: jnp.ndarray, u: jnp.ndarray) -> jnp.ndarray:
     i = u.size - 1
     fss = fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i + 1]))
 
-    def body(i: int, fss: jnp.ndarray) -> jnp.ndarray:
-        return fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
+    def body(i: int, fss: Array) -> Array:
+        result = fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
+        return cast(Array, result)
 
-    return jax.lax.fori_loop(2, u.size - 1, body, fss)
+    return cast(
+        Array,
+        jax.lax.fori_loop(2, u.size - 1, body, fss),  # type: ignore[no-untyped-call]
+    )
 
 
 def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
@@ -460,10 +461,10 @@ def test_ss_weno_burgers_two_point_flux(bc: BoundaryType) -> None:
     q = replace(q, left=None, right=None)
     Q = sbp.make_sbp_matrix_from_stencil(bc, grid.n, q)
 
-    def fs(ul: jnp.ndarray, ur: jnp.ndarray) -> jnp.ndarray:
+    def fs(ul: Array, ur: Array) -> Array:
         return (ul * ul + ul * ur + ur * ur) / 6
 
-    def two_point_flux_numpy_v0(u: jnp.ndarray) -> jnp.ndarray:
+    def two_point_flux_numpy_v0(u: Array) -> Array:
         import numpy as np
 
         q = jax.device_get(Q)
@@ -475,7 +476,7 @@ def test_ss_weno_burgers_two_point_flux(bc: BoundaryType) -> None:
                 for k in range(i, u.size):
                     fss[i] += 2 * q[j, k] * fs(w[j], w[k])
 
-        return jax.device_put(fss)
+        return cast(Array, jax.device_put(fss))
 
     from pyshocks import BlockTimer
 

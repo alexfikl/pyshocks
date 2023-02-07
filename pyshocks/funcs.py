@@ -43,16 +43,17 @@ Misc Functions
 .. autofunction:: ic_boxcar
 """
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, cast
 
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
+from pyshocks.tools import Array, ScalarLike
 
 # {{{ misc
 
 
-def ic_constant(grid: Grid, x: jnp.ndarray, *, c: float = 1.0) -> jnp.ndarray:
+def ic_constant(grid: Grid, x: Array, *, c: ScalarLike = 1.0) -> Array:
     """A constant function.
 
     .. math::
@@ -64,12 +65,12 @@ def ic_constant(grid: Grid, x: jnp.ndarray, *, c: float = 1.0) -> jnp.ndarray:
 
 def ic_rarefaction(
     grid: Grid,
-    x: jnp.ndarray,
+    x: Array,
     *,
-    ul: float = 0.0,
-    ur: float = 1.0,
-    x0: Optional[float] = None,
-) -> jnp.ndarray:
+    ul: ScalarLike = 0.0,
+    ur: ScalarLike = 1.0,
+    x0: Optional[ScalarLike] = None,
+) -> Array:
     r"""A step function.
 
     .. math::
@@ -88,14 +89,14 @@ def ic_rarefaction(
     return ul * h + (1 - h) * ur
 
 
-def ic_sign(grid: Grid, x: jnp.ndarray, *, x0: Optional[float] = None) -> jnp.ndarray:
+def ic_sign(grid: Grid, x: Array, *, x0: Optional[ScalarLike] = None) -> Array:
     r"""A step function like :func:`ic_rarefaction` with :math:`u_L = -1`
     and :math:`u_R = 1`.
     """
     return ic_rarefaction(grid, x, ul=-1.0, ur=1.0, x0=x0)
 
 
-def ic_sine(grid: Grid, x: jnp.ndarray, *, k: float = 2) -> jnp.ndarray:
+def ic_sine(grid: Grid, x: Array, *, k: ScalarLike = 2) -> Array:
     r"""A standard sine function.
 
     .. math::
@@ -116,8 +117,8 @@ def ic_sine(grid: Grid, x: jnp.ndarray, *, k: float = 2) -> jnp.ndarray:
 
 
 def ic_sine_sine(
-    grid: Grid, x: jnp.ndarray, *, k1: float = 2, k2: float = 2
-) -> jnp.ndarray:
+    grid: Grid, x: Array, *, k1: ScalarLike = 2, k2: ScalarLike = 2
+) -> Array:
     r"""A nested sine function.
 
     .. math::
@@ -135,13 +136,13 @@ def ic_sine_sine(
 
 def ic_cut_sine(
     grid: Grid,
-    x: jnp.ndarray,
+    x: Array,
     *,
     k: int = 1,
-    us: float = 1.0,
-    xa: Optional[float] = None,
-    xb: Optional[float] = None,
-) -> jnp.ndarray:
+    us: ScalarLike = 1.0,
+    xa: Optional[ScalarLike] = None,
+    xb: Optional[ScalarLike] = None,
+) -> Array:
     r"""A discontinuous sine function.
 
     .. math::
@@ -179,12 +180,12 @@ def ic_cut_sine(
 
 def ic_gaussian(
     grid: Grid,
-    x: jnp.ndarray,
+    x: Array,
     *,
-    sigma: float = 0.1,
-    xc: Optional[float] = None,
-    amplitude: Optional[float] = None,
-) -> jnp.ndarray:
+    sigma: ScalarLike = 0.1,
+    xc: Optional[ScalarLike] = None,
+    amplitude: Optional[ScalarLike] = None,
+) -> Array:
     r"""A standard Gaussian function.
 
     .. math::
@@ -202,12 +203,12 @@ def ic_gaussian(
 
 def ic_boxcar(
     grid: Grid,
-    x: jnp.ndarray,
+    x: Array,
     *,
-    amplitude: float = 1.0,
-    xa: Optional[float] = None,
-    xb: Optional[float] = None,
-) -> jnp.ndarray:
+    amplitude: ScalarLike = 1.0,
+    xa: Optional[ScalarLike] = None,
+    xb: Optional[ScalarLike] = None,
+) -> Array:
     r"""A boxcar function.
 
     .. math::
@@ -235,13 +236,13 @@ def ic_boxcar(
 
 def diffusion_expansion(
     grid: Grid,
-    t: float,
-    x: jnp.ndarray,
+    t: ScalarLike,
+    x: Array,
     *,
-    modes: Tuple[float, ...] = (1.0,),
-    amplitudes: Tuple[float, ...] = (1.0,),
-    diffusivity: float = 1.0,
-) -> jnp.ndarray:
+    modes: Tuple[ScalarLike, ...] = (1.0,),
+    amplitudes: Tuple[ScalarLike, ...] = (1.0,),
+    diffusivity: ScalarLike = 1.0,
+) -> Array:
     r"""A series expansion solution for the heat equation.
 
     .. math::
@@ -273,12 +274,12 @@ def diffusion_expansion(
 
 def diffusion_tophat(
     grid: Grid,
-    t: float,
-    x: jnp.ndarray,
+    t: ScalarLike,
+    x: Array,
     *,
-    x0: Optional[float] = None,
-    diffusivity: float = 1.0,
-) -> jnp.ndarray:
+    x0: Optional[ScalarLike] = None,
+    diffusivity: ScalarLike = 1.0,
+) -> Array:
     r"""A tophat exact solution for the diffusion equation.
 
     .. math::
@@ -306,13 +307,13 @@ def diffusion_tophat(
 
 def burgers_riemann(
     grid: Grid,
-    t: float,
-    x: jnp.ndarray,
+    t: ScalarLike,
+    x: Array,
     *,
-    ul: float = 1.0,
-    ur: float = 0.0,
-    x0: Optional[float] = None,
-) -> jnp.ndarray:
+    ul: ScalarLike = 1.0,
+    ur: ScalarLike = 0.0,
+    x0: Optional[ScalarLike] = None,
+) -> Array:
     r"""Construct a solution for the pure Burgers Riemann problem.
 
     .. math::
@@ -353,19 +354,19 @@ def burgers_riemann(
 
         r = h * ul + (1 - h) * ur
 
-    return r
+    return cast(Array, r)
 
 
 def burgers_linear_shock(
     grid: Grid,
-    t: float,
-    x: jnp.ndarray,
+    t: ScalarLike,
+    x: Array,
     *,
-    ul: float = 1.0,
-    ur: float = 0.0,
-    xa: Optional[float] = None,
-    xb: Optional[float] = None,
-) -> jnp.ndarray:
+    ul: ScalarLike = 1.0,
+    ur: ScalarLike = 0.0,
+    xa: Optional[ScalarLike] = None,
+    xb: Optional[ScalarLike] = None,
+) -> Array:
     r"""Construct a shock solution for the initial condition
 
     .. math::
@@ -422,19 +423,19 @@ def burgers_linear_shock(
     s1 = ul * h + ur * (1 - h)
 
     h = jnp.array(t < tmax, dtype=x.dtype)
-    return s0 * h + (1 - h) * s1
+    return cast(Array, s0 * h + (1 - h) * s1)
 
 
 def burgers_tophat(
     grid: Grid,
-    t: float,
-    x: jnp.ndarray,
+    t: ScalarLike,
+    x: Array,
     *,
-    us: float = 0.0,
-    uc: float = 1.0,
-    xa: Optional[float] = None,
-    xb: Optional[float] = None,
-) -> jnp.ndarray:
+    us: ScalarLike = 0.0,
+    uc: ScalarLike = 1.0,
+    xa: Optional[ScalarLike] = None,
+    xb: Optional[ScalarLike] = None,
+) -> Array:
     r"""Constructs an rarefaction-shock exact solution for the initial condition
 
     .. math::
@@ -480,7 +481,7 @@ def burgers_tophat(
     ).astype(x.dtype)
     h_r = (x > xb + s * t).astype(x.dtype)
 
-    return us * h_l + (x - xa) / (t + 1.0e-15) * h_e + uc * h_c + us * h_r
+    return cast(Array, us * h_l + (x - xa) / (t + 1.0e-15) * h_e + uc * h_c + us * h_r)
 
 
 # }}}

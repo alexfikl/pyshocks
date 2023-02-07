@@ -16,6 +16,7 @@ from pyshocks import (
     numerical_flux,
     predict_timestep,
 )
+from pyshocks.tools import Array, ScalarLike
 
 # {{{ base
 
@@ -32,13 +33,11 @@ class Scheme(SchemeBase):
     """
 
     # NOTE: this is Optional just for mypy, but should never be `None` in practice
-    velocity: Optional[jnp.ndarray]
+    velocity: Optional[Array]
 
 
 @flux.register(Scheme)
-def _flux_continuity(
-    scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray
-) -> jnp.ndarray:
+def _flux_continuity(scheme: Scheme, t: ScalarLike, x: Array, u: Array) -> Array:
     assert scheme.velocity is not None
 
     return scheme.velocity * u
@@ -46,8 +45,8 @@ def _flux_continuity(
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_continuity(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     assert scheme.velocity is not None
 
     amax = jnp.max(jnp.abs(scheme.velocity[grid.i_]))
@@ -91,8 +90,8 @@ class Godunov(FiniteVolumeScheme):
 
 @numerical_flux.register(Godunov)
 def _numerical_flux_continuity_godunov(
-    scheme: Godunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Godunov, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     assert scheme.velocity is not None
     assert scheme.rec is not None
     assert u.shape[0] == grid.x.size

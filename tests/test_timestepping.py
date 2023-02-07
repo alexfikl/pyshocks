@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from typing import Type
+from typing import Type, cast
 
 import jax
 import jax.numpy as jnp
@@ -9,6 +9,7 @@ import pytest
 
 from pyshocks import get_logger
 from pyshocks import timestepping as ts
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("test_timestepping")
 
@@ -29,11 +30,11 @@ def test_time_convergence(
     # {{{ ode
 
     @jax.jit
-    def source(t: float, u: jnp.ndarray) -> jnp.ndarray:
+    def source(t: ScalarLike, u: Array) -> Array:
         return jnp.array([jnp.exp(-t)])
 
-    def solution(t: float) -> jnp.ndarray:
-        return -source(t, jnp.array([0.0]))
+    def solution(t: ScalarLike) -> Array:
+        return cast(Array, -source(t, jnp.array([0.0])))
 
     tfinal = 4.0
     u0 = solution(0.0)
@@ -52,7 +53,7 @@ def test_time_convergence(
     eoc = EOCRecorder(name=cls.__name__)
 
     for n in range(2, 7):
-        dt = 1.0 / 2.0**n
+        dt: ScalarLike = 1.0 / 2.0**n
         maxit, dt = ts.predict_maxit_from_timestep(tfinal, dt)
 
         stepper = cls(
@@ -61,14 +62,14 @@ def test_time_convergence(
             checkpoint=None,
         )
 
-        u = []
-        t = []
+        u_acc = []
+        t_acc = []
         for event in ts.step(stepper, u0, maxit=maxit):
-            u.append(event.u[0])
-            t.append(event.t)
+            u_acc.append(event.u[0])
+            t_acc.append(event.t)
 
-        u = jnp.array(u)
-        t = jnp.array(t)
+        u = jnp.array(u_acc)
+        t = jnp.array(t_acc)
 
         if visualize:
             ax.plot(t, u)

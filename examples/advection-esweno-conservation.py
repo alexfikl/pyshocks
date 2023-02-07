@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
+from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -14,23 +15,24 @@ from pyshocks import (
     predict_timestep,
     reconstruction,
 )
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("advection")
 
 
 def cosine_pulse(
-    x: jnp.ndarray,
+    x: Array,
     *,
     w: float = 5.0 * jnp.pi,
     xc: float = 0.5,
     sigma: float = 0.2,
     p: int = 4,
-) -> jnp.ndarray:
+) -> Array:
     """Compute a cosine pulse using the parameters from [Yamaleev2009] Eq. 83."""
     r = (0.5 + 0.5 * jnp.cos(w * (x - xc))) ** p
     mask = (jnp.abs(x - xc) < sigma).astype(x.dtype)
 
-    return r * mask
+    return cast(Array, r * mask)
 
 
 def main(
@@ -99,10 +101,10 @@ def main(
 
     # {{{ right-hand side
 
-    def _predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _predict_timestep(_t: ScalarLike, _u: Array) -> Array:
         return theta * predict_timestep(scheme, grid, boundary, _t, _u)
 
-    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}
@@ -118,15 +120,17 @@ def main(
         checkpoint=None,
     )
 
-    l2_norm = []
-    tv_norm = []
+    l2_norm_tmp = []
+    tv_norm_tmp = []
     event = None
 
     for event in timestepping.step(method, u0, tfinal=tfinal):
-        l2_norm.append(norm(grid, event.u, p=2))
-        tv_norm.append(norm(grid, event.u, p="tvd"))
+        l2_norm_tmp.append(norm(grid, event.u, p=2))
+        tv_norm_tmp.append(norm(grid, event.u, p="tvd"))
 
-        logger.info("%s || norm l2 %.5e tv %.5e", event, l2_norm[-1], tv_norm[-1])
+        logger.info(
+            "%s || norm l2 %.5e tv %.5e", event, l2_norm_tmp[-1], tv_norm_tmp[-1]
+        )
 
         if interactive:
             ln0.set_ydata(event.u[s])
@@ -141,8 +145,8 @@ def main(
         plt.close(fig)
 
     if visualize:
-        l2_norm = jnp.array(l2_norm, dtype=u0.dtype)
-        tv_norm = jnp.array(tv_norm, dtype=u0.dtype)
+        l2_norm = jnp.array(l2_norm_tmp, dtype=u0.dtype)
+        tv_norm = jnp.array(tv_norm_tmp, dtype=u0.dtype)
 
         fig = plt.figure()
         ax = fig.gca()

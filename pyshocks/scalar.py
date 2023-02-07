@@ -61,7 +61,13 @@ from pyshocks.schemes import (
     evaluate_boundary,
     flux,
 )
-from pyshocks.tools import SpatialFunction, TemporalFunction, VectorFunction
+from pyshocks.tools import (
+    Array,
+    ScalarLike,
+    SpatialFunction,
+    TemporalFunction,
+    VectorFunction,
+)
 
 # {{{ fluxes
 
@@ -72,10 +78,10 @@ def scalar_flux_upwind(
     scheme: ConservationLawScheme,
     grid: Grid,
     bc: BoundaryType,
-    t: float,
-    a: jnp.ndarray,
-    u: jnp.ndarray,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    a: Array,
+    u: Array,
+) -> Array:
     r"""Implements the classic upwind flux (see [LeVeque2002]_).
 
     The flux is given by
@@ -123,7 +129,7 @@ def lax_friedrichs_initial_condition_correction(
     func: SpatialFunction,
     *,
     order: Optional[int] = None,
-) -> jnp.ndarray:
+) -> Array:
     """Implements a correction to the initial condition that ensures local
     total variation preservation with the Lax-Friedrichs scheme.
 
@@ -173,11 +179,11 @@ def scalar_flux_rusanov(
     scheme: ConservationLawScheme,
     grid: Grid,
     bc: BoundaryType,
-    t: float,
-    a: jnp.ndarray,
-    u: jnp.ndarray,
-    alpha: float = 1.0,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    a: Array,
+    u: Array,
+    alpha: ScalarLike = 1.0,
+) -> Array:
     r"""Implements the Rusanov flux (also referred to as the *local* Lax-Friedrichs)
     flux for scalar conservation laws (see Section 12.5 in [LeVeque2002]_).
 
@@ -208,10 +214,10 @@ def scalar_flux_rusanov(
     assert scheme.rec is not None
 
     # artificial viscosity
-    if abs(alpha - 1.0) > 1.0e-8:
+    if abs(alpha - 1.0) > 1.0e-8:  # type: ignore[operator]
         nu = grid.df ** (alpha - 1)
     else:
-        nu = 1.0
+        nu = jnp.array(1.0, dtype=u.dtype)
 
     from pyshocks.reconstruction import reconstruct
 
@@ -239,11 +245,11 @@ def scalar_flux_lax_friedrichs(
     scheme: ConservationLawScheme,
     grid: Grid,
     bc: BoundaryType,
-    t: float,
-    a: jnp.ndarray,
-    u: jnp.ndarray,
-    alpha: float = 1.0,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    a: Array,
+    u: Array,
+    alpha: ScalarLike = 1.0,
+) -> Array:
     r"""Implements the *global* Lax-Friedrichs flux (see Section 12.5 from
     [LeVeque2002]_).
 
@@ -268,11 +274,11 @@ def scalar_flux_engquist_osher(
     scheme: ConservationLawScheme,
     grid: Grid,
     bc: BoundaryType,
-    t: float,
-    a: jnp.ndarray,
-    u: jnp.ndarray,
-    omega: float = 0.0,
-) -> jnp.ndarray:
+    t: ScalarLike,
+    a: Array,
+    u: Array,
+    omega: ScalarLike = 0.0,
+) -> Array:
     r"""Implements the Engquist-Osher flux (see Section 12.6 in [LeVeque2002]_)
     for **convex** physical fluxes.
 
@@ -356,8 +362,8 @@ class TwoSidedBoundary(Boundary):
 
 @apply_boundary.register(TwoSidedBoundary)
 def _apply_boundary_two_sided(
-    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: TwoSidedBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     u = apply_boundary(bc.left, grid, t, u)
     u = apply_boundary(bc.right, grid, t, u)
 
@@ -366,8 +372,8 @@ def _apply_boundary_two_sided(
 
 @evaluate_boundary.register(TwoSidedBoundary)
 def _evaluate_boundary_two_sided(
-    bc: TwoSidedBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: TwoSidedBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     return evaluate_boundary(bc.left, grid, t, u) + evaluate_boundary(
         bc.right, grid, t, u
     )
@@ -401,12 +407,14 @@ class DirichletBoundary(OneSidedBoundary):
 
 @apply_boundary.register(DirichletBoundary)
 def _apply_boundary_scalar_dirichlet(
-    bc: DirichletBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: DirichletBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     assert u.size == grid.x.size
 
     ito = grid.g_[bc.side]
-    return u.at[ito].set(bc.g(t, grid.x[ito]), unique_indices=True)
+    u = u.at[ito].set(bc.g(t, grid.x[ito]), unique_indices=True)
+
+    return u
 
 
 def make_dirichlet_boundary(
@@ -453,8 +461,8 @@ class NeumannBoundary(OneSidedBoundary):
 
 @apply_boundary.register(NeumannBoundary)
 def _apply_boundary_scalar_neumann(
-    bc: NeumannBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: NeumannBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     assert u.size == grid.x.size
 
     # NOTE: the indexing here is computed as follows (for nghosts = 3)
@@ -477,8 +485,9 @@ def _apply_boundary_scalar_neumann(
         ito = jnp.arange(u.size - 1, u.size - g - 1, -1)
 
     ub = u[ifrom] + bc.side * (grid.x[ifrom] - grid.x[ito]) * bc.g(t)
+    u = u.at[ito].set(ub, unique_indices=True)
 
-    return u.at[ito].set(ub, unique_indices=True)
+    return u
 
 
 def make_neumann_boundary(
@@ -509,8 +518,8 @@ class PeriodicBoundary(Boundary):
 
 @apply_boundary.register(PeriodicBoundary)
 def _apply_boundary_scalar_periodic(
-    bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: PeriodicBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     assert u.size == grid.x.size
 
     for side in [+1, -1]:
@@ -523,8 +532,8 @@ def _apply_boundary_scalar_periodic(
 
 @evaluate_boundary.register(PeriodicBoundary)
 def _evaluate_boundary_scalar_periodic(
-    bc: PeriodicBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: PeriodicBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     return jnp.zeros_like(u)
 
 
@@ -554,7 +563,7 @@ class OneSidedSATBoundary(OneSidedBoundary):
     """
 
     g: TemporalFunction
-    tau: float
+    tau: ScalarLike
 
     def __post_init__(self) -> None:
         assert self.tau >= 0.5
@@ -566,8 +575,8 @@ class OneSidedSATBoundary(OneSidedBoundary):
 
 @evaluate_boundary.register(OneSidedSATBoundary)
 def _evaluate_boundary_sat(
-    bc: OneSidedSATBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: OneSidedSATBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     assert grid.nghosts == 0
     assert grid.x.shape == u.shape
 
@@ -610,13 +619,13 @@ class OneSidedAdvectionSATBoundary(OneSidedSATBoundary):
         to determine if the boundary conditions is necessary.
     """
 
-    velocity: float
+    velocity: ScalarLike
 
 
 @evaluate_boundary.register(OneSidedAdvectionSATBoundary)
 def _evaluate_boundary_advection_sat(
-    bc: OneSidedAdvectionSATBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: OneSidedAdvectionSATBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     assert grid.nghosts == 0
     assert grid.x.shape == u.shape
 
@@ -652,13 +661,13 @@ class OneSidedDiffusionSATBoundary(OneSidedSATBoundary):
     energy stable if the derivative at the boundary vanishes.
     """
 
-    S: ClassVar[jnp.ndarray]
+    S: ClassVar[Array]
 
 
 @evaluate_boundary.register(OneSidedDiffusionSATBoundary)
 def _evaluate_boundary_diffusion_sat(
-    bc: OneSidedDiffusionSATBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: OneSidedDiffusionSATBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     assert grid.nghosts == 0
     assert grid.x.shape == u.shape
 
@@ -698,8 +707,8 @@ class OneSidedBurgersBoundary(OneSidedSATBoundary):
 
 @evaluate_boundary.register(OneSidedBurgersBoundary)
 def _evaluate_boundary_ssweno_burgers(
-    bc: OneSidedBurgersBoundary, grid: Grid, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    bc: OneSidedBurgersBoundary, grid: Grid, t: ScalarLike, u: Array
+) -> Array:
     assert grid.nghosts == 0
     assert grid.x.shape == u.shape
 

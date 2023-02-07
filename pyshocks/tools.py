@@ -66,9 +66,9 @@ from typing import (
 
 try:
     # NOTE: needs python 3.10
-    from typing import ParamSpec
+    from typing import ParamSpec, TypeAlias
 except ImportError:
-    from typing_extensions import ParamSpec  # type: ignore[assignment]
+    from typing_extensions import ParamSpec, TypeAlias  # type: ignore[assignment]
 
 import pathlib
 from types import TracebackType
@@ -85,6 +85,10 @@ P = ParamSpec("P")
 
 PathLike = Union[pathlib.Path, str]
 
+Array: TypeAlias = jnp.ndarray
+Scalar: TypeAlias = jnp.ndarray
+ScalarLike = Union[float, Scalar]
+
 
 # {{{ callable protocols
 
@@ -95,7 +99,7 @@ class ScalarFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, t: float, x: jnp.ndarray) -> float:
+    def __call__(self, t: ScalarLike, x: Array) -> Scalar:
         ...
 
 
@@ -105,7 +109,7 @@ class VectorFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, t: ScalarLike, x: Array) -> Array:
         ...
 
 
@@ -115,7 +119,7 @@ class SpatialFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, x: jnp.ndarray) -> jnp.ndarray:
+    def __call__(self, x: Array) -> Array:
         ...
 
 
@@ -125,7 +129,7 @@ class TemporalFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, t: float) -> float:
+    def __call__(self, t: ScalarLike) -> Scalar:
         ...
 
 
@@ -135,9 +139,7 @@ class TemporalFunction(Protocol):
 # {{{ eoc
 
 
-def estimate_order_of_convergence(
-    x: jnp.ndarray, y: jnp.ndarray
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def estimate_order_of_convergence(x: Array, y: Array) -> Tuple[Scalar, Scalar]:
     """Computes an estimate of the order of convergence in the least-square sense.
     This assumes that the :math:`(x, y)` pair follows a law of the form
 
@@ -157,8 +159,8 @@ def estimate_order_of_convergence(
 
 
 def estimate_gliding_order_of_convergence(
-    x: jnp.ndarray, y: jnp.ndarray, *, gliding_mean: Optional[int] = None
-) -> jnp.ndarray:
+    x: Array, y: Array, *, gliding_mean: Optional[int] = None
+) -> Array:
     assert x.size == y.size
     if x.size <= 1:
         raise RuntimeError("Need at least two values to estimate order.")
@@ -173,7 +175,8 @@ def estimate_gliding_order_of_convergence(
                 x[i : i + gliding_mean], y[i : i + gliding_mean] + 1.0e-16
             )
             for i in range(npoints)
-        ]
+        ],
+        dtype=x.dtype,
     )
 
 
@@ -202,33 +205,38 @@ class EOCRecorder:
 
         self.name = name
         self.dtype = dtype
-        self.history: List[Tuple[jnp.ndarray, jnp.ndarray]] = []
+        self.history: List[Tuple[Scalar, Scalar]] = []
 
     @property
-    def _history(self) -> jnp.ndarray:
+    def _history(self) -> Array:
         return jnp.array(self.history, dtype=self.dtype).T
 
-    def add_data_point(self, h: jnp.ndarray, error: jnp.ndarray) -> None:
+    def add_data_point(self, h: ScalarLike, error: ScalarLike) -> None:
         """
         :arg h: abscissa, a value representative of the "grid size".
         :arg error: error at given *h*.
         """
-        self.history.append((h, error))
+        self.history.append(
+            (jnp.array(h, dtype=self.dtype), jnp.array(error, dtype=self.dtype))
+        )
 
     @property
-    def estimated_order(self) -> jnp.ndarray:
+    def estimated_order(self) -> Scalar:
         import numpy as np
 
         if not self.history:
-            return np.nan
+            return jnp.array(np.nan, dtype=self.dtype)
 
         h, error = self._history
         _, eoc = estimate_order_of_convergence(h, error)
         return eoc
 
     @property
-    def max_error(self) -> jnp.ndarray:
-        return max(error for _, error in self.history)
+    def max_error(self) -> Scalar:
+        return jnp.amax(
+            jnp.array([error for _, error in self.history], dtype=self.dtype),
+            initial=jnp.array(0.0, dtype=self.dtype),
+        )
 
     def satisfied(
         self, order: float, atol: Optional[float] = None, *, slack: float = 0
@@ -391,21 +399,21 @@ class BlockTimer:
 
     name: str = "block"
 
-    t_wall: float = field(default=-1, init=False)
-    t_wall_start: float = field(default=-1, init=False)
+    t_wall: Scalar = field(default=jnp.array(-1.0), init=False)
+    t_wall_start: Scalar = field(default=jnp.array(-1.0), init=False)
 
-    t_proc: float = field(default=-1, init=False)
-    t_proc_start: float = field(default=-1, init=False)
+    t_proc: Scalar = field(default=jnp.array(-1.0), init=False)
+    t_proc_start: Scalar = field(default=jnp.array(-1.0), init=False)
 
     @property
-    def t_cpu(self) -> float:
+    def t_cpu(self) -> Scalar:
         return self.t_proc / self.t_wall
 
     def __enter__(self) -> "BlockTimer":
         import time
 
-        self.t_wall_start = time.perf_counter()
-        self.t_proc_start = time.process_time()
+        self.t_wall_start = jnp.array(time.perf_counter(), dtype=jnp.float64)
+        self.t_proc_start = jnp.array(time.process_time(), dtype=jnp.float64)
         return self
 
     def finalize(self) -> None:
@@ -452,15 +460,15 @@ class TimeResult:
 
     __slots__ = {"walltime", "mean", "std"}
 
-    walltime: float
-    mean: float
-    std: float
+    walltime: Scalar
+    mean: Scalar
+    std: Scalar
 
     def __str__(self) -> str:
         return f"wall {self.walltime:.3e}s mean {self.mean:.3e}s ± {self.std:.3e}"
 
     @classmethod
-    def from_measurements(cls, deltas: jnp.ndarray, *, skip: int = 5) -> "TimeResult":
+    def from_measurements(cls, deltas: Array, *, skip: int = 5) -> "TimeResult":
         # NOTE: skipping the first few iterations because they mostly measure
         # the jit warming up, so they'll skew the standard deviation
         return TimeResult(
@@ -495,7 +503,7 @@ class IterationTimer:
     """
 
     name: str = "iteration"
-    t_deltas: List[jnp.ndarray] = field(default_factory=list, init=False, repr=False)
+    t_deltas: List[Scalar] = field(default_factory=list, init=False, repr=False)
 
     def tick(self) -> BlockTimer:
         """
@@ -505,7 +513,7 @@ class IterationTimer:
 
         @dataclass
         class _BlockTimer(BlockTimer):
-            t_deltas: Optional[jnp.ndarray] = None
+            t_deltas: Optional[List[Scalar]] = None
 
             def finalize(self) -> None:
                 super().finalize()
@@ -516,12 +524,14 @@ class IterationTimer:
         return _BlockTimer(name="inner", t_deltas=self.t_deltas)
 
     @property
-    def total(self) -> jnp.ndarray:
-        return jnp.sum(jnp.array(self.t_deltas))
+    def total(self) -> Scalar:
+        return jnp.sum(jnp.array(self.t_deltas, dtype=jnp.float64))
 
     def stats(self) -> TimeResult:
         """Compute statistics across all the iterations."""
-        return TimeResult.from_measurements(jnp.array(self.t_deltas), skip=5)
+        return TimeResult.from_measurements(
+            jnp.array(self.t_deltas, dtype=jnp.float64), skip=5
+        )
 
 
 def timeit(func: Callable[P, T]) -> Callable[P, T]:
@@ -571,7 +581,7 @@ def repeatit(
     import timeit as _timeit
 
     r = _timeit.repeat(stmt=stmt, setup=setup, repeat=repeat + 1, number=number)
-    return TimeResult.from_measurements(jnp.array(r), skip=3)
+    return TimeResult.from_measurements(jnp.array(r, dtype=jnp.float64), skip=3)
 
 
 # }}}
@@ -799,14 +809,14 @@ def savefig(fig: Any, filename: PathLike, **kwargs: Any) -> None:
 
 def save_animation(
     filename: Optional[Union[str, pathlib.Path]],
-    x: jnp.ndarray,
-    ys: Union[jnp.ndarray, Tuple[jnp.ndarray, ...]],
+    x: Array,
+    ys: Union[Array, Tuple[Array, ...]],
     *,
     fps: Optional[int] = None,
     xlabel: Optional[str] = None,
     ylabel: Optional[str] = None,
-    ymin: Optional[float] = None,
-    ymax: Optional[float] = None,
+    ymin: Optional[ScalarLike] = None,
+    ymax: Optional[ScalarLike] = None,
     legends: Optional[Sequence[str]] = None,
     fig_kwargs: Optional[Dict[str, Any]] = None,
     plot_kwargs: Optional[Dict[str, Any]] = None,
@@ -867,16 +877,16 @@ def save_animation(
     ax = fig.gca()
 
     if ymin is None:
-        ymin = min(y.min() for y in ys)
+        ymin = jnp.amin(jnp.array([y.min() for y in ys], dtype=x.dtype))
 
     if ymax is None:
-        ymax = max(y.max() for y in ys)
+        ymax = jnp.amax(jnp.array([y.max() for y in ys], dtype=x.dtype))
 
     ax.set_xlabel(xlabel)
     if legends is not None:
         ax.set_ylabel(ylabel)
     ax.set_xlim([x[0], x[-1]])
-    ax.set_ylim([ymin - 0.1 * abs(ymin), ymax + 0.1 * abs(ymax)])
+    ax.set_ylim([ymin - 0.1 * jnp.abs(ymin), ymax + 0.1 * jnp.abs(ymax)])
     ax.margins(0.05)
 
     if legends:

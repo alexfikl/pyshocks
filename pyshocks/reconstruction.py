@@ -31,6 +31,7 @@ import jax.numpy as jnp
 from pyshocks import weno
 from pyshocks.grid import Grid
 from pyshocks.limiters import Limiter
+from pyshocks.tools import Array, ScalarLike
 
 if TYPE_CHECKING:
     from pyshocks.schemes import BoundaryType
@@ -80,10 +81,10 @@ def reconstruct(
     rec: Reconstruction,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-    u: jnp.ndarray,
-    wavespeed: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    f: Array,
+    u: Array,
+    wavespeed: Array,
+) -> Tuple[Array, Array]:
     r"""Reconstruct *f* as a function of *u*.
 
     In this implementation, we use the convention that::
@@ -154,10 +155,10 @@ def _reconstruct_first_order(
     rec: ConstantReconstruction,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-    u: jnp.ndarray,
-    wavespeed: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    f: Array,
+    u: Array,
+    wavespeed: Array,
+) -> Tuple[Array, Array]:
     assert grid.nghosts >= rec.stencil_width
     return f, f
 
@@ -215,10 +216,10 @@ def _reconstruct_muscl(
     rec: MUSCL,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-    u: jnp.ndarray,
-    wavespeed: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    f: Array,
+    u: Array,
+    wavespeed: Array,
+) -> Tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     # FIXME: would this work on non-uniform grids? may need to change the
@@ -274,10 +275,10 @@ def _reconstruct_muscls(
     rec: MUSCLS,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-    u: jnp.ndarray,
-    wavespeed: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    f: Array,
+    u: Array,
+    wavespeed: Array,
+) -> Tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     # FIXME: would this work on non-uniform grids? may need to change the
@@ -352,7 +353,7 @@ class WENOJS53(WENOJS):
         return 3
 
 
-def _reconstruct_weno_js_side(rec: WENOJS, f: jnp.ndarray) -> jnp.ndarray:
+def _reconstruct_weno_js_side(rec: WENOJS, f: Array) -> Array:
     omega = weno.weno_js_weights(rec.s, f, eps=rec.eps)
     uhat = weno.weno_interp(rec.s, f)
 
@@ -364,10 +365,10 @@ def _reconstruct_wenojs(
     rec: WENOJS,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-    u: jnp.ndarray,
-    wavespeed: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    f: Array,
+    u: Array,
+    wavespeed: Array,
+) -> Tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     assert grid.nghosts >= rec.stencil_width
@@ -396,8 +397,8 @@ class ESWENO32(Reconstruction):
     not the entire energy stable WENO scheme.
     """
 
-    eps: float = 1.0e-6
-    delta: float = 1.0e-6
+    eps: ScalarLike = 1.0e-6
+    delta: ScalarLike = 1.0e-6
 
     # coefficients
     s: ClassVar[weno.Stencil]
@@ -414,7 +415,7 @@ class ESWENO32(Reconstruction):
         return 2
 
 
-def _reconstruct_es_weno_side(rec: ESWENO32, f: jnp.ndarray) -> jnp.ndarray:
+def _reconstruct_es_weno_side(rec: ESWENO32, f: Array) -> Array:
     omega = weno.es_weno_weights(rec.s, f, eps=rec.eps)
     uhat = weno.weno_interp(rec.s, f)
 
@@ -426,10 +427,10 @@ def _reconstruct_esweno32(
     rec: ESWENO32,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-    u: jnp.ndarray,
-    wavespeed: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    f: Array,
+    u: Array,
+    wavespeed: Array,
+) -> Tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     assert grid.nghosts >= rec.stencil_width
@@ -483,8 +484,8 @@ def _reconstruct_ss_weno_side(
     rec: SSWENO242,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-) -> jnp.ndarray:
+    f: Array,
+) -> Array:
     if grid.nghosts >= rec.stencil_width:
         w = f
     else:
@@ -509,10 +510,10 @@ def _reconstruct_ssweno242(
     rec: SSWENO242,
     grid: Grid,
     bc: "BoundaryType",
-    f: jnp.ndarray,
-    u: jnp.ndarray,
-    wavespeed: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    f: Array,
+    u: Array,
+    wavespeed: Array,
+) -> Tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     if not isinstance(grid, UniformGrid):

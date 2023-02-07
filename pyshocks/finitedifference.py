@@ -17,6 +17,8 @@ from typing import Any, Tuple
 
 import jax.numpy as jnp
 
+from pyshocks.tools import Array, Scalar, ScalarLike
+
 # {{{ stencil
 
 
@@ -44,11 +46,11 @@ class Stencil:
 
     derivative: int
     order: int
-    coeffs: jnp.ndarray
-    indices: jnp.ndarray
-    trunc: float
+    coeffs: Array
+    indices: Array
+    trunc: Scalar
 
-    padded_coeffs: jnp.ndarray
+    padded_coeffs: Array
 
     def __str__(self) -> str:
         return repr(self)
@@ -75,11 +77,11 @@ class Stencil:
 
 def determine_stencil_truncation_error(
     derivative: int,
-    a: jnp.ndarray,
-    indices: jnp.ndarray,
+    a: Array,
+    indices: Array,
     *,
     atol: float = 1.0e-6,
-) -> Tuple[int, float]:
+) -> Tuple[int, Scalar]:
     r"""Determine the order and truncation error for the stencil *a* and *indices*.
 
     .. math::
@@ -92,7 +94,7 @@ def determine_stencil_truncation_error(
     is the order of the approximation.
     """
 
-    c = 0.0
+    c = jnp.array(0.0, dtype=a.dtype)
     i = derivative
     indices = indices.astype(a.dtype)
     while i < 64 and jnp.allclose(c, 0.0, atol=atol, rtol=0.0):
@@ -102,8 +104,10 @@ def determine_stencil_truncation_error(
     return i - derivative, c
 
 
-def apply_derivative(d: Stencil, f: jnp.ndarray, h: float) -> jnp.ndarray:
-    return jnp.convolve(f, d.padded_coeffs, mode="same") / h**d.derivative
+def apply_derivative(d: Stencil, f: Array, h: ScalarLike) -> Array:
+    return jnp.array(
+        jnp.convolve(f, d.padded_coeffs, mode="same") / h**d.derivative, dtype=f.dtype
+    )
 
 
 # }}}
@@ -215,13 +219,13 @@ def make_fornberg_approximation(
     c = jnp.zeros((x.size, derivative + 1), dtype=dtype)
     c = c.at[0, 0].set(1.0)
 
-    c1, c4 = 1, x[0] - xd
+    c1, c4 = jnp.array(1, dtype=c.dtype), x[0] - xd
     for i in range(1, x.size):
         j = jnp.arange(0, min(i, derivative) + 1)
 
         # NOTE: avoids implicit conversion to float
         cj = j.astype(dtype)
-        c2, c5, c4 = 1, c4, x[i] - xd
+        c2, c5, c4 = jnp.array(1, dtype=c.dtype), c4, x[i] - xd
 
         for k in range(i):
             c3 = x[i] - x[k]
@@ -261,7 +265,7 @@ def make_fornberg_approximation(
 # {{{ wavenumber
 
 
-def modified_wavenumber(st: Stencil, k: jnp.ndarray) -> jnp.ndarray:
+def modified_wavenumber(st: Stencil, k: Array) -> Array:
     km = jnp.empty(k.shape, dtype=jnp.complex128)
 
     for n in range(k.shape[0]):

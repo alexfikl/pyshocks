@@ -1,32 +1,38 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from typing import Any
+
 import jax
 import jax.numpy as jnp
 import jax.numpy.linalg as jla
-import numpy as np
 
 from pyshocks import get_logger
+from pyshocks.tools import Array, Scalar
 
 logger = get_logger("example-autodiff")
 
 
-def scalar_fn(A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
+def scalar_fn(A: Array, x: Array, b: Array) -> Scalar:
     y = A @ x + b
     return (y @ y) / 2.0
 
 
-def vector_fn(A: jnp.ndarray, x: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
+def vector_fn(A: Array, x: Array, b: Array) -> Array:
     return A @ x + b
 
 
-def main(n: int = 128) -> None:
-    key = jax.random.PRNGKey(42)
-    A = jax.random.uniform(key, shape=(n, n), dtype=np.float64)
-    b = jax.random.uniform(key, shape=(n,), dtype=np.float64)
+def main(n: int = 128, dtype: Any = None) -> None:
+    if dtype is None:
+        dtype = jnp.float64
+    dtype = jnp.dtype(dtype)
 
-    x0 = jax.random.uniform(key, shape=(n,), dtype=np.float64)
-    y0 = jax.random.uniform(key, shape=(n,), dtype=np.float64)
+    key = jax.random.PRNGKey(42)
+    A = jax.random.uniform(key, shape=(n, n), dtype=dtype)
+    b = jax.random.uniform(key, shape=(n,), dtype=dtype)
+
+    x0 = jax.random.uniform(key, shape=(n,), dtype=dtype)
+    y0 = jax.random.uniform(key, shape=(n,), dtype=dtype)
 
     # {{{ test gradient: df/dx_i
 
@@ -76,9 +82,10 @@ def main(n: int = 128) -> None:
 
     # {{{ test reverse jacobian product: df_i/dx_j y0_i
 
-    _, jax_jac = jax.vjp(
-        lambda x: vector_fn(A, x, b), x0  # type: ignore[no-any-return]
-    )
+    def wrapper(x: Array) -> Array:
+        return vector_fn(A, x, b)
+
+    _, jax_jac = jax.vjp(wrapper, x0)
     jax_jac = jax_jac(y0)[0]
     our_jac = A.T @ y0
 

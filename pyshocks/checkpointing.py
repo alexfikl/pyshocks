@@ -165,7 +165,7 @@ def _save_pickle(chk: PickleCheckpoint, idx: int, values: Dict[str, Any]) -> Non
     try:
         import cloudpickle as pickle
     except ImportError:
-        import pickle  # type: ignore[no-redef]
+        import pickle   # type: ignore[no-redef]
 
     import lzma
 
@@ -187,7 +187,7 @@ def _load_pickle(
     try:
         import cloudpickle as pickle
     except ImportError:
-        import pickle  # type: ignore[no-redef]
+        import pickle   # type: ignore[no-redef]
 
     import lzma
 
@@ -248,9 +248,9 @@ def _load_npz(
     if not filename.exists():
         raise KeyError(f"Cannot find checkpoint at index {idx!r}.")
 
-    values = jnp.load(filename, allow_pickle=False)
+    values = dict(jnp.load(filename, allow_pickle=False))
     if include is None:
-        return dict(values)
+        return values
 
     return {k: v for k, v in values.items() if k in include}
 

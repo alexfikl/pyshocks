@@ -18,11 +18,12 @@ from pyshocks import (
 )
 from pyshocks.reconstruction import ConstantReconstruction
 from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("advection-splitting")
 
 
-def sine_wave(t: float, x: jnp.ndarray, *, k: int = 1) -> jnp.ndarray:
+def sine_wave(t: ScalarLike, x: Array, *, k: int = 1) -> Array:
     return jnp.sin(2.0 * jnp.pi * k * (t + 1) * x)
 
 
@@ -98,10 +99,10 @@ def main(
 
     # {{{ right-hand side
 
-    def _predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _predict_timestep(_t: ScalarLike, _u: Array) -> Array:
         return theta * predict_timestep(scheme, grid, boundary, _t, _u)
 
-    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}

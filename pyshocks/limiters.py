@@ -30,6 +30,7 @@ from typing import Any, Dict, Tuple, Type
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
+from pyshocks.tools import Array
 
 # {{{ limiter interface
 
@@ -68,7 +69,7 @@ class Limiter:
 
 
 @singledispatch
-def evaluate(lm: Limiter, r: jnp.ndarray) -> jnp.ndarray:
+def evaluate(lm: Limiter, r: Array) -> Array:
     """Evaluate the limiter at a given slope ratio.
 
     This function can be used to evaluate non-symmetric limiters at given
@@ -83,7 +84,7 @@ def evaluate(lm: Limiter, r: jnp.ndarray) -> jnp.ndarray:
 
 
 @singledispatch
-def flux_limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+def flux_limit(lm: Limiter, grid: Grid, u: Array) -> Array:
     """Compute a flux limiter from *u*.
 
     :arg lm: an object that describes how to limit the variable.
@@ -93,7 +94,7 @@ def flux_limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
 
 
 @singledispatch
-def slope_limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+def slope_limit(lm: Limiter, grid: Grid, u: Array) -> Array:
     """Compute a limited slope from *u* on the *grid*.
 
     :arg lm: an object that describes how to limit the variable.
@@ -102,7 +103,7 @@ def slope_limit(lm: Limiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
     raise NotImplementedError(type(lm).__name__)
 
 
-def local_slope_ratio(u: jnp.ndarray, *, atol: float = 1.0e-12) -> jnp.ndarray:
+def local_slope_ratio(u: Array, *, atol: float = 1.0e-12) -> Array:
     # NOTE: the slope ratio is computed from the following cells
     #       i - 1          i         i + 1
     #   ------------|------------|------------
@@ -117,7 +118,7 @@ def local_slope_ratio(u: jnp.ndarray, *, atol: float = 1.0e-12) -> jnp.ndarray:
         jnp.abs(sl) < atol,
         jnp.abs(sr) < atol,
     ).astype(dtype=u.dtype)
-    return jnp.where(mask, 0.0, sl / (sr + mask))
+    return jnp.array(jnp.where(mask, 0.0, sl / (sr + mask)), dtype=u.dtype)
 
 
 # }}}
@@ -131,21 +132,17 @@ class UnlimitedLimiter(Limiter):
 
 
 @evaluate.register(UnlimitedLimiter)
-def _evaluate_unlimited(lm: UnlimitedLimiter, r: jnp.ndarray) -> jnp.ndarray:
+def _evaluate_unlimited(lm: UnlimitedLimiter, r: Array) -> Array:
     return jnp.ones_like(r)
 
 
 @flux_limit.register(UnlimitedLimiter)
-def _flux_limit_unlimited(
-    lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
+def _flux_limit_unlimited(lm: UnlimitedLimiter, grid: Grid, u: Array) -> Array:
     return jnp.ones_like(u)
 
 
 @slope_limit.register(UnlimitedLimiter)
-def _slope_limit_unlimited(
-    lm: UnlimitedLimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
+def _slope_limit_unlimited(lm: UnlimitedLimiter, grid: Grid, u: Array) -> Array:
     return jnp.pad((u[2:] + u[:-2]) / (grid.x[2:] - grid.x[:-2]), 1)
 
 
@@ -155,7 +152,7 @@ def _slope_limit_unlimited(
 # {{{ minmod
 
 
-def minmod(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
+def minmod(a: Array, b: Array) -> Array:
     return jnp.where(
         a * b < 0.0,
         0.0,
@@ -191,14 +188,14 @@ class MINMODLimiter(Limiter):
 
 
 @evaluate.register(MINMODLimiter)
-def _evaluate_minmod(lm: MINMODLimiter, r: jnp.ndarray) -> jnp.ndarray:
+def _evaluate_minmod(lm: MINMODLimiter, r: Array) -> Array:
     return jnp.maximum(
         0.0, jnp.minimum(jnp.minimum(lm.theta, lm.theta * r), (1 + r) / 2)
     )
 
 
 @slope_limit.register(MINMODLimiter)
-def _slope_limit_minmod(lm: MINMODLimiter, grid: Grid, u: jnp.ndarray) -> jnp.ndarray:
+def _slope_limit_minmod(lm: MINMODLimiter, grid: Grid, u: Array) -> Array:
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
@@ -226,16 +223,14 @@ class MonotonizedCentralLimiter(Limiter):
 
 
 @evaluate.register(MonotonizedCentralLimiter)
-def _evaluate_monotonized_central(
-    lm: MonotonizedCentralLimiter, r: jnp.ndarray
-) -> jnp.ndarray:
+def _evaluate_monotonized_central(lm: MonotonizedCentralLimiter, r: Array) -> Array:
     return jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r), (1 + r) / 2))
 
 
 @slope_limit.register(MonotonizedCentralLimiter)
 def _slope_limit_monotonized_central(
-    lm: MonotonizedCentralLimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
+    lm: MonotonizedCentralLimiter, grid: Grid, u: Array
+) -> Array:
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
     sc = (u[2:] - u[:-2]) / (grid.x[2:] - grid.x[:-2])
@@ -264,14 +259,12 @@ class SUPERBEELimiter(Limiter):
 
 
 @evaluate.register(SUPERBEELimiter)
-def _evaluate_superbee(lm: SUPERBEELimiter, r: jnp.ndarray) -> jnp.ndarray:
+def _evaluate_superbee(lm: SUPERBEELimiter, r: Array) -> Array:
     return jnp.maximum(0.0, jnp.maximum(jnp.minimum(1, 2 * r), jnp.minimum(2, r)))
 
 
 @slope_limit.register(SUPERBEELimiter)
-def _slope_limit_superbee(
-    lm: SUPERBEELimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
+def _slope_limit_superbee(lm: SUPERBEELimiter, grid: Grid, u: Array) -> Array:
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
@@ -316,7 +309,7 @@ class VanAlbadaLimiter(Limiter):
 
 
 @evaluate.register(VanAlbadaLimiter)
-def _evaluate_van_albada(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
+def _evaluate_van_albada(lm: VanAlbadaLimiter, r: Array) -> Array:
     if lm.variant == 1:
         phi = (r**2 + r) / (r**2 + 1)
     else:
@@ -326,9 +319,7 @@ def _evaluate_van_albada(lm: VanAlbadaLimiter, r: jnp.ndarray) -> jnp.ndarray:
 
 
 @slope_limit.register(VanAlbadaLimiter)
-def _slope_limit_van_albada(
-    lm: VanAlbadaLimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
+def _slope_limit_van_albada(lm: VanAlbadaLimiter, grid: Grid, u: Array) -> Array:
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
@@ -361,15 +352,13 @@ class VanLeerLimiter(Limiter):
 
 
 @evaluate.register(VanLeerLimiter)
-def _evaluate_van_leer(lm: VanLeerLimiter, r: jnp.ndarray) -> jnp.ndarray:
+def _evaluate_van_leer(lm: VanLeerLimiter, r: Array) -> Array:
     rabs = jnp.abs(r)
     return jnp.maximum(0.0, (r + rabs) / (1 + rabs))
 
 
 @slope_limit.register(VanLeerLimiter)
-def _slope_limit_van_leer(
-    lm: VanLeerLimiter, grid: Grid, u: jnp.ndarray
-) -> jnp.ndarray:
+def _slope_limit_van_leer(lm: VanLeerLimiter, grid: Grid, u: Array) -> Array:
     sl = (u[1:-1] - u[:-2]) / (grid.x[1:-1] - grid.x[:-2])
     sr = (u[2:] - u[1:-1]) / (grid.x[2:] - grid.x[1:-1])
 
@@ -390,7 +379,7 @@ class KorenLimiter(Limiter):
 
 
 @evaluate.register(KorenLimiter)
-def _evaluate_koren(lm: KorenLimiter, r: jnp.ndarray) -> jnp.ndarray:
+def _evaluate_koren(lm: KorenLimiter, r: Array) -> Array:
     return jnp.maximum(0.0, jnp.minimum(jnp.minimum(2, 2 * r), (1 + 2 * r) / 3))
 
 

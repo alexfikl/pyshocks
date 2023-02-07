@@ -16,6 +16,7 @@ from pyshocks import (
     set_recommended_matplotlib,
 )
 from pyshocks.finitedifference import Stencil
+from pyshocks.tools import Array
 
 logger = get_logger("test_finite_difference")
 set_recommended_matplotlib()
@@ -75,7 +76,7 @@ def test_advection_vs_continuity(
 
     i = grid.i_
 
-    def dot(x: jnp.ndarray, y: jnp.ndarray) -> jnp.ndarray:
+    def dot(x: Array, y: Array) -> Array:
         return (x[i] * grid.dx[i]) @ y[i]
 
     from pyshocks import apply_operator
@@ -166,14 +167,14 @@ def test_advection_finite_difference_jacobian(
     u = jax.random.normal(subkey, grid.x.shape, dtype=jnp.float64)
 
     eps = 1.0e-3
-    fddjac = []
+    fddjac_acc = []
 
     for i in range(u.size):
         up = u.at[i].add(+eps)
         um = u.at[i].add(-eps)
-        fddjac.append((op(up) - op(um)) / (2.0 * eps))
+        fddjac_acc.append((op(up) - op(um)) / (2.0 * eps))
 
-    fddjac = jnp.stack(fddjac).T
+    fddjac = jnp.stack(fddjac_acc).T
 
     # }}}
 
@@ -221,7 +222,7 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
 
     eoc = EOCRecorder()
 
-    s = jnp.s_[abs(d.indices[0]) + 1 : -abs(d.indices[-1]) - 1]
+    s = jnp.s_[jnp.abs(d.indices[0]) + 1 : -jnp.abs(d.indices[-1]) - 1]
     for n in [32, 64, 128, 256, 512]:
         theta = jnp.linspace(0.0, 2.0 * jnp.pi, n, dtype=d.coeffs.dtype)
         h = theta[1] - theta[0]
@@ -253,42 +254,52 @@ def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
     stencils = [
         (
             make_fornberg_approximation(1, (-2, 2)),
-            [1 / 12, -8 / 12, 0.0, 8 / 12, -1 / 12],
+            jnp.array([1 / 12, -8 / 12, 0.0, 8 / 12, -1 / 12]),
             4,
             -1 / 30,
         ),
         (
             make_taylor_approximation(1, (-2, 2)),
-            [1 / 12, -8 / 12, 0.0, 8 / 12, -1 / 12],
+            jnp.array([1 / 12, -8 / 12, 0.0, 8 / 12, -1 / 12]),
             4,
             -1 / 30,
         ),
         (
             make_taylor_approximation(1, (-2, 1)),
-            [1 / 6, -6 / 6, 3 / 6, 2 / 6],
+            jnp.array([1 / 6, -6 / 6, 3 / 6, 2 / 6]),
             3,
             1 / 12,
         ),
         (
             make_taylor_approximation(1, (-1, 2)),
-            [-2 / 6, -3 / 6, 6 / 6, -1 / 6],
+            jnp.array([-2 / 6, -3 / 6, 6 / 6, -1 / 6]),
             3,
             -1 / 12,
         ),
-        (make_taylor_approximation(2, (-2, 1)), [0.0, 1.0, -2.0, 1.0], 2, 1 / 12),
+        (
+            make_taylor_approximation(2, (-2, 1)),
+            jnp.array([0.0, 1.0, -2.0, 1.0]),
+            2,
+            1 / 12,
+        ),
         (
             make_taylor_approximation(2, (-2, 2)),
-            [-1 / 12, 16 / 12, -30 / 12, 16 / 12, -1 / 12],
+            jnp.array([-1 / 12, 16 / 12, -30 / 12, 16 / 12, -1 / 12]),
             4,
             -1 / 90,
         ),
         (
             make_taylor_approximation(3, (-2, 2)),
-            [-1 / 2, 2 / 2, 0.0, -2 / 2, 1 / 2],
+            jnp.array([-1 / 2, 2 / 2, 0.0, -2 / 2, 1 / 2]),
             2,
             1 / 4,
         ),
-        (make_taylor_approximation(4, (-2, 2)), [1.0, -4.0, 6.0, -4.0, 1.0], 2, 1 / 6),
+        (
+            make_taylor_approximation(4, (-2, 2)),
+            jnp.array([1.0, -4.0, 6.0, -4.0, 1.0]),
+            2,
+            1 / 6,
+        ),
     ]
 
     if visualize:

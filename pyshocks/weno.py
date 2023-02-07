@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 if TYPE_CHECKING:
     from pyshocks.convolve import ConvolutionType
@@ -99,10 +100,10 @@ class Stencil:
         reconstruction using the stencils :attr:`c`.
     """
 
-    a: jnp.ndarray
-    b: jnp.ndarray
-    c: jnp.ndarray
-    d: jnp.ndarray
+    a: Optional[Array]
+    b: Optional[Array]
+    c: Array
+    d: Array
 
 
 @dataclass(frozen=True)
@@ -133,8 +134,8 @@ class BoundaryStencil:
 
 
 def weno_smoothness(
-    s: Stencil, u: jnp.ndarray, *, mode: Optional["ConvolutionType"] = None
-) -> jnp.ndarray:
+    s: Stencil, u: Array, *, mode: Optional["ConvolutionType"] = None
+) -> Array:
     r"""Compute the smoothness coefficients for a WENO scheme.
 
     The coefficients must have the form
@@ -149,6 +150,9 @@ def weno_smoothness(
     """
     from pyshocks.convolve import convolve1d
 
+    assert s.a is not None
+    assert s.b is not None
+
     return jnp.stack(
         [
             sum(
@@ -161,8 +165,8 @@ def weno_smoothness(
 
 
 def weno_interp(
-    s: Stencil, u: jnp.ndarray, *, mode: Optional["ConvolutionType"] = None
-) -> jnp.ndarray:
+    s: Stencil, u: Array, *, mode: Optional["ConvolutionType"] = None
+) -> Array:
     r"""Interpolate the variable *u* at the cell faces for WENO-JS.
 
     The interpolation has the form
@@ -266,7 +270,7 @@ def weno_js_53_coefficients(dtype: Any = None) -> Stencil:
     return Stencil(a=a, b=b, c=c, d=d)
 
 
-def weno_js_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
+def weno_js_weights(s: Stencil, u: Array, *, eps: ScalarLike) -> Array:
     r"""Compute the standard WENO-JS weights.
 
     :returns: the weights :math:`\omega_i` for each stencil interpolation
@@ -284,7 +288,7 @@ def weno_js_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
 # {{{ ESWENO
 
 
-def es_weno_parameters(grid: Grid, u0: jnp.ndarray) -> Tuple[float, float]:
+def es_weno_parameters(grid: Grid, u0: Array) -> Tuple[Scalar, Scalar]:
     """Estimate the ESWENO32 parameters from the grid and initial condition.
 
     :returns: ``(eps, delta)``, where ``eps`` is given by Equation 65
@@ -303,7 +307,7 @@ def es_weno_parameters(grid: Grid, u0: jnp.ndarray) -> Tuple[float, float]:
     return eps, delta
 
 
-def es_weno_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
+def es_weno_weights(s: Stencil, u: Array, *, eps: ScalarLike) -> Array:
     r"""Compute the ESWENO weights.
 
     :returns: the weights :math:`\omega_i` for each stencil interpolation
@@ -324,7 +328,7 @@ def es_weno_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
 # {{{ SSWENO
 
 
-def ss_weno_242_parameters(grid: Grid, u0: jnp.ndarray) -> float:
+def ss_weno_242_parameters(grid: Grid, u0: Array) -> Scalar:
     """Estimate the SSWENO parameters from the grid and initial condition.
 
     :arg u0: initial condition evaluated at given points.
@@ -337,10 +341,10 @@ def ss_weno_242_parameters(grid: Grid, u0: jnp.ndarray) -> float:
     # should be sufficient for the moment.
 
     i = grid.i_
-    return float(jnp.sum(grid.dx[i] * jnp.abs(u0[i]))) * grid.dx_min**4
+    return jnp.sum(grid.dx[i] * jnp.abs(u0[i])) * grid.dx_min**4
 
 
-def ss_weno_242_weights(s: Stencil, u: jnp.ndarray, *, eps: float) -> jnp.ndarray:
+def ss_weno_242_weights(s: Stencil, u: Array, *, eps: ScalarLike) -> Array:
     beta = weno_smoothness(s, u)
     tau = jnp.pad((u[3:] - 3 * u[2:-1] + 3 * u[1:-2] - u[:-3]) ** 2, (1, 2))
     alpha = s.d * (1.0 + tau / (eps + beta))
@@ -364,7 +368,7 @@ def ss_weno_242_coefficients(bc: "BoundaryType", dtype: Any = None) -> BoundaryS
     return BoundaryStencil(bc=bc, si=si, sl=sl, sr=sr)
 
 
-def ss_weno_242_mask(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
+def ss_weno_242_mask(sb: BoundaryStencil, u: Array) -> Array:
     from pyshocks.schemes import BoundaryType
 
     if sb.bc == BoundaryType.Periodic:
@@ -485,14 +489,15 @@ def ss_weno_242_boundary_coefficients(
             [0, 0, 24 / 31, 1013 / 4898, 3 / 158],
             [0, 11 / 56, 51 / 70, 3 / 40, 0],
             [3 / 142, 357 / 3266, 408 / 575, 4 / 25, 0],
-        ]
+        ],
+        dtype=dtype,
     ).T
     dr = dl[::-1, ::-1]
 
     return Stencil(a=None, b=None, c=cl, d=dl), Stencil(a=None, b=None, c=cr, d=dr)
 
 
-def ss_weno_242_interp(sb: BoundaryStencil, u: jnp.ndarray) -> jnp.ndarray:
+def ss_weno_242_interp(sb: BoundaryStencil, u: Array) -> Array:
     from pyshocks.convolve import ConvolutionType
     from pyshocks.schemes import BoundaryType
 

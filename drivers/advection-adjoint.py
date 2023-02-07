@@ -4,6 +4,7 @@
 import pathlib
 from dataclasses import dataclass, replace
 from functools import partial
+from typing import Tuple
 
 import jax
 import jax.numpy as jnp
@@ -19,6 +20,7 @@ from pyshocks import (
 )
 from pyshocks.checkpointing import InMemoryCheckpoint
 from pyshocks.timestepping import Stepper, adjoint_step, step
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("advection-adjoint")
 
@@ -40,12 +42,12 @@ class Simulation:
 @timeit
 def evolve_forward(
     sim: Simulation,
-    u0: jnp.ndarray,
+    u0: Array,
     *,
     dirname: pathlib.Path,
     interactive: bool,
     visualize: bool,
-) -> jnp.ndarray:
+) -> Tuple[Array, int]:
     grid = sim.grid
     stepper = sim.stepper
 
@@ -122,8 +124,8 @@ def evolve_forward(
 @timeit
 def evolve_adjoint(
     sim: Simulation,
-    uf: jnp.ndarray,
-    p0: jnp.ndarray,
+    uf: Array,
+    p0: Array,
     *,
     dirname: pathlib.Path,
     maxit: int,
@@ -144,7 +146,7 @@ def evolve_adjoint(
     bc = make_dirichlet_boundary(lambda t, x: jnp.zeros_like(x))
 
     @jax.jit
-    def _apply_boundary(t: float, u: jnp.ndarray, p: jnp.ndarray) -> jnp.ndarray:
+    def _apply_boundary(t: ScalarLike, u: Array, p: Array) -> Array:
         return apply_boundary(bc, grid, t, p)
 
     # }}
@@ -277,10 +279,10 @@ def main(
 
     from pyshocks import apply_operator, predict_timestep
 
-    def forward_predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def forward_predict_timestep(_t: ScalarLike, _u: Array) -> Array:
         return theta * predict_timestep(scheme, grid, boundary, _t, _u)
 
-    def forward_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def forward_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     from pyshocks.timestepping import SSPRK33

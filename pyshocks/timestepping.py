@@ -29,7 +29,7 @@ import jax
 import jax.numpy as jnp
 
 from pyshocks.checkpointing import Checkpoint, load, save
-from pyshocks.tools import ScalarFunction, VectorFunction
+from pyshocks.tools import Array, Scalar, ScalarFunction, ScalarLike, VectorFunction
 
 # {{{ interface
 
@@ -44,11 +44,11 @@ class StepCompleted:
     .. attribute:: u
     """
 
-    t: float
-    tfinal: float
-    dt: float
+    t: Scalar
+    tfinal: Scalar
+    dt: Scalar
     iteration: int
-    u: jnp.ndarray
+    u: Array
 
     def __str__(self) -> str:
         return (
@@ -63,7 +63,7 @@ class AdjointStepCompleted(StepCompleted):
     .. attribute:: p
     """
 
-    p: jnp.ndarray
+    p: Array
 
 
 @dataclass(frozen=True)
@@ -92,11 +92,11 @@ class Stepper:
 
 def step(
     stepper: Stepper,
-    u0: jnp.ndarray,
+    u0: Array,
     *,
     maxit: Optional[int] = None,
-    tstart: float = 0.0,
-    tfinal: Optional[float] = None,
+    tstart: ScalarLike = 0.0,
+    tfinal: Optional[ScalarLike] = None,
 ) -> Iterator[StepCompleted]:
     """Advance a given ODE description in time to *tfinal*.
 
@@ -119,10 +119,13 @@ def step(
         tfinal = jnp.inf
 
     m = 0
-    t = tstart
+    t = jnp.array(tstart, dtype=u0.dtype)
+    tfinal = jnp.array(tfinal, dtype=u0.dtype)
     u = u0
 
-    yield StepCompleted(t=t, tfinal=tfinal, dt=0.0, iteration=m, u=u)
+    yield StepCompleted(
+        t=t, tfinal=tfinal, dt=jnp.array(0.0, dtype=u0.dtype), iteration=m, u=u
+    )
 
     while True:
         # NOTE: this checkpoints both the initial condition and the final state
@@ -136,7 +139,10 @@ def step(
             break
 
         dt = stepper.predict_timestep(t, u)
-        dt = min(dt, tfinal - t) + 1.0e-15
+        if tfinal != jnp.inf:
+            dt_min = tfinal - t
+            dt = (dt if dt < dt_min else dt_min) + 1.0e-15
+
         if not jnp.isfinite(dt):
             raise ValueError(f"Time step is not finite: {dt!r}.")
 
@@ -150,12 +156,10 @@ def step(
 
 def adjoint_step(
     stepper: Stepper,
-    p0: jnp.ndarray,
+    p0: Array,
     *,
     maxit: int,
-    apply_boundary: Optional[
-        Callable[[float, jnp.ndarray, jnp.ndarray], jnp.ndarray]
-    ] = None,
+    apply_boundary: Optional[Callable[[Scalar, Array, Array], Array]] = None,
 ) -> Iterator[AdjointStepCompleted]:
     if stepper.checkpoint is None:
         raise ValueError("Adjoint time stepping requires a checkpoint.")
@@ -185,7 +189,12 @@ def adjoint_step(
         p = apply_boundary(chk["t"], chk["u"], p)
 
     yield AdjointStepCompleted(
-        t=t, tfinal=tfinal, dt=0.0, iteration=maxit, u=chk["u"], p=p
+        t=t,
+        tfinal=tfinal,
+        dt=jnp.array(0.0, dtype=p.dtype),
+        iteration=maxit,
+        u=chk["u"],
+        p=p,
     )
 
     for m in range(maxit - 1, -1, -1):
@@ -209,7 +218,7 @@ def adjoint_step(
 
 
 @singledispatch
-def advance(stepper: Stepper, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarray:
+def advance(stepper: Stepper, dt: ScalarLike, t: ScalarLike, u: Array) -> Array:
     r"""Advances the ODE for a single time step, i.e.
 
     .. math::
@@ -232,16 +241,18 @@ def advance(stepper: Stepper, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarra
 # {{{ fixed time step
 
 
-def predict_timestep_from_maxit(tfinal: float, maxit: int) -> Tuple[int, float]:
+def predict_timestep_from_maxit(tfinal: ScalarLike, maxit: int) -> Tuple[int, Scalar]:
     """Determine time step from *tfinal* and *maxit*.
 
     :returns: a tuple of ``(maxit, dt)`` with the approximated values.
     """
     dt = tfinal / maxit + 1.0e-15
-    return maxit, dt
+    return maxit, jnp.array(dt, dtype=jnp.float64)
 
 
-def predict_maxit_from_timestep(tfinal: float, dt: float) -> Tuple[int, float]:
+def predict_maxit_from_timestep(
+    tfinal: ScalarLike, dt: ScalarLike
+) -> Tuple[int, Scalar]:
     """Determine the maximum number of iteration for a fixed time step *dt*.
 
     :returns: a tuple ``(maxit, dt)`` with the approximated values.
@@ -249,12 +260,17 @@ def predict_maxit_from_timestep(tfinal: float, dt: float) -> Tuple[int, float]:
     maxit = int(tfinal / dt)
     dt = tfinal / maxit + 1.0e-15
 
-    return maxit, dt
+    return maxit, jnp.array(dt, dtype=jnp.float64)
 
 
 def predict_timestep_from_resolutions(
-    a: float, b: float, resolutions: List[int], *, umax: float = 1.0, p: int = 1
-) -> float:
+    a: ScalarLike,
+    b: ScalarLike,
+    resolutions: List[int],
+    *,
+    umax: ScalarLike = 1.0,
+    p: int = 1,
+) -> Scalar:
     """Determine a maximum time step that is stable for the given domain
     and resolutions. The time step is computed based on the characteristic
     velocity *umax*.
@@ -263,7 +279,7 @@ def predict_timestep_from_resolutions(
     """
     dx = (b - a) / max(resolutions)
 
-    return dx**p / umax
+    return jnp.array(dx**p / umax, dtype=jnp.float64)
 
 
 # }}}
@@ -279,8 +295,8 @@ class ForwardEuler(Stepper):
 
 @advance.register(ForwardEuler)
 def _advance_forward_euler(
-    stepper: ForwardEuler, dt: float, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    stepper: ForwardEuler, dt: ScalarLike, t: ScalarLike, u: Array
+) -> Array:
     return u + dt * stepper.source(t, u)
 
 
@@ -297,8 +313,8 @@ class SSPRK33(Stepper):
 
 @advance.register(SSPRK33)
 def _advance_ssprk33(
-    stepper: SSPRK33, dt: float, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    stepper: SSPRK33, dt: ScalarLike, t: ScalarLike, u: Array
+) -> Array:
     fn = stepper.source
 
     k1 = u + dt * fn(t, u)
@@ -318,7 +334,7 @@ class RK44(Stepper):
 
 
 @advance.register(RK44)
-def _advance_rk44(stepper: RK44, dt: float, t: float, u: jnp.ndarray) -> jnp.ndarray:
+def _advance_rk44(stepper: RK44, dt: ScalarLike, t: ScalarLike, u: Array) -> Array:
     fn = stepper.source
 
     k1 = dt * fn(t, u)
@@ -345,7 +361,7 @@ class CKRK45(Stepper):
 
     # NOTE: myth goes that this coefficients are accurate to 26 digits
 
-    a: ClassVar[jnp.ndarray] = jnp.array(
+    a: ClassVar[Array] = jnp.array(
         [
             0.0,
             -567301805773 / 1357537059087,
@@ -356,7 +372,7 @@ class CKRK45(Stepper):
         dtype=jnp.float64,
     )
 
-    b: ClassVar[jnp.ndarray] = jnp.array(
+    b: ClassVar[Array] = jnp.array(
         [
             1432997174477 / 9575080441755,
             5161836677717 / 13612068292357,
@@ -367,7 +383,7 @@ class CKRK45(Stepper):
         dtype=jnp.float64,
     )
 
-    c: ClassVar[jnp.ndarray] = jnp.array(
+    c: ClassVar[Array] = jnp.array(
         [
             0.0,
             1432997174477 / 9575080441755,
@@ -380,9 +396,7 @@ class CKRK45(Stepper):
 
 
 @advance.register(CKRK45)
-def _advance_ckrk45(
-    stepper: CKRK45, dt: float, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+def _advance_ckrk45(stepper: CKRK45, dt: ScalarLike, t: ScalarLike, u: Array) -> Array:
     fn = stepper.source
 
     p = k = u

@@ -98,12 +98,13 @@ SBP 6-4
 import enum
 from dataclasses import dataclass, replace
 from functools import singledispatch
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, Optional, Tuple, Type, Union, cast
 
 import jax.numpy as jnp
 
 from pyshocks.grid import UniformGrid
 from pyshocks.schemes import BoundaryType
+from pyshocks.tools import Array, ScalarLike
 
 # {{{ SBP helpers
 
@@ -136,9 +137,9 @@ class Stencil:
         The :class:`~numpy.dtype` of the stencils.
     """
 
-    int: jnp.ndarray  # noqa: A003
-    left: Optional[jnp.ndarray]
-    right: Optional[jnp.ndarray]
+    int: Array  # noqa: A003
+    left: Optional[Array]
+    right: Optional[Array]
 
     is_diagonal: bool = False
 
@@ -159,7 +160,7 @@ class Stencil:
         return jnp.dtype(self.int.dtype)
 
 
-def make_sbp_boundary_matrix(n: int, *, dtype: Any = None) -> jnp.ndarray:
+def make_sbp_boundary_matrix(n: int, *, dtype: Any = None) -> Array:
     """Construct the boundary :math:`B` operator for an SBP discretization.
 
     :arg n: size of the matrix.
@@ -176,7 +177,7 @@ def make_sbp_boundary_matrix(n: int, *, dtype: Any = None) -> jnp.ndarray:
     return b
 
 
-def make_sbp_diagonal_matrix(n: int, s: Stencil, *, weight: float = 1.0) -> jnp.ndarray:
+def make_sbp_diagonal_matrix(n: int, s: Stencil, *, weight: ScalarLike = 1.0) -> Array:
     """Construct a diagonal matrix with a given boundary stencil.
 
     :arg n: size of the matrix.
@@ -194,35 +195,32 @@ def make_sbp_diagonal_matrix(n: int, s: Stencil, *, weight: float = 1.0) -> jnp.
     return weight * mat
 
 
-def make_sbp_circulant_matrix(
-    n: int, s: Stencil, *, weight: float = 1.0
-) -> jnp.ndarray:
+def make_sbp_circulant_matrix(n: int, s: Stencil, *, weight: ScalarLike = 1.0) -> Array:
     """Construct a circulat matrix with a given interior stencil.
 
     :arg n: size of the matrix.
     :returns: an array of shape ``(n, n)``.
     """
     m = s.int.size
+    w = weight * jnp.eye(n, n, dtype=s.dtype)
     return sum(
-        jnp.roll(
-            weight * s.int[i] * jnp.eye(n, n, dtype=s.dtype),
-            i - m // 2,
-            axis=1,
-        )
-        for i in range(m)
+        [jnp.roll(s.int[i] * w, i - m // 2, axis=1) for i in range(m)], jnp.array(0.0)
     )
 
 
-def make_sbp_banded_matrix(n: int, s: Stencil, *, weight: float = 1.0) -> jnp.ndarray:
+def make_sbp_banded_matrix(n: int, s: Stencil, *, weight: ScalarLike = 1.0) -> Array:
     """Construct a banded matrix with a given boundary stencil.
 
     :arg n: size of the matrix.
     :returns: an array of shape ``(n, n)``.
     """
     o = s.int.size // 2
-    mat: jnp.ndarray = sum(
-        weight * s.int[k] * jnp.eye(n, n, k=k - o, dtype=s.dtype)
-        for k in range(s.int.size)
+    mat: Array = sum(
+        [
+            weight * s.int[k] * jnp.eye(n, n, k=k - o, dtype=s.dtype)
+            for k in range(s.int.size)
+        ],
+        jnp.array(0.0),
     )
 
     if s.left is not None:
@@ -237,8 +235,8 @@ def make_sbp_banded_matrix(n: int, s: Stencil, *, weight: float = 1.0) -> jnp.nd
 
 
 def make_sbp_matrix_from_stencil(
-    bc: BoundaryType, n: int, s: Stencil, *, weight: float = 1.0
-) -> jnp.ndarray:
+    bc: BoundaryType, n: int, s: Stencil, *, weight: ScalarLike = 1.0
+) -> Array:
     if s.is_diagonal:
         if bc == BoundaryType.Periodic:
             # NOTE: this is just here so we can remove some if statements below
@@ -311,47 +309,49 @@ class SBPOperator:
         raise NotImplementedError
 
     def make_second_derivative_r_matrix(
-        self, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-    ) -> jnp.ndarray:
+        self, grid: UniformGrid, bc: BoundaryType, b: Array
+    ) -> Array:
         raise NotImplementedError
 
     def make_second_derivative_s_matrix(
-        self, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-    ) -> jnp.ndarray:
+        self, grid: UniformGrid, bc: BoundaryType, b: Array
+    ) -> Optional[Array]:
         raise NotImplementedError
 
 
 def sbp_matrix_from_name(
     op: SBPOperator, grid: UniformGrid, bc: BoundaryType, name: str
-) -> jnp.ndarray:
+) -> Array:
     n = grid.n
     dtype = grid.dtype
 
     if name == "P":
         func = globals()[f"make_sbp_{op.ids}_norm_stencil"]
-        return make_sbp_diagonal_matrix(n, func(dtype=dtype))
-    if name == "Q":
+        result = make_sbp_diagonal_matrix(n, func(dtype=dtype))
+    elif name == "Q":
         func = globals()[f"make_sbp_{op.ids}_first_derivative_q_stencil"]
-        return make_sbp_matrix_from_stencil(bc, n, func(dtype=dtype))
-    if name == "S":
+        result = make_sbp_matrix_from_stencil(bc, n, func(dtype=dtype))
+    elif name == "S":
         func = globals()[f"make_sbp_{op.ids}_second_derivative_s_stencil"]
-        return make_sbp_matrix_from_stencil(
+        result = make_sbp_matrix_from_stencil(
             bc, n, func(op.second_derivative, dtype=dtype), weight=1.0 / grid.dx_min
         )
-    if name == "R":
+    elif name == "R":
         func = globals()[f"make_sbp_{op.ids}_second_derivative_r_matrix"]
-        return func(bc, jnp.ones_like(grid.x), dx=grid.dx_min)
+        result = func(bc, jnp.ones_like(grid.x), dx=grid.dx_min)
+    else:
+        raise ValueError(f"Unknown SBP matrix name: {name!r}.")
 
-    raise ValueError(f"Unknown SBP matrix name: {name!r}.")
+    return jnp.array(result, dtype=grid.x.dtype)
 
 
 def make_sbp_mattsson2012_second_derivative(
     op: SBPOperator,
     grid: UniformGrid,
     bc: BoundaryType,
-    b: jnp.ndarray,
-    M: Optional[jnp.ndarray] = None,
-) -> jnp.ndarray:
+    b: Array,
+    M: Optional[Array] = None,
+) -> Array:
     assert isinstance(grid, UniformGrid)
     # get mass matrix
     P = sbp_norm_matrix(op, grid, bc)
@@ -363,7 +363,7 @@ def make_sbp_mattsson2012_second_derivative(
     # get Bbar matrix ([Mattsson2012] Definition 2.3)
     if bc == BoundaryType.Periodic:
         assert S is None
-        BS = 0
+        BS = jnp.array(0.0, dtype=P.dtype)
     else:
         assert S is not None
         Bbar = jnp.zeros(S.shape, dtype=S.dtype)
@@ -384,13 +384,11 @@ def make_sbp_mattsson2012_second_derivative(
     assert jnp.linalg.norm(M - M.T) < 1.0e-8
     assert jnp.linalg.norm(jnp.sum(M, axis=1)) < 1.0e-8
 
-    return invP @ (-M + BS)  # pylint: disable=invalid-unary-operand-type
+    return cast(Array, invP @ (-M + BS))  # pylint: disable=invalid-unary-operand-type
 
 
 @singledispatch
-def sbp_norm_matrix(
-    op: SBPOperator, grid: UniformGrid, bc: BoundaryType
-) -> jnp.ndarray:
+def sbp_norm_matrix(op: SBPOperator, grid: UniformGrid, bc: BoundaryType) -> Array:
     """Construct the :math:`P` operator for and SBP approximation."""
     raise NotImplementedError(type(op).__name__)
 
@@ -398,15 +396,15 @@ def sbp_norm_matrix(
 @singledispatch
 def sbp_first_derivative_matrix(
     op: SBPOperator, grid: UniformGrid, bc: BoundaryType
-) -> jnp.ndarray:
+) -> Array:
     """Construct a first derivative :math:`D` operator satisfying the SBP property."""
     raise NotImplementedError(type(op).__name__)
 
 
 @singledispatch
 def sbp_second_derivative_matrix(
-    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-) -> jnp.ndarray:
+    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: Union[float, Array]
+) -> Array:
     """Construct a wide-stencil second derivative :math:`D_2` operator
     that is compatible with :func:`sbp_first_derivative_matrix`.
     """
@@ -415,8 +413,8 @@ def sbp_second_derivative_matrix(
 
 @singledispatch
 def apply_sbp_first_derivative(
-    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, u: jnp.ndarray
-) -> jnp.ndarray:
+    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, u: Array
+) -> Array:
     """A (potentially) matrix-free version of :func:`sbp_first_derivative_matrix`."""
     D1 = sbp_first_derivative_matrix(op, grid, bc)
     return D1 @ u
@@ -424,8 +422,12 @@ def apply_sbp_first_derivative(
 
 @singledispatch
 def apply_sbp_second_derivative(
-    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray, u: jnp.ndarray
-) -> jnp.ndarray:
+    op: SBPOperator,
+    grid: UniformGrid,
+    bc: BoundaryType,
+    b: Union[float, Array],
+    u: Array,
+) -> Array:
     """A (potentially) matrix-free version of :func:`sbp_second_derivative_matrix`."""
     D2 = sbp_second_derivative_matrix(op, grid, bc, b)
     return D2 @ u
@@ -454,13 +456,13 @@ class SBP21(SBPOperator):
         return 1
 
     def make_second_derivative_r_matrix(
-        self, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-    ) -> jnp.ndarray:
+        self, grid: UniformGrid, bc: BoundaryType, b: Array
+    ) -> Array:
         return make_sbp_21_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
 
     def make_second_derivative_s_matrix(
-        self, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-    ) -> jnp.ndarray:
+        self, grid: UniformGrid, bc: BoundaryType, b: Array
+    ) -> Optional[Array]:
         if bc == BoundaryType.Periodic:
             return None
 
@@ -475,7 +477,7 @@ class SBP21(SBPOperator):
 
 
 @sbp_norm_matrix.register(SBP21)
-def _sbp_21_norm_matrix(op: SBP21, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
+def _sbp_21_norm_matrix(op: SBP21, grid: UniformGrid, bc: BoundaryType) -> Array:
     assert isinstance(grid, UniformGrid)
 
     p = make_sbp_21_norm_stencil(dtype=grid.dtype)
@@ -485,20 +487,20 @@ def _sbp_21_norm_matrix(op: SBP21, grid: UniformGrid, bc: BoundaryType) -> jnp.n
 @sbp_first_derivative_matrix.register(SBP21)
 def _sbp_21_first_derivative_matrix(
     op: SBP21, grid: UniformGrid, bc: BoundaryType
-) -> jnp.ndarray:
+) -> Array:
     assert isinstance(grid, UniformGrid)
 
     q = make_sbp_21_first_derivative_q_stencil(dtype=grid.dtype)
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
-    return jnp.diag(1.0 / P) @ Q  # type: ignore[no-untyped-call]
+    return cast(Array, jnp.diag(1.0 / P) @ Q)  # type: ignore[no-untyped-call]
 
 
 @sbp_second_derivative_matrix.register(SBP21)
 def _sbp_21_second_derivative_matrix(
-    op: SBP21, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-) -> jnp.ndarray:
+    op: SBP21, grid: UniformGrid, bc: BoundaryType, b: Union[float, Array]
+) -> Array:
     from numbers import Number
 
     if isinstance(b, jnp.ndarray):
@@ -526,15 +528,15 @@ def _sbp_21_second_derivative_matrix(
 
 
 def make_sbp_21_second_derivative_b_matrices(
-    bc: BoundaryType, b: jnp.ndarray
-) -> Tuple[jnp.ndarray]:
+    bc: BoundaryType, b: Array
+) -> Tuple[Array]:
     # [Mattsson2012] Appendix A.1
     return (jnp.diag(b),)  # type: ignore[no-untyped-call]
 
 
 def make_sbp_21_second_derivative_r_matrix(
-    bc: BoundaryType, b: jnp.ndarray, dx: float
-) -> jnp.ndarray:
+    bc: BoundaryType, b: Array, dx: ScalarLike
+) -> Array:
     dtype = b.dtype
     (d22,) = make_sbp_21_second_derivative_d_stencils(dtype=dtype)
     (c22,) = make_sbp_21_second_derivative_c_stencils(dtype=dtype)
@@ -548,11 +550,9 @@ def make_sbp_21_second_derivative_r_matrix(
 
 
 def make_sbp_21_second_derivative_m_matrix(
-    bc: BoundaryType, b: jnp.ndarray, dx: float
-) -> jnp.ndarray:
-    def make_boundary(
-        b1: jnp.ndarray, b2: jnp.ndarray, b3: jnp.ndarray, b4: jnp.ndarray
-    ) -> jnp.ndarray:
+    bc: BoundaryType, b: Array, dx: ScalarLike
+) -> Array:
+    def make_boundary(b1: Array, b2: Array, b3: Array, b4: Array) -> Array:
         return jnp.array(
             [
                 [(b1 + b2) / 2, -(b1 + b2) / 2, 0, 0],
@@ -582,7 +582,7 @@ def make_sbp_21_second_derivative_m_matrix(
         n, m = mb_r.shape
         M = M.at[-n:, -m:].set(mb_r)
 
-    return M / dx
+    return cast(Array, M / dx)
 
 
 def make_sbp_21_norm_stencil(dtype: Any = None) -> Stencil:
@@ -694,13 +694,13 @@ class SBP42(SBPOperator):
         return 2
 
     def make_second_derivative_r_matrix(
-        self, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-    ) -> jnp.ndarray:
+        self, grid: UniformGrid, bc: BoundaryType, b: Array
+    ) -> Array:
         return make_sbp_42_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
 
     def make_second_derivative_s_matrix(
-        self, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-    ) -> jnp.ndarray:
+        self, grid: UniformGrid, bc: BoundaryType, b: Array
+    ) -> Optional[Array]:
         if bc == BoundaryType.Periodic:
             return None
 
@@ -715,7 +715,7 @@ class SBP42(SBPOperator):
 
 
 @sbp_norm_matrix.register(SBP42)
-def _sbp_42_norm_matrix(op: SBP42, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
+def _sbp_42_norm_matrix(op: SBP42, grid: UniformGrid, bc: BoundaryType) -> Array:
     assert isinstance(grid, UniformGrid)
 
     p = make_sbp_42_norm_stencil(dtype=grid.dtype)
@@ -725,20 +725,20 @@ def _sbp_42_norm_matrix(op: SBP42, grid: UniformGrid, bc: BoundaryType) -> jnp.n
 @sbp_first_derivative_matrix.register(SBP42)
 def _sbp_42_first_derivative_matrix(
     op: SBP42, grid: UniformGrid, bc: BoundaryType
-) -> jnp.ndarray:
+) -> Array:
     assert isinstance(grid, UniformGrid)
 
     q = make_sbp_42_first_derivative_q_stencil(dtype=grid.dtype)
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
-    return jnp.diag(1.0 / P) @ Q  # type: ignore[no-untyped-call]
+    return cast(Array, jnp.diag(1.0 / P) @ Q)  # type: ignore[no-untyped-call]
 
 
 @sbp_second_derivative_matrix.register(SBP42)
 def _sbp_42_second_derivative_matrix(
-    op: SBP42, grid: UniformGrid, bc: BoundaryType, b: jnp.ndarray
-) -> jnp.ndarray:
+    op: SBP42, grid: UniformGrid, bc: BoundaryType, b: Union[float, Array]
+) -> Array:
     from numbers import Number
 
     if isinstance(b, jnp.ndarray):
@@ -766,8 +766,8 @@ def _sbp_42_second_derivative_matrix(
 
 
 def make_sbp_42_second_derivative_b_matrices(
-    bc: BoundaryType, b: jnp.ndarray
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    bc: BoundaryType, b: Array
+) -> Tuple[Array, Array]:
     # [Mattsson2012] Appendix A.2
     B34 = jnp.pad((b[2:] + b[:-2]) / 2, 1)
 
@@ -786,8 +786,8 @@ def make_sbp_42_second_derivative_b_matrices(
 
 
 def make_sbp_42_second_derivative_r_matrix(
-    bc: BoundaryType, b: jnp.ndarray, dx: float
-) -> jnp.ndarray:
+    bc: BoundaryType, b: Array, dx: ScalarLike
+) -> Array:
     dtype = b.dtype
     (d34, d44) = make_sbp_42_second_derivative_d_stencils(dtype=dtype)
     (c34, c44) = make_sbp_42_second_derivative_c_stencils(dtype=dtype)
@@ -799,24 +799,26 @@ def make_sbp_42_second_derivative_r_matrix(
     C34 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c34))  # type: ignore
     C44 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c44))  # type: ignore
 
-    return (
-        dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
+    return cast(
+        Array,
+        dx**5 / 18 * D34.T @ C34 @ B34 @ D34
+        + dx**7 / 144 * D44.T @ C44 @ B44 @ D44,
     )
 
 
 def make_sbp_42_second_derivative_m_matrix(
-    bc: BoundaryType, b: jnp.ndarray, dx: float
-) -> jnp.ndarray:
+    bc: BoundaryType, b: Array, dx: ScalarLike
+) -> Array:
     def make_boundary(
-        b1: jnp.ndarray,
-        b2: jnp.ndarray,
-        b3: jnp.ndarray,
-        b4: jnp.ndarray,
-        b5: jnp.ndarray,
-        b6: jnp.ndarray,
-        b7: jnp.ndarray,
-        b8: jnp.ndarray,
-    ) -> jnp.ndarray:
+        b1: Array,
+        b2: Array,
+        b3: Array,
+        b4: Array,
+        b5: Array,
+        b6: Array,
+        b7: Array,
+        b8: Array,
+    ) -> Array:
         # NOTE: M is 0-indexed to write out the transpose easier
         # NOTE: b is 1-indexed to match the notation in [Mattsson2012]
         m0 = jnp.array(
@@ -1061,10 +1063,10 @@ def make_sbp_42_second_derivative_m_matrix(
         n, m = mb_r.shape
         M = M.at[-n:, -m:].set(mb_r)
 
-    return -M / dx
+    return cast(Array, -M / dx)
 
 
-def make_sbp_42_norm_stencil(dtype: Any = None) -> jnp.ndarray:
+def make_sbp_42_norm_stencil(dtype: Any = None) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -1080,7 +1082,7 @@ def make_sbp_42_norm_stencil(dtype: Any = None) -> jnp.ndarray:
 
 def make_sbp_42_first_derivative_q_stencil(
     dtype: Any = None,
-) -> jnp.ndarray:
+) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -1107,7 +1109,7 @@ def make_sbp_42_first_derivative_q_stencil(
 def make_sbp_42_second_derivative_s_stencil(
     sd: SecondDerivativeType,
     dtype: Any = None,
-) -> jnp.ndarray:
+) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -1240,7 +1242,7 @@ class SBP64(SBPOperator):  # pylint: disable=abstract-method
 
 
 @sbp_norm_matrix.register(SBP64)
-def _sbp_64_norm_matrix(op: SBP64, grid: UniformGrid, bc: BoundaryType) -> jnp.ndarray:
+def _sbp_64_norm_matrix(op: SBP64, grid: UniformGrid, bc: BoundaryType) -> Array:
     assert isinstance(grid, UniformGrid)
 
     p = make_sbp_64_norm_stencil(dtype=grid.dtype)
@@ -1250,14 +1252,14 @@ def _sbp_64_norm_matrix(op: SBP64, grid: UniformGrid, bc: BoundaryType) -> jnp.n
 @sbp_first_derivative_matrix.register(SBP64)
 def _sbp_64_first_derivative_matrix(
     op: SBP64, grid: UniformGrid, bc: BoundaryType
-) -> jnp.ndarray:
+) -> Array:
     assert isinstance(grid, UniformGrid)
 
     q = make_sbp_64_first_derivative_q_stencil(dtype=grid.dtype)
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
-    return jnp.diag(1.0 / P) @ Q  # type: ignore[no-untyped-call]
+    return cast(Array, jnp.diag(1.0 / P) @ Q)  # type: ignore[no-untyped-call]
 
 
 # }}}
@@ -1266,7 +1268,7 @@ def _sbp_64_first_derivative_matrix(
 # {{{ stencils
 
 
-def make_sbp_64_norm_stencil(dtype: Any = None) -> jnp.ndarray:
+def make_sbp_64_norm_stencil(dtype: Any = None) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -1292,7 +1294,7 @@ def make_sbp_64_norm_stencil(dtype: Any = None) -> jnp.ndarray:
 
 def make_sbp_64_first_derivative_q_stencil(
     dtype: Any = None,
-) -> jnp.ndarray:
+) -> Stencil:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)

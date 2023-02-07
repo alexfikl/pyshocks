@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass, field, replace
-from typing import ClassVar
+from typing import ClassVar, cast
 
 import jax.numpy as jnp
 
@@ -21,6 +21,7 @@ from pyshocks import (
     predict_timestep,
     reconstruction,
 )
+from pyshocks.tools import Array, Scalar, ScalarLike
 
 # {{{ base
 
@@ -34,16 +35,14 @@ class Scheme(SchemeBase):
 
 
 @flux.register(Scheme)
-def _flux_burgers(
-    scheme: Scheme, t: float, x: jnp.ndarray, u: jnp.ndarray
-) -> jnp.ndarray:
+def _flux_burgers(scheme: Scheme, t: ScalarLike, x: Array, u: Array) -> Array:
     return u**2 / 2
 
 
 @predict_timestep.register(Scheme)
 def _predict_timestep_burgers(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Scalar:
     # largest wave speed i.e. max |f'(u)|
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
@@ -83,8 +82,8 @@ class Godunov(FiniteVolumeScheme):
 
 @numerical_flux.register(Godunov)
 def _numerical_flux_burgers_godunov(
-    scheme: Godunov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Godunov, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     from pyshocks.scalar import scalar_flux_upwind
 
     return scalar_flux_upwind(scheme, grid, bc.boundary_type, t, u, u)
@@ -111,8 +110,8 @@ class Rusanov(FiniteVolumeScheme):
 
 @numerical_flux.register(Rusanov)
 def _numerical_flux_burgers_rusanov(
-    scheme: Rusanov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Rusanov, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     from pyshocks.scalar import scalar_flux_rusanov
 
     return scalar_flux_rusanov(
@@ -122,8 +121,8 @@ def _numerical_flux_burgers_rusanov(
 
 @predict_timestep.register(Rusanov)
 def _predict_timestep_burgers_rusanov(
-    scheme: Rusanov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: Rusanov, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Scalar:
     smax = jnp.max(jnp.abs(u[grid.i_]))
 
     return 0.5 * grid.dx_min ** (2 - scheme.alpha) / smax
@@ -148,8 +147,8 @@ class LaxFriedrichs(Rusanov):
 
 @numerical_flux.register(LaxFriedrichs)
 def _numerical_flux_burgers_lax_friedrichs(
-    scheme: LaxFriedrichs, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: LaxFriedrichs, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     from pyshocks.scalar import scalar_flux_lax_friedrichs
 
     return scalar_flux_lax_friedrichs(
@@ -192,8 +191,8 @@ class EngquistOsher(FiniteVolumeScheme):
 
 @numerical_flux.register(EngquistOsher)
 def _numerical_flux_burgers_engquist_osher(
-    scheme: EngquistOsher, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: EngquistOsher, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     from pyshocks.scalar import scalar_flux_engquist_osher
 
     return scalar_flux_engquist_osher(
@@ -228,14 +227,14 @@ def _bind_burgers_esweno32(  # type: ignore[misc]
     from pyshocks.weno import es_weno_parameters
 
     # NOTE: prefer the parameters recommended by Carpenter!
-    eps, delta = es_weno_parameters(grid, 1.0)
+    eps, delta = es_weno_parameters(grid, jnp.ones_like(grid.x))
     return replace(scheme, rec=replace(scheme.rec, eps=eps, delta=delta))
 
 
 @numerical_flux.register(ESWENO32)
 def _numerical_flux_burgers_esweno32(
-    scheme: ESWENO32, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: ESWENO32, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     from pyshocks.scalar import scalar_flux_upwind
     from pyshocks.weno import es_weno_weights
 
@@ -294,7 +293,7 @@ class SSMUSCL(FiniteVolumeScheme):
         return self.variant
 
 
-def hesthaven_limiter(u: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
+def hesthaven_limiter(u: Array, *, variant: int = 1) -> Array:
     # [Hesthaven2018] Page 193
     # gives phi_{i + 1/2} for i in [0, n - 1]
     phi = jnp.where(
@@ -309,7 +308,7 @@ def hesthaven_limiter(u: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
 
     if variant == 1:
         pass
-    else:
+    elif variant == 2:
         from pyshocks.limiters import local_slope_ratio
 
         # [Hesthaven2018] Page 194
@@ -327,14 +326,16 @@ def hesthaven_limiter(u: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
                 jnp.maximum(1, 2 - r[:-1]),
             ),
         )
+    else:
+        raise ValueError(f"Unknown variant: {variant!r}")
 
-    return phi
+    return cast(Array, phi)
 
 
 @numerical_flux.register(SSMUSCL)
 def _numerical_flux_burgers_ssmuscl(
-    scheme: SSMUSCL, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: SSMUSCL, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     # FIXME: any way to include this in the MUSCL reconstruction?
     phi = hesthaven_limiter(u, variant=scheme.variant)
     up = u[:-1] + 0.5 * phi * (u[1:] - u[:-1])
@@ -386,8 +387,8 @@ def _bind_advection_flux_split_rusanov(  # type: ignore[misc]
 
 @apply_operator.register(FluxSplitRusanov)
 def _apply_operator_flux_split_rusanov(
-    scheme: FluxSplitRusanov, grid: Grid, bc: Boundary, t: float, u: jnp.ndarray
-) -> jnp.ndarray:
+    scheme: FluxSplitRusanov, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+) -> Array:
     from pyshocks import apply_boundary
 
     u = apply_boundary(bc, grid, t, u)

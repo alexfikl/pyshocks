@@ -31,7 +31,9 @@ pylint:			## Run pylint checks over the source code
 .PHONY: pylint
 
 mypy:			## Run mypy checks over the source code
-	$(PYTHON) -m mypy --strict --show-error-codes pyshocks tests examples drivers
+	$(PYTHON) -m mypy \
+		--strict --show-error-codes --no-warn-unused-ignores \
+		pyshocks tests examples drivers
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 .PHONY: mypy
 

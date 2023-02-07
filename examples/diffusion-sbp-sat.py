@@ -19,6 +19,7 @@ from pyshocks import (
 )
 from pyshocks.reconstruction import ConstantReconstruction
 from pyshocks.scalar import PeriodicBoundary, make_diffusion_sat_boundary
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("diffusion-sbp-sat")
 
@@ -104,10 +105,10 @@ def main(
 
     # {{{ right-hand side
 
-    def _predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _predict_timestep(_t: ScalarLike, _u: Array) -> Array:
         return theta * predict_timestep(scheme, grid, boundary, _t, _u)
 
-    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}

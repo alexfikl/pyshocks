@@ -4,20 +4,21 @@
 from typing import Optional
 
 import jax.experimental.sparse as js
-import jax.numpy as jnp
+
+from pyshocks.tools import Array
 
 
-def sparse_banded(qi: jnp.ndarray) -> js.BCOO:
+def sparse_banded(qi: Array) -> js.BCOO:
     raise NotImplementedError
 
 
 def sparse_banded_boundary(
-    qi: jnp.ndarray,
-    qb_l: Optional[jnp.ndarray],
-    qb_r: Optional[jnp.ndarray],
+    qi: Array,
+    qb_l: Optional[Array],
+    qb_r: Optional[Array],
 ) -> js.BCOO:
     raise NotImplementedError
 
 
-def sparse_circulant(qi: jnp.ndarray) -> js.BCOO:
+def sparse_circulant(qi: Array) -> js.BCOO:
     raise NotImplementedError

@@ -10,6 +10,7 @@ import pytest
 
 from pyshocks import get_logger, make_uniform_cell_grid, set_recommended_matplotlib
 from pyshocks.limiters import make_limiter_from_name
+from pyshocks.tools import Array
 
 logger = get_logger("test_muscl")
 set_recommended_matplotlib()
@@ -18,13 +19,11 @@ set_recommended_matplotlib()
 # {{{ test_limiters
 
 
-def func_sine(x: jnp.ndarray, k: int = 1) -> jnp.ndarray:
+def func_sine(x: Array, k: int = 1) -> Array:
     return jnp.sin(2.0 * jnp.pi * k * x)
 
 
-def func_step(
-    x: jnp.ndarray, w: float = 0.25, a: float = -1.0, b: float = 1.0
-) -> jnp.ndarray:
+def func_step(x: Array, w: float = 0.25, a: float = -1.0, b: float = 1.0) -> Array:
     mid = (b + a) / 2
     a = mid - w * (mid - a)
     b = mid + w * (b - mid)
@@ -197,7 +196,7 @@ def test_tvd_slope_limiter_burgers(
 
     from pyshocks import apply_operator, norm
 
-    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _apply_operator(_t: float, _u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     from pyshocks.timestepping import SSPRK33, predict_maxit_from_timestep, step
@@ -215,7 +214,7 @@ def test_tvd_slope_limiter_burgers(
 
     tvd = norm(grid, u0, p="tvd")
     fail_count = 0
-    tvd_increase = []
+    tvd_increase_acc = []
 
     u = u0
     for event in step(method, u0, maxit=maxit, tfinal=tfinal):
@@ -223,12 +222,12 @@ def test_tvd_slope_limiter_burgers(
         tvd_next = norm(grid, u, p="tvd")
 
         fail_count = fail_count + int(tvd_next > tvd + 1.0e-12)
-        tvd_increase.append(tvd_next - tvd)
+        tvd_increase_acc.append(tvd_next - tvd)
 
         tvd = tvd_next
         assert jnp.isfinite(tvd), event
 
-    tvd_increase = jnp.array(tvd_increase, dtype=u0.dtype)
+    tvd_increase = jnp.array(tvd_increase_acc, dtype=u0.dtype)
 
     if fail_count:
         logger.info(

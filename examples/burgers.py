@@ -21,11 +21,12 @@ from pyshocks import (
     reconstruction,
     sbp,
 )
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("burgers")
 
 
-def ic_func(grid: Grid, t: float, x: jnp.ndarray, *, variant: int = 1) -> jnp.ndarray:
+def ic_func(grid: Grid, t: ScalarLike, x: Array, *, variant: int = 1) -> Array:
     from pyshocks import funcs
 
     if variant == 1:
@@ -52,7 +53,7 @@ def make_finite_volume(
     else:
         boundary = make_dirichlet_boundary(ga=lambda t, x: ic_func(grid, t, x))
 
-    def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def make_solution(t: ScalarLike, x: Array) -> Array:
         return cell_average(quad, lambda x: ic_func(grid, t, x))
 
     return grid, boundary, make_solution
@@ -76,11 +77,11 @@ def make_finite_difference(
     else:
         grid = make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
         boundary = make_burgers_sat_boundary(
-            ga=lambda t: ic_func(grid, t, grid.a),
-            gb=lambda t: ic_func(grid, t, grid.b),
+            ga=lambda t: ic_func(grid, t, jnp.array(grid.a)),
+            gb=lambda t: ic_func(grid, t, jnp.array(grid.b)),
         )
 
-    def make_solution(t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def make_solution(t: ScalarLike, x: Array) -> Array:
         return ic_func(grid, t, x)
 
     return grid, boundary, make_solution
@@ -156,10 +157,10 @@ def main(
 
     # {{{ right-hand side
 
-    def _predict_timestep(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _predict_timestep(_t: ScalarLike, _u: Array) -> Array:
         return theta * predict_timestep(scheme, grid, boundary, _t, _u)
 
-    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, boundary, _t, _u)
 
     # }}}

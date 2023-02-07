@@ -24,6 +24,7 @@ from pyshocks import (
 )
 from pyshocks.limiters import make_limiter_from_name
 from pyshocks.reconstruction import make_reconstruction_from_name
+from pyshocks.tools import Array, ScalarLike
 
 logger = get_logger("test_convergence")
 set_recommended_matplotlib()
@@ -34,12 +35,12 @@ set_recommended_matplotlib()
 
 @dataclass(frozen=True)
 class Result:
-    h_max: float
-    error: float
+    h_max: ScalarLike
+    error: ScalarLike
 
-    t: jnp.ndarray
-    energy: jnp.ndarray
-    tvd: jnp.ndarray
+    t: Array
+    energy: Array
+    tvd: Array
 
 
 @dataclass(frozen=True)
@@ -55,17 +56,17 @@ class ConvergenceTestCase:
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
         raise NotImplementedError
 
-    def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         raise NotImplementedError
 
     def norm(
         self,
         scheme: SchemeBase,
         grid: Grid,
-        u: jnp.ndarray,
+        u: Array,
         *,
-        p: Union[int, float, str] = 1,
-    ) -> jnp.ndarray:
+        p: Union[int, ScalarLike, str] = 1,
+    ) -> Array:
         from pyshocks import norm
 
         return norm(grid, u, p=p, weighted=True)
@@ -79,7 +80,7 @@ class FiniteVolumeTestCase(ConvergenceTestCase):  # pylint: disable=abstract-met
         # NOTE: number of ghosts cells should depend on the scheme?
         return make_uniform_cell_grid(a=a, b=b, n=n, nghosts=3)
 
-    def cell_average(self, grid: Grid, func: SpatialFunction) -> jnp.ndarray:
+    def cell_average(self, grid: Grid, func: SpatialFunction) -> Array:
         from pyshocks import cell_average, make_leggauss_quadrature
 
         quad = make_leggauss_quadrature(grid, order=5)
@@ -100,7 +101,7 @@ def evolve(
     n: int,
     *,
     order: int,
-    dt: float,
+    dt: ScalarLike,
     a: float = -1.0,
     b: float = 1.0,
     tfinal: float = 0.5,
@@ -131,7 +132,7 @@ def evolve(
     from pyshocks import apply_operator
 
     @jax.jit
-    def _apply_operator(_t: float, _u: jnp.ndarray) -> jnp.ndarray:
+    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
         return apply_operator(scheme, grid, bc, _t, _u)
 
     import pyshocks.timestepping as ts
@@ -144,26 +145,25 @@ def evolve(
         checkpoint=None,
     )
 
-    t = [-1.0] * (maxit + 1)
-    energy = [-1.0] * (maxit + 1)
-    tvd = [-1.0] * (maxit + 1)
+    t_acc = []
+    energy_acc = []
+    tvd_acc = []
 
     u = u0
     for event in ts.step(stepper, u0, maxit=maxit):
         u = event.u
 
         if visualize:
-            m = event.iteration
-            t[m] = event.t
-            energy[m] = case.norm(scheme, grid, event.u, p=2) ** 2
-            tvd[m] = case.norm(scheme, grid, event.u, p="tvd")
+            t_acc.append(event.t)
+            energy_acc.append(case.norm(scheme, grid, event.u, p=2) ** 2)
+            tvd_acc.append(case.norm(scheme, grid, event.u, p="tvd"))
 
     # exact solution
     uhat = case.evaluate(grid, tfinal, grid.x)
 
-    t = jnp.array(t, dtype=u0.dtype)
-    energy = jnp.array(energy, dtype=u0.dtype)
-    tvd = jnp.array(tvd, dtype=u0.dtype)
+    t = jnp.array(t_acc, dtype=u0.dtype)
+    energy = jnp.array(energy_acc, dtype=u0.dtype)
+    tvd = jnp.array(tvd_acc, dtype=u0.dtype)
 
     # }}}
 
@@ -227,7 +227,7 @@ class BurgersTestCase(FiniteVolumeTestCase):
         rec = make_reconstruction_from_name("constant")
         return burgers.make_scheme_from_name(self.scheme_name, rec=rec, alpha=0.98)
 
-    def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         return self.cell_average(grid, partial(funcs.burgers_riemann, grid, t))
 
 
@@ -317,13 +317,13 @@ class AdvectionTestCase(FiniteVolumeTestCase):
             self.scheme_name, rec=rec, velocity=velocity
         )
 
-    def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         # NOTE: WENOJS53 convergence is very finicky with respect to what initial
         # conditions / time steps / whatever we give it. This has to do with the
         # critical points in the solutions, eps, and other things (JS is not the
         # most robust of the WENO family of schemes). The choice here seems to work!
 
-        def func(x: jnp.ndarray) -> jnp.ndarray:
+        def func(x: Array) -> Array:
             return funcs.ic_sine_sine(grid, x - self.a * t)
 
         return self.cell_average(grid, func)
@@ -355,17 +355,17 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
             self.scheme_name, rec=None, op=op, velocity=velocity
         )
 
-    def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         return funcs.ic_sine_sine(grid, x - self.a * t)
 
     def norm(
         self,
         scheme: SchemeBase,
         grid: Grid,
-        u: jnp.ndarray,
+        u: Array,
         *,
-        p: Union[int, float, str] = 2,
-    ) -> jnp.ndarray:
+        p: Union[int, ScalarLike, str] = 2,
+    ) -> Array:
         from pyshocks import norm
 
         assert isinstance(scheme, advection.SBPSAT)
@@ -470,7 +470,7 @@ class DiffusionTestCase(FiniteVolumeTestCase):
             self.scheme_name, rec=rec, diffusivity=diffusivity
         )
 
-    def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         return self.cell_average(
             grid, partial(funcs.diffusion_expansion, grid, t, diffusivity=self.d)
         )
@@ -488,8 +488,8 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         from pyshocks.scalar import make_diffusion_sat_boundary
 
         return make_diffusion_sat_boundary(
-            ga=lambda t: self.evaluate(grid, t, grid.a),
-            gb=lambda t: self.evaluate(grid, t, grid.b),
+            ga=lambda t: self.evaluate(grid, t, jnp.array(grid.a)),
+            gb=lambda t: self.evaluate(grid, t, jnp.array(grid.b)),
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:
@@ -504,7 +504,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
             self.scheme_name, rec=None, op=op, diffusivity=diffusivity
         )
 
-    def evaluate(self, grid: Grid, t: float, x: jnp.ndarray) -> jnp.ndarray:
+    def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         return funcs.diffusion_expansion(grid, t, x, diffusivity=self.d)
         # return funcs.diffusion_tophat(grid, t, x, diffusivity=self.d)
 
@@ -512,10 +512,10 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         self,
         scheme: SchemeBase,
         grid: Grid,
-        u: jnp.ndarray,
+        u: Array,
         *,
-        p: Union[int, float, str] = 2,
-    ) -> jnp.ndarray:
+        p: Union[int, ScalarLike, str] = 2,
+    ) -> Array:
         from pyshocks import norm
 
         assert isinstance(scheme, diffusion.SBPSAT)
