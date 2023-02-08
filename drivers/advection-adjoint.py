@@ -51,13 +51,14 @@ def evolve_forward(
     grid = sim.grid
     stepper = sim.stepper
 
+    if visualize or interactive:
+        import matplotlib.pyplot as mp
+
     # {{{ plotting
 
     s = grid.i_
 
     if interactive:
-        import matplotlib.pyplot as mp
-
         fig = mp.figure()
         ax = fig.gca()
         mp.ion()
