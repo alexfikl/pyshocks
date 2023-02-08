@@ -62,6 +62,7 @@ from typing import (
     Type,
     TypeVar,
     Union,
+    cast,
 )
 
 try:
@@ -399,15 +400,15 @@ class BlockTimer:
 
     name: str = "block"
 
-    t_wall: Scalar = field(default=jnp.array(-1.0), init=False)
-    t_wall_start: Scalar = field(default=jnp.array(-1.0), init=False)
+    t_wall: ScalarLike = field(init=False)
+    t_wall_start: ScalarLike = field(init=False)
 
-    t_proc: Scalar = field(default=jnp.array(-1.0), init=False)
-    t_proc_start: Scalar = field(default=jnp.array(-1.0), init=False)
+    t_proc: ScalarLike = field(init=False)
+    t_proc_start: ScalarLike = field(init=False)
 
     @property
     def t_cpu(self) -> Scalar:
-        return self.t_proc / self.t_wall
+        return cast(Scalar, self.t_proc / self.t_wall)
 
     def __enter__(self) -> "BlockTimer":
         import time
@@ -519,7 +520,7 @@ class IterationTimer:
                 super().finalize()
 
                 assert self.t_deltas is not None
-                self.t_deltas.append(self.t_wall)
+                self.t_deltas.append(jnp.array(self.t_wall))
 
         return _BlockTimer(name="inner", t_deltas=self.t_deltas)
 
