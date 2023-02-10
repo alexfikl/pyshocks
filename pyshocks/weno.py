@@ -381,7 +381,7 @@ def ss_weno_242_mask(sb: BoundaryStencil, u: Array) -> Array:
 
         d = sb.sl.d
         mask = mask.at[:, : d.shape[1]].set((d > 0).astype(u.dtype))
-        d = sb.sl.d
+        d = sb.sr.d
         mask = mask.at[:, -d.shape[1] :].set((d > 0).astype(u.dtype))
 
     return mask
@@ -480,7 +480,7 @@ def ss_weno_242_boundary_coefficients(
         ],
         dtype=dtype,
     )
-    cr = cl[::-1, ::-1, :]
+    cr = cl[::-1, ::-1, ::-1]
 
     # weights coefficients ([Fisher2011] Equation 78)
     dl = jnp.array(

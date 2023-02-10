@@ -128,6 +128,10 @@ class Grid:
         return jnp.s_[self.nghosts : self.x.size - self.nghosts]
 
     @property
+    def f_(self) -> slice:
+        return jnp.s_[self.nghosts : self.f.size - self.nghosts]
+
+    @property
     def b_(self) -> Tuple[int, int, int]:
         # NOTE: -1 should be unused, but we set it to -1 for type consistency
         return (-1, self.x.size - self.nghosts - 1, self.nghosts)
@@ -534,10 +538,14 @@ def norm(
     if isinstance(u, (float, Number)) or u.shape == ():
         return jnp.array(jnp.abs(u), dtype=grid.x.dtype)
 
-    assert u.shape[:1] == grid.x.shape
-
-    dx = grid.dx[grid.i_] if weighted else 1.0
-    return jnp.array(_norm(u[grid.i_], dx, p), dtype=u.dtype)
+    if u.shape[:1] == grid.x.shape:
+        dx = grid.dx[grid.i_] if weighted else 1.0
+        return jnp.array(_norm(u[grid.i_], dx, p), dtype=u.dtype)
+    elif u.shape[:1] == grid.f.shape:
+        df = grid.df[grid.f_] if weighted else 1.0
+        return jnp.array(_norm(u[grid.f_], df, p), dtype=u.dtype)
+    else:
+        raise ValueError(f"Array has unexpected shape: {u.shape[:1]}")
 
 
 def rnorm(

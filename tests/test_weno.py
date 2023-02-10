@@ -276,6 +276,8 @@ def get_function(name: str) -> SpatialFunction:
         return lambda x: x**2 + 3 * x + 1
     if name == "cubic":
         return lambda x: x**3 - 1
+    if name == "cubicosine":
+        return lambda x: (x**3 - 1) * jnp.cos(2 * jnp.pi * x)
 
     raise ValueError(f"Unknown function name: {name!r}.")
 
@@ -344,11 +346,11 @@ def test_weno_smooth_reconstruction_order_cell_values(
 # {{{ test_ss_weno_interpolation
 
 
-@pytest.mark.parametrize("bc", [BoundaryType.Periodic])
+@pytest.mark.parametrize("bc", [BoundaryType.Dirichlet])
 def test_ss_weno_242_interpolation(
-    bc: BoundaryType, *, order: int = 4, visualize: bool = False
+    bc: BoundaryType, *, order: int = 2, visualize: bool = False
 ) -> None:
-    from pyshocks import EOCRecorder, cell_average, make_leggauss_quadrature, rnorm
+    from pyshocks import EOCRecorder, rnorm
 
     is_periodic = bc == BoundaryType.Periodic
     if is_periodic:
@@ -361,28 +363,31 @@ def test_ss_weno_242_interpolation(
     eocs = [EOCRecorder(name=f"u_{stencils[i]}") for i in range(nstencils)]
     from pyshocks import weno
 
-    func = get_function("sine")
+    func = get_function("cubicosine")
     for n in range(192, 384 + 1, 32):
         grid = make_uniform_ssweno_grid(-1.0, 1.0, n=n, is_periodic=is_periodic)
-        quad = make_leggauss_quadrature(grid, order=order + 1)
-        u = cell_average(quad, func)
+        u = func(grid.x)
         uhat = func(grid.f)
 
         sb = weno.ss_weno_242_coefficients(bc, grid.x.dtype)
         mask = weno.ss_weno_242_mask(sb, u)
         ubar = weno.ss_weno_242_interp(sb, u)
 
-        print(uhat[3], ubar[0, 3])
+        a, b = 127 / 48, -79 / 48
+        a, b = 121 / 48, -73 / 48
+        uhatk = uhat[-1]
+        ubar0k = a * u[-1] + b * u[-2]
+        print(uhatk, ubar0k)
 
-        for i in range(1, nstencils):
+        for i in range(0, nstencils):
             error = rnorm(grid, uhat * mask[i], ubar[i] * mask[i], p=1, weighted=False)
             eocs[i].add_data_point(grid.dx_max, error)
 
             logger.info("error: n %4d u[%2s] %.12e", n, stencils[i], error)
 
-        error = abs(uhat[3] - ubar[0, 3]) / abs(uhat[3])
-        eocs[0].add_data_point(grid.dx_max, error)
-        logger.info("error: n %4d u[%2s] %.12e", n, stencils[0], error)
+        # error = abs(uhatk - ubar0k) / abs(uhatk)
+        # eocs[-1].add_data_point(grid.dx_max, error)
+        # logger.info("error: n %4d u[%2s] %.12e", n, stencils[-1], error)
 
     from pyshocks.tools import stringify_eoc
 

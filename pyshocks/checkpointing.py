@@ -165,7 +165,7 @@ def _save_pickle(chk: PickleCheckpoint, idx: int, values: Dict[str, Any]) -> Non
     try:
         import cloudpickle as pickle
     except ImportError:
-        import pickle   # type: ignore[no-redef]
+        import pickle  # type: ignore[no-redef]
 
     import lzma
 
@@ -187,7 +187,7 @@ def _load_pickle(
     try:
         import cloudpickle as pickle
     except ImportError:
-        import pickle   # type: ignore[no-redef]
+        import pickle  # type: ignore[no-redef]
 
     import lzma
 
