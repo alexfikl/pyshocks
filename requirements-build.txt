@@ -4,7 +4,7 @@
 #
 #    pip-compile --resolver=backtracking requirements-build.in
 #
-numpy==1.24.1
+numpy==1.24.2
     # via -r requirements-build.in
 wheel==0.38.4
     # via -r requirements-build.in

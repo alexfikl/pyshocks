@@ -48,9 +48,9 @@ isort==5.12.0
     # via
     #   flake8-isort
     #   pylint
-jax==0.4.2
+jax==0.4.3
     # via pyshocks (setup.cfg)
-jaxlib==0.4.2
+jaxlib==0.4.3
     # via pyshocks (setup.cfg)
 lazy-object-proxy==1.9.0
     # via astroid
@@ -64,11 +64,11 @@ mdurl==0.1.2
     # via markdown-it-py
 mpmath==1.2.1
     # via sympy
-mypy==0.991
+mypy==1.0.0
     # via pyshocks (setup.cfg)
-mypy-extensions==0.4.3
+mypy-extensions==1.0.0
     # via mypy
-numpy==1.24.1
+numpy==1.24.2
     # via
     #   jax
     #   jaxlib
@@ -87,7 +87,7 @@ pep8-naming==0.13.3
     # via pyshocks (setup.cfg)
 pip-tools==6.12.2
     # via pyshocks (setup.cfg)
-platformdirs==2.6.2
+platformdirs==3.0.0
     # via pylint
 pluggy==1.0.0
     # via pytest
@@ -101,7 +101,7 @@ pygments==2.14.0
     # via
     #   doc8
     #   rich
-pylint==2.16.0
+pylint==2.16.1
     # via pyshocks (setup.cfg)
 pyproject-hooks==1.0.0
     # via build
@@ -121,7 +121,7 @@ scipy==1.10.0
     #   jaxlib
 sphinx-lint==0.6.7
     # via pyshocks (setup.cfg)
-stevedore==4.1.1
+stevedore==5.0.0
     # via doc8
 sympy==1.11.1
     # via pyshocks (setup.cfg)
