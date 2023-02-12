@@ -32,7 +32,7 @@ pylint:			## Run pylint checks over the source code
 
 mypy:			## Run mypy checks over the source code
 	$(PYTHON) -m mypy \
-		--strict --show-error-codes --no-warn-unused-ignores \
+		--strict --show-error-codes \
 		pyshocks tests examples drivers
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 .PHONY: mypy
