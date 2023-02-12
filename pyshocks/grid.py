@@ -540,12 +540,14 @@ def norm(
 
     if u.shape[:1] == grid.x.shape:
         dx = grid.dx[grid.i_] if weighted else 1.0
-        return jnp.array(_norm(u[grid.i_], dx, p), dtype=u.dtype)
+        result = jnp.array(_norm(u[grid.i_], dx, p), dtype=u.dtype)
     elif u.shape[:1] == grid.f.shape:
         df = grid.df[grid.f_] if weighted else 1.0
-        return jnp.array(_norm(u[grid.f_], df, p), dtype=u.dtype)
+        result = jnp.array(_norm(u[grid.f_], df, p), dtype=u.dtype)
     else:
         raise ValueError(f"Array has unexpected shape: {u.shape[:1]}")
+
+    return result
 
 
 def rnorm(
