@@ -94,27 +94,41 @@ pytype:			## Run pytype checks over the source code
 
 # {{{ testing
 
-pin:			## Pin dependencies versions to requirements.txt
+REQUIREMENTS=\
+	requirements-build.txt \
+	requirements-dev.txt \
+	requirements.txt
+
+requirements-build.txt: requirements-build.in
 	$(PYTHON) -m piptools compile \
 		--resolver=backtracking --upgrade \
-		requirements-build.in
+		-o $@ $<
+
+requirements-dev.txt: setup.cfg
 	$(PYTHON) -m piptools compile \
 		--resolver=backtracking --upgrade \
 		--extra dev --extra pyweno \
-		-o requirements.txt setup.cfg
+		-o $@ $<
+
+requirements.txt: setup.cfg
+	$(PYTHON) -m piptools compile \
+		--resolver=backtracking --upgrade \
+		-o $@ $<
+
+pin: $(REQUIREMENTS)	## Pin dependencies versions to requirements.txt
 .PHONY: pin
 
-pip-install:	## Install pinned depdencies from requirements.txt
+pip-install:			## Install pinned depdencies from requirements.txt
 	$(PYTHON) -m pip install --upgrade pip setuptools
 	$(PYTHON) -m pip install -r requirements-build.txt
-	$(PYTHON) -m pip install -r requirements.txt -e .
+	$(PYTHON) -m pip install -r requirements-dev.txt -e .
 .PHONY: pip-install
 
 docs:			## Generate HTML documentation (at docs/_build/html/index.html)
 	(cd docs; rm -rf _build; make html SPHINXOPTS="-W --keep-going -n")
 .PHONY: docs
 
-test:			## Run pytest tests
+test:					## Run pytest tests
 	$(PYTHON) -m pytest -rswx --durations=25 -v -s
 .PHONY: test
 

@@ -29,6 +29,16 @@ listed in ``setup.cfg``.
 * ``rich``: recommended for nicer logging.
 * ``matplotlib`` and ``SciencePlots``: recommended for nicer plotting.
 
+A pinned version of all the requirements is kept in ``requirements.txt``.
+For a quick install with the versions that are currently being tested on the CI
+
+.. code:: bash
+
+   python -m pip install -r requirements.txt -e .
+
+or use ``requirements-dev.txt`` to also install development packages
+(e.g. ``flake8``)
+
 Documentation
 =============
 

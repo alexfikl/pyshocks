@@ -105,7 +105,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
     logger.info("D1")
 
     D1 = sbp.sbp_first_derivative_matrix(op, grid, bc)
-    D1.block_until_ready()  # type: ignore[attr-defined]
+    D1.block_until_ready()
 
     assert D1.shape == (n, n)
     assert D1.dtype == dtype
@@ -171,7 +171,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
     logger.info("D2")
 
     D2 = sbp.sbp_second_derivative_matrix(op, grid, bc, 1.0)
-    D2.block_until_ready()  # type: ignore[attr-defined]
+    D2.block_until_ready()
 
     assert D2.shape == (n, n)
     assert D2.dtype == dtype
