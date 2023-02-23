@@ -5,13 +5,13 @@ requires = [
     "wheel",
 ]
 
-[tool.isort]
-profile = "black"
-
 [tool.black]
 line-length = 88
 target-version = ['py38']
 exclude='\.eggs|\.git|\.mypy_cache|build|dist|\.pytest_cache|\.pytype'
+
+[tool.isort]
+profile = "black"
 
 [tool.ruff]
 target-version = "py38"
