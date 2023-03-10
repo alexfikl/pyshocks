@@ -974,7 +974,7 @@ def main(
         save_animation(
             # f"burgers_ssweno_{suffix}.mp4",
             None,
-            x,  # type: ignore[arg-type]
+            x,
             (solution.y,),
             fig_kwargs={"dpi": 100, "layout": "tight"},
             plot_kwargs={"linewidth": 2},

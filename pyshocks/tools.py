@@ -74,7 +74,6 @@ except ImportError:
 import pathlib
 from types import TracebackType
 
-import jax
 import jax.numpy as jnp
 
 from pyshocks.logging import get_logger
@@ -87,8 +86,10 @@ P = ParamSpec("P")
 
 PathLike = Union[pathlib.Path, str]
 
-Array: TypeAlias = jax.Array
-Scalar: TypeAlias = jax.Array
+# TODO: these should be set to jax.Array, but that breaks pylint because it
+# defines Array.[size,shape,dtype] only in the pyi file
+Array: TypeAlias = jnp.ndarray      # type: ignore[name-defined,attr-defined]
+Scalar: TypeAlias = jnp.ndarray     # type: ignore[name-defined,attr-defined]
 ScalarLike = Union[float, Scalar]
 
 

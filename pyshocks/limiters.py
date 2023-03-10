@@ -150,7 +150,7 @@ def _slope_limit_unlimited(lm: UnlimitedLimiter, grid: Grid, u: Array) -> Array:
 
 
 def minmod(a: Array, b: Array) -> Array:
-    return jnp.where(
+    return jnp.where(       # type: ignore[call-overload]
         a * b < 0.0,
         0.0,
         jnp.where(jnp.abs(a) < jnp.abs(b), a, b),

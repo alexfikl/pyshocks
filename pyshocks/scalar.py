@@ -215,7 +215,7 @@ def scalar_flux_rusanov(
     assert scheme.rec is not None
 
     # artificial viscosity
-    if abs(alpha - 1.0) > 1.0e-8:  # type: ignore[operator]
+    if abs(alpha - 1.0) > 1.0e-8:
         nu = grid.df ** (alpha - 1)
     else:
         nu = jnp.array(1.0, dtype=u.dtype)

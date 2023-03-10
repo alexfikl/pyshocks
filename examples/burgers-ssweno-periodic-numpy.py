@@ -625,7 +625,7 @@ def main(
         save_animation(
             # f"burgers_ssweno_{suffix}.mp4",
             None,
-            x,  # type: ignore[arg-type]
+            x,
             plotted_solution,
             fig_kwargs={"dpi": 200, "layout": "tight"},
             plot_kwargs={"linewidth": 2, "markersize": 5},
@@ -652,8 +652,8 @@ def main(
         save_animation(
             # f"burgers_ssweno_{suffix}_weights.mp4",
             None,
-            x,  # type: ignore[arg-type]
-            omegas,  # type: ignore[arg-type]
+            x,
+            omegas,
             legends=(r"$\omega^L$", r"$\omega^C$", r"$\omega^R$"),
             fig_kwargs={"dpi": 100, "layout": "tight"},
             plot_kwargs={"linewidth": 2},
