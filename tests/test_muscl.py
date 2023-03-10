@@ -28,7 +28,7 @@ def func_step(x: Array, w: float = 0.25, a: float = -1.0, b: float = 1.0) -> Arr
     a = mid - w * (mid - a)
     b = mid + w * (b - mid)
 
-    return jnp.logical_and(x > a, x < b).astype(x.dtype)  # type: ignore
+    return jnp.logical_and(x > a, x < b).astype(x.dtype)
 
 
 @pytest.mark.parametrize(

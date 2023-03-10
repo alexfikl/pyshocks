@@ -43,7 +43,7 @@ Misc Functions
 .. autofunction:: ic_boxcar
 """
 
-from typing import Optional, Tuple, cast
+from typing import Optional, Tuple
 
 import jax.numpy as jnp
 
@@ -172,7 +172,7 @@ def ic_cut_sine(
         raise ValueError("'xb' must be in the domain [a, b].")
 
     return jnp.where(
-        jnp.logical_and(xa < x, x < xb),  # type: ignore[no-untyped-call]
+        jnp.logical_and(xa < x, x < xb),
         1.0 + jnp.sin(2.0 * jnp.pi * (x - xa) / (xb - xa)),
         us,
     )
@@ -339,10 +339,7 @@ def burgers_riemann(
 
     if ul <= ur:
         h_l = (x < x0 + ul * t).astype(x.dtype)
-        h_c = jnp.logical_and(  # type: ignore[no-untyped-call]
-            x0 + ul * t < x,
-            x0 + ur * t > x,
-        ).astype(x.dtype)
+        h_c = jnp.logical_and(x0 + ul * t < x, x0 + ur * t > x).astype(x.dtype)
         h_r = (x0 + ur * t < x).astype(x.dtype)
 
         r = ul * h_l + (x - x0) / (t + 1.0e-15) * h_c + ur * h_r
@@ -354,7 +351,7 @@ def burgers_riemann(
 
         r = h * ul + (1 - h) * ur
 
-    return cast(Array, r)
+    return r
 
 
 def burgers_linear_shock(
@@ -408,10 +405,7 @@ def burgers_linear_shock(
 
     # strong solutions valid for t < tmax
     s0_l = (x < xa + ul * t).astype(x.dtype)
-    s0_c = jnp.logical_and(  # type: ignore[no-untyped-call]
-        xa + ul * t < x,
-        xb + ur * t > x,
-    ).astype(x.dtype)
+    s0_c = jnp.logical_and(xa + ul * t < x, xb + ur * t > x).astype(x.dtype)
     s0_r = (x > xb + ur * t).astype(x.dtype)
 
     s0 = ul * s0_l + (b - a * x) / (1 - a * t) * s0_c + ur * s0_r
@@ -423,7 +417,7 @@ def burgers_linear_shock(
     s1 = ul * h + ur * (1 - h)
 
     h = jnp.array(t < tmax, dtype=x.dtype)
-    return cast(Array, s0 * h + (1 - h) * s1)
+    return s0 * h + (1 - h) * s1
 
 
 def burgers_tophat(
@@ -471,17 +465,11 @@ def burgers_tophat(
     s = (uc + us) / 2
 
     h_l = (x < xa + us * t).astype(x.dtype)
-    h_e = jnp.logical_and(  # type: ignore[no-untyped-call]
-        xa + us * t < x,
-        x < xa + uc * t,
-    ).astype(x.dtype)
-    h_c = jnp.logical_and(  # type: ignore[no-untyped-call]
-        xa + uc * t < x,
-        x < xb + s * t,
-    ).astype(x.dtype)
+    h_e = jnp.logical_and(xa + us * t < x, x < xa + uc * t).astype(x.dtype)
+    h_c = jnp.logical_and(xa + uc * t < x, x < xb + s * t).astype(x.dtype)
     h_r = (x > xb + s * t).astype(x.dtype)
 
-    return cast(Array, us * h_l + (x - xa) / (t + 1.0e-15) * h_e + uc * h_c + us * h_r)
+    return us * h_l + (x - xa) / (t + 1.0e-15) * h_e + uc * h_c + us * h_r
 
 
 # }}}

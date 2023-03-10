@@ -50,6 +50,7 @@ Simultaneous-Approximation-Term (SAT) Boundary Conditions
 from dataclasses import dataclass
 from typing import ClassVar, Optional
 
+import jax
 import jax.numpy as jnp
 
 from pyshocks.grid import Grid, UniformGrid
@@ -227,7 +228,7 @@ def scalar_flux_rusanov(
 
     # largest local wave speed
     a = jnp.abs(a)
-    if isinstance(a, jnp.ndarray) and a.size == u.size:
+    if isinstance(a, jax.Array) and a.size == u.size:
         # FIXME: should the reconstruct a and use al/ar to get a local speed?
         a = jnp.maximum(a[1:], a[:-1])
 

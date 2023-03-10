@@ -504,7 +504,7 @@ def _norm(u: Array, dx: Array, p: Union[str, ScalarLike]) -> Scalar:
     if p == "tvd":
         return jnp.sum(jnp.abs(jnp.diff(u)))
 
-    if isinstance(p, (int, float, jnp.ndarray)):
+    if isinstance(p, (int, float, jax.Array)):
         p = float(p)
         if p <= 0:
             raise ValueError(f"'p' must be a positive float: {p!r} <= 0.")

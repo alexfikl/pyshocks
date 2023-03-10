@@ -100,6 +100,7 @@ from dataclasses import dataclass, replace
 from functools import singledispatch
 from typing import Any, Dict, Optional, Tuple, Type, Union, cast
 
+import jax
 import jax.numpy as jnp
 
 from pyshocks.grid import UniformGrid
@@ -503,7 +504,7 @@ def _sbp_21_second_derivative_matrix(
 ) -> Array:
     from numbers import Number
 
-    if isinstance(b, jnp.ndarray):
+    if isinstance(b, jax.Array):
         pass
     elif isinstance(b, Number):
         b = jnp.full_like(grid.x, jnp.array(b), dtype=grid.dtype)
@@ -741,7 +742,7 @@ def _sbp_42_second_derivative_matrix(
 ) -> Array:
     from numbers import Number
 
-    if isinstance(b, jnp.ndarray):
+    if isinstance(b, jax.Array):
         pass
     elif isinstance(b, Number):
         b = jnp.full_like(grid.x, jnp.array(b), dtype=grid.dtype)
