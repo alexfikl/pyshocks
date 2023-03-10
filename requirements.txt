@@ -8,17 +8,17 @@ contourpy==1.0.7
     # via matplotlib
 cycler==0.11.0
     # via matplotlib
-fonttools==4.38.0
+fonttools==4.39.0
     # via matplotlib
-jax==0.4.4
+jax==0.4.6
     # via pyshocks (setup.cfg)
-jaxlib==0.4.4
+jaxlib==0.4.6
     # via pyshocks (setup.cfg)
 kiwisolver==1.4.4
     # via matplotlib
 markdown-it-py==2.2.0
     # via rich
-matplotlib==3.7.0
+matplotlib==3.7.1
     # via pyshocks (setup.cfg)
 mdurl==0.1.2
     # via markdown-it-py
@@ -43,7 +43,7 @@ pyparsing==3.0.9
     # via matplotlib
 python-dateutil==2.8.2
     # via matplotlib
-rich==13.3.1
+rich==13.3.2
     # via pyshocks (setup.cfg)
 scipy==1.10.1
     # via
