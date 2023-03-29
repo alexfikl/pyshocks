@@ -17,7 +17,9 @@ fmt: black		## Run all formatting scripts
 .PHONY: fmt
 
 black:			## Run black over the source code
-	$(PYTHON) -m black --safe --target-version py38 pyshocks tests examples drivers
+	$(PYTHON) -m black \
+		--safe --target-version py38 --preview \
+		pyshocks tests examples drivers
 .PHONY: black
 
 flake8:			## Run flake8 checks over the source code

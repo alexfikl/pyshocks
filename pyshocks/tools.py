@@ -88,8 +88,8 @@ PathLike = Union[pathlib.Path, str]
 
 # TODO: these should be set to jax.Array, but that breaks pylint because it
 # defines Array.[size,shape,dtype] only in the pyi file
-Array: TypeAlias = jnp.ndarray      # type: ignore[name-defined,attr-defined]
-Scalar: TypeAlias = jnp.ndarray     # type: ignore[name-defined,attr-defined]
+Array: TypeAlias = jnp.ndarray  # type: ignore[name-defined,attr-defined]
+Scalar: TypeAlias = jnp.ndarray  # type: ignore[name-defined,attr-defined]
 ScalarLike = Union[float, Scalar]
 
 
@@ -440,8 +440,7 @@ class BlockTimer:
 
     def __str__(self) -> str:
         return (
-            f"{self.name}: completed "
-            f"({self.t_wall:.3e}s wall, {self.t_cpu:.3f}x cpu)"
+            f"{self.name}: completed ({self.t_wall:.3e}s wall, {self.t_cpu:.3f}x cpu)"
         )
 
 
