@@ -4,12 +4,10 @@
 #
 #    pip-compile --extra=dev --extra=pyweno --output-file=requirements-dev.txt --resolver=backtracking setup.cfg
 #
-astroid==2.15.1
+astroid==2.15.2
     # via pylint
 attrs==22.2.0
-    # via
-    #   flake8-bugbear
-    #   pytest
+    # via flake8-bugbear
 build==0.10.0
     # via pip-tools
 click==8.1.3
@@ -54,7 +52,7 @@ isort==5.12.0
     # via
     #   flake8-isort
     #   pylint
-jax==0.4.7
+jax==0.4.8
     # via pyshocks (setup.cfg)
 jaxlib==0.4.7
     # via pyshocks (setup.cfg)
@@ -72,13 +70,13 @@ mccabe==0.7.0
     #   pylint
 mdurl==0.1.2
     # via markdown-it-py
-ml-dtypes==0.0.4
+ml-dtypes==0.1.0
     # via
     #   jax
     #   jaxlib
 mpmath==1.3.0
     # via sympy
-mypy==1.1.1
+mypy==1.2.0
     # via pyshocks (setup.cfg)
 mypy-extensions==1.0.0
     # via mypy
@@ -94,7 +92,7 @@ numpy==1.24.2
     #   scipy
 opt-einsum==3.3.0
     # via jax
-packaging==23.0
+packaging==23.1
     # via
     #   build
     #   matplotlib
@@ -103,9 +101,9 @@ pbr==5.11.1
     # via stevedore
 pep8-naming==0.13.3
     # via pyshocks (setup.cfg)
-pillow==9.4.0
+pillow==9.5.0
     # via matplotlib
-pip-tools==6.12.3
+pip-tools==6.13.0
     # via pyshocks (setup.cfg)
 platformdirs==3.2.0
     # via pylint
@@ -117,17 +115,17 @@ pycodestyle==2.10.0
     # via flake8
 pyflakes==3.0.1
     # via flake8
-pygments==2.14.0
+pygments==2.15.0
     # via
     #   doc8
     #   rich
-pylint==2.17.1
+pylint==2.17.2
     # via pyshocks (setup.cfg)
 pyparsing==3.0.9
     # via matplotlib
 pyproject-hooks==1.0.0
     # via build
-pytest==7.2.2
+pytest==7.3.0
     # via pyshocks (setup.cfg)
 python-dateutil==2.8.2
     # via matplotlib
@@ -137,7 +135,7 @@ regex==2023.3.23
     # via sphinx-lint
 restructuredtext-lint==1.4.0
     # via doc8
-rich==13.3.3
+rich==13.3.4
     # via pyshocks (setup.cfg)
 scipy==1.10.1
     # via

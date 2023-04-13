@@ -10,7 +10,7 @@ cycler==0.11.0
     # via matplotlib
 fonttools==4.39.3
     # via matplotlib
-jax==0.4.7
+jax==0.4.8
     # via pyshocks (setup.cfg)
 jaxlib==0.4.7
     # via pyshocks (setup.cfg)
@@ -22,7 +22,7 @@ matplotlib==3.7.1
     # via pyshocks (setup.cfg)
 mdurl==0.1.2
     # via markdown-it-py
-ml-dtypes==0.0.4
+ml-dtypes==0.1.0
     # via
     #   jax
     #   jaxlib
@@ -38,17 +38,17 @@ numpy==1.24.2
     #   scipy
 opt-einsum==3.3.0
     # via jax
-packaging==23.0
+packaging==23.1
     # via matplotlib
-pillow==9.4.0
+pillow==9.5.0
     # via matplotlib
-pygments==2.14.0
+pygments==2.15.0
     # via rich
 pyparsing==3.0.9
     # via matplotlib
 python-dateutil==2.8.2
     # via matplotlib
-rich==13.3.3
+rich==13.3.4
     # via pyshocks (setup.cfg)
 scipy==1.10.1
     # via
