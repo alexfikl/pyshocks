@@ -65,9 +65,9 @@ nitpick_ignore = [
 # {{{ links
 
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-    "numpy": ("https://numpy.org/doc/stable", None),
     "jax": ("https://jax.readthedocs.io/en/latest", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "python": ("https://docs.python.org/3", None),
     "scipy": ("https://docs.scipy.org/doc/scipy", None),
 }
 
