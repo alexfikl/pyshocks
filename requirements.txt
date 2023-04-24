@@ -26,7 +26,7 @@ ml-dtypes==0.1.0
     # via
     #   jax
     #   jaxlib
-numpy==1.24.2
+numpy==1.24.3
     # via
     #   contourpy
     #   jax
@@ -42,7 +42,7 @@ packaging==23.1
     # via matplotlib
 pillow==9.5.0
     # via matplotlib
-pygments==2.15.0
+pygments==2.15.1
     # via rich
 pyparsing==3.0.9
     # via matplotlib
