@@ -7,12 +7,15 @@ Reconstruction
 
 .. autoclass:: Reconstruction
     :no-show-inheritance:
+    :members:
 .. autofunction:: reconstruct
 
 .. autoclass:: ConstantReconstruction
 .. autoclass:: MUSCL
+    :members:
 .. autoclass:: MUSCLS
 .. autoclass:: WENOJS
+    :members:
 .. autoclass:: WENOJS32
 .. autoclass:: WENOJS53
 .. autoclass:: ESWENO32
@@ -51,28 +54,23 @@ class Reconstruction:
     to point (or node) values that are used to reconstruct in cell values.
 
     The reconstruct is performed using :func:`reconstruct`.
-
-    .. attribute:: order
-
-        Order of the reconstruction. Most schemes are based on a form of
-        weighted interpolation for which this value represents the order of the
-        interpolation.
-
-    .. attribute:: stencil_width
-
-        The stencil width required for the reconstruction.
     """
 
     @property
     def name(self) -> str:
+        """An identifier for the reconstruction algorithm."""
         return type(self).__name__.lower()
 
     @property
     def order(self) -> int:
+        """Order of the reconstruction. Most schemes are based on a form of
+        weighted interpolation for which this value represents the order of the
+        interpolation."""
         raise NotImplementedError(type(self).__name__)
 
     @property
     def stencil_width(self) -> int:
+        """The stencil width required for the reconstruction."""
         raise NotImplementedError(type(self).__name__)
 
 
@@ -189,13 +187,11 @@ class MUSCL(Reconstruction):
     where :math:`\phi` is a limiter given by :attr:`lm`. Note that here
     :math:`f \equiv f(u)` and the limiter :math:`\phi` is computed based on
     the underlying variable :math:`u`.
-
-    .. attribute:: lm
-
-        A :class:`~pyshocks.limiters.Limiter` used in the MUSCL reconstruction.
     """
 
+    #: A :class:`~pyshocks.limiters.Limiter` used in the MUSCL reconstruction.
     lm: Limiter
+    #: Absolute tolerance in cutting of the slope in constant regions.
     atol: float = 1.0e-12
 
     @property
@@ -306,14 +302,11 @@ def _reconstruct_muscls(
 
 @dataclass(frozen=True)
 class WENOJS(Reconstruction):  # pylint: disable=abstract-method
-    """A WENO-JS reconstruction from [JiangShu1996]_.
+    """A WENO-JS reconstruction from [JiangShu1996]_."""
 
-    .. attribute:: eps
-
-        Small fudge factor used in smoothness indicators.
-    """
-
+    #: Small fudge factor used in smoothness indicators.
     eps: float
+    #: A :class:`~pyshocks.weno.Stencil` for the reconstruction.
     s: ClassVar[weno.Stencil]
 
     @property

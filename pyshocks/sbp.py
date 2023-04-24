@@ -45,8 +45,13 @@ An SBP operator must implement the following interface, which relies on the
 :func:`~functools.singledispatch` functionality.
 
 .. autoclass:: Stencil
+    :no-show-inheritance:
+    :members:
 .. autoclass:: SecondDerivativeType
+    :members:
 .. autoclass:: SBPOperator
+    :no-show-inheritance:
+    :members:
 
 .. autofunction:: sbp_norm_matrix
 .. autofunction:: sbp_first_derivative_matrix
@@ -112,36 +117,18 @@ from pyshocks.tools import Array, ScalarLike
 
 @dataclass(frozen=True)
 class Stencil:
-    """
-    .. attribute:: int
-
-        Interior stencil, as an array of shape ``(n_i,)``.
-
-    .. attribute:: left
-
-        Left boundary stencil, as an array of shape ``(n_l, m_l)``.
-
-    .. attribute:: right
-
-        Left boundary stencil, as an array of shape ``(n_r, m_r)``. If not
-        provided and :attr:`left` is provided, the right boundary stencil
-        is taken to be ``-left[::-1, ::-1]``.
-
-    .. attribute:: is_diagonal
-
-        If *True*, the resulting operator is assumed to be diagonal only.
-        This is used to return an array of shape ``(n,)`` instead of a
-        matrix of shape ``(n, m)`` in certain functions.
-
-    .. attribute:: dtype
-
-        The :class:`~numpy.dtype` of the stencils.
-    """
-
+    #: Interior stencil, as an array of shape ``(n_i,)``.
     int: Array  # noqa: A003
+    #: Left boundary stencil, as an array of shape ``(n_l, m_l)``.
     left: Optional[Array]
+    #: Left boundary stencil, as an array of shape ``(n_r, m_r)``. If not
+    #: provided and :attr:`left` is provided, the right boundary stencil
+    #: is taken to be ``-left[::-1, ::-1]``.
     right: Optional[Array]
 
+    #: If *True*, the resulting operator is assumed to be diagonal only.
+    #: This is used to return an array of shape ``(n,)`` instead of a
+    #: matrix of shape ``(n, m)`` in certain functions.
     is_diagonal: bool = False
 
     def __post_init__(self) -> None:
@@ -158,6 +145,7 @@ class Stencil:
 
     @property
     def dtype(self) -> "jnp.dtype[Any]":
+        """The :class:`~numpy.dtype` of the stencils."""
         return jnp.dtype(self.int.dtype)
 
 
@@ -263,50 +251,39 @@ def make_sbp_matrix_from_stencil(
 @enum.unique
 class SecondDerivativeType(enum.Enum):
     #: A second derivative that is compatible with the first derivative in
-    # the sense described by [Mattsson2012]_.
+    #: the sense described by [Mattsson2012]_.
     Compatible = enum.auto()
+
     #: A second derivative that is compatible with the first derivative
-    # in the sense described by [Parisi2010]_.
+    #: in the sense described by [Parisi2010]_.
     FullyCompatible = enum.auto()
+
     #: A narrow-stencil second-order derivative.
     Narrow = enum.auto()
 
 
 @dataclass(frozen=True)
 class SBPOperator:
-    """Generic family of SBP operators.
+    """Generic family of SBP operators."""
 
-    .. attribute:: ids
-
-        Some form of unique string identifier for the operator.
-
-    .. attribute:: order
-
-        Interior order of the SBP operator.
-
-    .. attribute:: boundary_order
-
-        Boundary order of the SBP operator. This is not valid for periodic
-        boundaries.
-
-    .. attribute:: second_derivative
-
-        A :class:`SecondDerivativeType` describing the construction of the
-        second derivative.
-    """
-
+    #: A :class:`SecondDerivativeType` describing the construction of the
+    #: second derivative.
     second_derivative: SecondDerivativeType
 
     @property
     def ids(self) -> str:
+        """An identifier for the operator."""
         return f"{self.order}{self.boundary_order}"
 
     @property
     def order(self) -> int:
+        """Interior order of the SBP operator."""
         raise NotImplementedError
 
     @property
     def boundary_order(self) -> int:
+        """Boundary order of the SBP operator. This is not valid for periodic
+        boundaries."""
         raise NotImplementedError
 
     def make_second_derivative_r_matrix(

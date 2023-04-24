@@ -9,7 +9,7 @@ Grid
 
 .. autoclass:: Grid
     :no-show-inheritance:
-
+    :members:
 .. autoclass:: UniformGrid
 
 .. autofunction:: make_uniform_cell_grid
@@ -20,6 +20,7 @@ Quadrature
 ^^^^^^^^^^
 .. autoclass:: Quadrature
     :no-show-inheritance:
+    :members:
 
 .. autofunction:: make_leggauss_quadrature
 .. autofunction:: cell_average
@@ -42,77 +43,29 @@ from pyshocks.tools import Array, Scalar, ScalarLike, SpatialFunction
 
 @dataclass(frozen=True)
 class Grid:
-    """
-    .. attribute:: a
-    .. attribute:: b
-
-        Domain bounds for :math:`[a, b]`.
-
-    .. attribute:: n
-
-        Number of (interior) cells.
-
-    .. attribute:: nghosts
-
-        Number of ghost cells
-
-    .. attribute:: x
-
-        Array of solution point coordinates of shape ``(n + 2 g,)``.
-
-    .. attribute:: dx
-
-        Array of cell sizes (dependent on the representation).
-
-    .. attribute:: f
-
-        Midpoint between the solution points.
-
-    .. attribute:: df
-
-        Array of cell sizes between the staggered points :attr:`f`.
-
-    .. attribute:: dx_min
-    .. attribute:: dx_max
-
-        Smallest (and largest) element size in the domain.
-
-    .. attribute:: b_
-
-        Gives the index of the first and last point :attr:`x` that is not a
-        ghost point. The indices are obtained from ``Grid.b_[-1]`` and
-        ``Grid.b_[+1]``, respectively. Note that these can be the same as
-        :attr:`a` and :attr:`b`, but not necessarily.
-
-    .. attribute:: i_
-
-        A :class:`slice` of interior indices, i.e. without the ghost cell layer.
-
-    .. attribute:: g_
-
-        A :class:`tuple` of ghost indices. ``Grid.g_[+1]`` and ``Grid.g_[-1]``
-        give a :class:`slice` for the ghost indices on the right and left sides,
-        respectively.
-
-    .. attribute:: gi_
-
-        Similar to :attr:`g_`, but gives the first and last ``nghosts`` interior
-        points.
-    """
-
+    #: Left domain bound for :math:`[a, b]`.
     a: ScalarLike
+    #: Right domain bound for :math:`[a, b]`.
     b: ScalarLike
+    #: Number of ghost cells.
     nghosts: int
 
+    #: Array of solution point coordinates of shape ``(n + 2 g,)``.
     x: Array
+    #: Array of cell sizes (dependent on the representation).
     dx: Array
 
+    #: Midpoint between the solution points.
     f: Array
+    #: Array of cell sizes between the staggered points :attr:`f`.
     df: Array
 
+    #: Smallest cell size in the domain.
     dx_min: Scalar
+    #: Largest cell size in the domain.
     dx_max: Scalar
 
+    #: If *True*, the grid is assumed to be periodic.
     is_periodic: bool
 
     @property
@@ -121,27 +74,42 @@ class Grid:
 
     @property
     def n(self) -> int:
+        """Number of (interior) cells."""
         return int(self.x.size)  # - 2 * self.nghosts
 
     @property
     def i_(self) -> slice:
+        """A :class:`slice` of interior indices, i.e. without the ghost cell layer."""
         return jnp.s_[self.nghosts : self.x.size - self.nghosts]
 
     @property
     def f_(self) -> slice:
+        """A :class:`slice` of interior staggered indices, i.e. without the
+        ghost cell layer."""
         return jnp.s_[self.nghosts : self.f.size - self.nghosts]
 
     @property
     def b_(self) -> Tuple[int, int, int]:
+        """Gives the index of the first and last point :attr:`x` that is not a
+        ghost point. The indices are obtained from ``Grid.b_[-1]`` and
+        ``Grid.b_[+1]``, respectively. Note that these can be the same as
+        :attr:`a` and :attr:`b`, but not necessarily.
+        """
         # NOTE: -1 should be unused, but we set it to -1 for type consistency
         return (-1, self.x.size - self.nghosts - 1, self.nghosts)
 
     @property
     def g_(self) -> Tuple[None, slice, slice]:
+        """A :class:`tuple` of ghost indices. ``Grid.g_[+1]`` and ``Grid.g_[-1]``
+        give a :class:`slice` for the ghost indices on the right and left sides,
+        respectively.
+        """
         return (None, jnp.s_[self.x.size - self.nghosts :], jnp.s_[: self.nghosts])
 
     @property
     def gi_(self) -> Tuple[None, slice, slice]:
+        """Similar to :attr:`g_`, but gives the first and last ``nghosts`` interior
+        points."""
         g = self.nghosts
         return (None, jnp.s_[self.x.size - 2 * g : self.x.size - g], jnp.s_[g : 2 * g])
 
@@ -373,36 +341,18 @@ def make_uniform_ssweno_grid(
 class Quadrature:
     """Compositve quadrature of given :attr:`order`.
 
-    .. attribute:: order
-    .. attribute:: nnodes
-
-        Number of quadrature nodes in each cell.
-
-    .. attribute:: ncells
-
-        Number of cells in the domain.
-
-    .. attribute:: x
-
-        Quadrature points. The array has a shape of ``(nnodes, ncells)``.
-
-    .. attribute:: w
-
-        Quadrature weights of the same size as :attr:`x`.
-
-    .. attribute:: dx
-
-        Cell sizes, as given by :attr:`Grid.dx`. These are only used when
-        computing cell averages.
-
-    .. automethod:: __init__
     .. automethod:: __call__
     """
 
+    #: Expected order of convergence of the quadrature
     order: int
+    #: Quadrature points. The array has a shape of ``(nnodes, ncells)``.
     x: Array
+    #: Quadrature weights of the same size as :attr:`x`.
     w: Array
 
+    #: Cell sizes, as given by :attr:`Grid.dx`. These are only used when
+    #: computing cell averages.
     dx: Array
 
     def __post_init__(self) -> None:
@@ -414,10 +364,12 @@ class Quadrature:
 
     @property
     def nnodes(self) -> int:
+        """Number of quadrature nodes in each cell."""
         return int(self.x.shape[0])
 
     @property
     def ncells(self) -> int:
+        """Number of cells in the domain."""
         return int(self.x.shape[1])
 
     def __call__(self, fn: SpatialFunction, axis: Optional[int] = None) -> Array:

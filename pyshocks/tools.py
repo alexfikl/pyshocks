@@ -27,6 +27,8 @@ Convergence
 
 .. autoclass:: EOCRecorder
     :no-show-inheritance:
+    :members:
+
 .. autofunction:: estimate_order_of_convergence
 
 Timing and Profiling
@@ -34,10 +36,13 @@ Timing and Profiling
 
 .. autoclass:: TimeResult
     :no-show-inheritance:
+    :members:
 .. autoclass:: BlockTimer
     :no-show-inheritance:
+    :members:
 .. autoclass:: IterationTimer
     :no-show-inheritance:
+    :members:
 
 .. autofunction:: timeit
 .. autofunction:: repeatit
@@ -184,22 +189,14 @@ def estimate_gliding_order_of_convergence(
 
 
 class EOCRecorder:
-    """Keep track of all your *estimated order of convergence* needs.
+    """Keep track of all your *estimated order of convergence* needs."""
 
-    .. attribute:: estimated_order
-
-        Estimated order of convergence for currently available data. The
-        order is estimated by least squares through the given data
-        (see :func:`estimate_order_of_convergence`).
-
-    .. attribute:: max_error
-
-        Largest error (in absolute value) in current data.
-
-    .. automethod:: __init__
-    .. automethod:: add_data_point
-    .. automethod:: satisfied
-    """
+    #: An identifier used for the data being estimated.
+    name: str
+    #: :class:`numpy.dtype` of the error values.
+    dtype: jnp.dtype[Any]
+    #: history
+    history: List[Tuple[Scalar, Scalar]]
 
     def __init__(self, *, name: str = "Error", dtype: Any = None) -> None:
         if dtype is None:
@@ -208,7 +205,7 @@ class EOCRecorder:
 
         self.name = name
         self.dtype = dtype
-        self.history: List[Tuple[Scalar, Scalar]] = []
+        self.history = []
 
     @property
     def _history(self) -> Array:
@@ -225,6 +222,10 @@ class EOCRecorder:
 
     @property
     def estimated_order(self) -> Scalar:
+        """Estimated order of convergence for currently available data. The
+        order is estimated by least squares through the given data
+        (see :func:`estimate_order_of_convergence`).
+        """
         import numpy as np
 
         if not self.history:
@@ -236,6 +237,7 @@ class EOCRecorder:
 
     @property
     def max_error(self) -> Scalar:
+        """Largest error (in absolute value) in current data."""
         return jnp.amax(
             jnp.array([error for _, error in self.history], dtype=self.dtype),
             initial=jnp.array(0.0, dtype=self.dtype),
@@ -386,30 +388,28 @@ def visualize_eoc(
 class BlockTimer:
     """A context manager for timing blocks of code.
 
-    .. code::
+    .. code:: python
 
         with BlockTimer("my-code-block") as bt:
             # do some code
 
         print(bt)
-
-    .. attribute:: name
-    .. attribute:: t_wall
-    .. attribute:: t_proc
-
-    .. automethod:: finalize
     """
 
+    #: An identifier used to differentiate the timer.
     name: str = "block"
 
+    #: Total wall time, obtained from :func:`time.perf_counter`
     t_wall: ScalarLike = field(init=False)
     t_wall_start: ScalarLike = field(init=False)
 
+    #: Total process time, obtained from :func:`time.process_time`.
     t_proc: ScalarLike = field(init=False)
     t_proc_start: ScalarLike = field(init=False)
 
     @property
     def t_cpu(self) -> Scalar:
+        """Total CPU time, obtained from ``t_proc / t_wall``."""
         return cast(Scalar, self.t_proc / self.t_wall)
 
     def __enter__(self) -> "BlockTimer":
@@ -446,24 +446,13 @@ class BlockTimer:
 
 @dataclass(frozen=True)
 class TimeResult:
-    """
-    .. attribute:: walltime
-
-        Smallest value of the walltime for all the runs.
-
-    .. attribute:: mean
-
-       Mean value for the walltime.
-
-    .. attribute:: std
-
-        Standard deviation for the walltime.
-    """
-
     __slots__ = {"walltime", "mean", "std"}
 
+    #: Smallest value of the walltime for all the runs.
     walltime: Scalar
+    #: Mean value for the walltimes.
     mean: Scalar
+    #: Standard deviations for the walltimes.
     std: Scalar
 
     def __str__(self) -> str:
@@ -471,8 +460,12 @@ class TimeResult:
 
     @classmethod
     def from_measurements(cls, deltas: Array, *, skip: int = 5) -> "TimeResult":
-        # NOTE: skipping the first few iterations because they mostly measure
-        # the jit warming up, so they'll skew the standard deviation
+        """
+        :arg deltas: an array of run timings.
+        :arg skip: number of initial entries to skip. The first few runs are
+            likely to contain the JIT warming up, so they can be skipped to
+            obtain more realistic estimates.
+        """
         return TimeResult(
             walltime=jnp.sum(deltas),
             mean=jnp.mean(deltas[skip:]),
@@ -494,17 +487,11 @@ class IterationTimer:
             print(bt)
 
         print(timer.stats())
-
-    .. attribute:: name
-    .. attribute:: total
-
-        Total time elapsed in the :meth:`tick` calls.
-
-    .. automethod:: tick
-    .. automethod:: stats
     """
 
+    #: An identifier used to differentiate the timer.
     name: str = "iteration"
+    #: A list of timings.
     t_deltas: List[Scalar] = field(default_factory=list, init=False, repr=False)
 
     def tick(self) -> BlockTimer:
@@ -527,6 +514,7 @@ class IterationTimer:
 
     @property
     def total(self) -> Scalar:
+        """Total time taken by all the iterations."""
         return jnp.sum(jnp.array(self.t_deltas, dtype=jnp.float64))
 
     def stats(self) -> TimeResult:
