@@ -7,4 +7,6 @@ Equations
 
 .. automodule:: pyshocks.burgers
 
+.. automodule:: pyshocks.diffusion
+
 .. .. automodule:: pyshocks.euler

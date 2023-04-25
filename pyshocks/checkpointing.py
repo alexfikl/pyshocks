@@ -7,12 +7,15 @@ Checkpointing
 
 .. autoclass:: Checkpoint
     :no-show-inheritance:
+    :members:
 .. autofunction:: save
 .. autofunction:: load
 
 .. autoclass:: InMemoryCheckpoint
 .. autoclass:: PickleCheckpoint
+    :members:
 .. autoclass:: NumpyCheckpoint
+    :members:
 """
 
 import pathlib
@@ -43,24 +46,18 @@ class Checkpoint(ABC):
             data = load(chk, i)
             assert data["i"] == i
 
-    .. attribute:: basename
-
-        A basename for the checkpointing keys. A specific checkpoint implementation
-        can use this as a key in a dictionary, as a filename or something else
-        entirely.
-
-    .. automethod:: index_to_key
-
-        Transforms an integer index into a key used to denote the checkpoint.
-
     .. automethod:: __contains__
     """
 
+    #: A basename for the checkpointing keys. A specific checkpoint implementation
+    #: can use this as a key in a dictionary, as a filename or something else
+    #: entirely.
     basename: str
 
     @abstractmethod
     def index_to_key(self, i: int) -> Hashable:
-        """
+        """Transforms an integer index into a key used to denote the checkpoint.
+
         :arg i: an index used to denote the checkpoint.
         """
 
@@ -99,6 +96,7 @@ class InMemoryCheckpoint(Checkpoint):
     As expected, this is not suitable for larger simulations.
     """
 
+    #: Internal data structure used to store the checkpoints.
     storage: Dict[Hashable, Dict[str, Any]] = field(default_factory=dict)
 
     def index_to_key(self, i: int) -> Hashable:
@@ -141,12 +139,9 @@ def _load_in_memory(
 class PickleCheckpoint(Checkpoint):
     """A class that stores checkpoints in a compressed format with the
     :mod:`pickle` module. The data is compressed using :mod:`lzma`.
-
-    .. attribute:: dirname
-
-        The directory in which to store the checkpoints.
     """
 
+    #: The directory in which to store the checkpoints.
     dirname: pathlib.Path
 
     def index_to_key(self, i: int) -> pathlib.Path:
@@ -213,12 +208,9 @@ class NumpyCheckpoint(Checkpoint):
     See :func:`numpy.savez` for details on the mechanism. Note that, at this
     time, :mod:`jax.numpy` does not support :func:`numpy.savez_compressed`,
     so compression is not possible.
-
-    .. attribute:: dirname
-
-        The directory in which to store the checkpoints.
     """
 
+    #: The directory in which to store the checkpoints.
     dirname: pathlib.Path
 
     def index_to_key(self, i: int) -> pathlib.Path:

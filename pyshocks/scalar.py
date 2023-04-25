@@ -21,13 +21,17 @@ Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: OneSidedBoundary
+    :members:
 .. autoclass:: TwoSidedBoundary
+    :members:
 
 Ghost Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: DirichletBoundary
+    :members:
 .. autoclass:: NeumannBoundary
+    :members:
 .. autoclass:: PeriodicBoundary
 
 .. autofunction:: make_dirichlet_boundary
@@ -37,10 +41,15 @@ Simultaneous-Approximation-Term (SAT) Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: OneSidedSATBoundary
+    :members:
 .. autoclass:: OneSidedAdvectionSATBoundary
+    :members:
 .. autoclass:: OneSidedDiffusionSATBoundary
+    :members:
 .. autoclass:: OneSidedBurgersBoundary
+    :members:
 .. autoclass:: SATBoundary
+    :members:
 
 .. autofunction:: make_advection_sat_boundary
 .. autofunction:: make_diffusion_sat_boundary
@@ -320,27 +329,23 @@ def scalar_flux_engquist_osher(
 @dataclass(frozen=True)
 class OneSidedBoundary(Boundary):
     """
-    .. attribute:: side
-
-        Integer ``+1`` or ``-1`` indicating the side on which this boundary
-        condition applies.
-
     .. automethod:: __init__
     """
 
+    #: Integer ``+1`` or ``-1`` indicating the side on which this boundary
+    #: condition applies.
     side: int
 
 
 @dataclass(frozen=True)
 class TwoSidedBoundary(Boundary):
     """
-    .. attribute:: left
-    .. attribute:: right
-
     .. automethod:: __init__
     """
 
+    #: Boundary condition on the left-hand side of the domain.
     left: OneSidedBoundary
+    #: Boundary condition on the right-hand side of the domain.
     right: OneSidedBoundary
 
     def __post_init__(self) -> None:
@@ -355,6 +360,7 @@ class TwoSidedBoundary(Boundary):
 
     @property
     def boundary_type(self) -> BoundaryType:
+        """The type of the boundary."""
         if self.left.boundary_type != self.right.boundary_type:
             raise NotImplementedError("Different boundaries on each side.")
 
@@ -391,18 +397,15 @@ class DirichletBoundary(OneSidedBoundary):
 
         u(t, a) = g_d(t).
 
-    .. attribute:: f
-
-        Callable that can be used to evaluate the boundary condition in the
-        ghost cells on the given :attr:`~OneSidedBoundary.side`.
-
     .. automethod:: __init__
     """
 
+    #: Callable that can be used to evaluate the boundary condition in the
+    #: ghost cells on the given :attr:`~OneSidedBoundary.side`.
     g: VectorFunction
 
     @property
-    def boundary_type(self) -> BoundaryType:
+    def boundary_type(self) -> "BoundaryType":
         return BoundaryType.Dirichlet
 
 
@@ -443,16 +446,15 @@ class NeumannBoundary(OneSidedBoundary):
 
         \pm \frac{\partial u}{\partial x}(t, a) = g_n(t).
 
-    using a second-order approximation.
-
-    .. attribute:: f
-
-        Callable that can be used to evaluate the boundary condition in the
-        ghost cells on the given :attr:`~OneSidedBoundary.side`.
+    using a second-order approximation, where the sign is given by the side
+    as the boundary condition is more generally written as
+    :math:`\mathbf{n} \cdot \nabla u = g_n`.
 
     .. automethod:: __init__
     """
 
+    #: Callable that can be used to evaluate the boundary condition in the
+    #: ghost cells on the given :attr:`~OneSidedBoundary.side`.
     g: TemporalFunction
 
     @property
@@ -556,14 +558,11 @@ class OneSidedSATBoundary(OneSidedBoundary):
         \tau (u_i - g) \mathbf{e}_i.
 
      where :math:`i` is either the first or last point in the grid.
-
-    .. attribute:: g
-    .. attribute:: tau
-
-        Weight used in the SAT penalty term.
     """
 
+    #: Callable used to evaluate the boundary condition on the boundary only.
     g: TemporalFunction
+    #: Weight used in the SAT penalty term.
     tau: ScalarLike
 
     def __post_init__(self) -> None:
@@ -589,7 +588,9 @@ def _evaluate_boundary_sat(
 
 @dataclass(frozen=True)
 class SATBoundary(TwoSidedBoundary):
+    #: Boundary condition on the left-hand side of the domain.
     left: OneSidedSATBoundary
+    #: Boundary condition on the right-hand side of the domain.
     right: OneSidedSATBoundary
 
 
@@ -612,14 +613,10 @@ def make_sat_boundary(
 
 @dataclass(frozen=True)
 class OneSidedAdvectionSATBoundary(OneSidedSATBoundary):
-    """Implements the SAT boundary condition for the advection equation.
+    """Implements the SAT boundary condition for the advection equation."""
 
-    .. attribute:: velocity
-
-        Velocity at the boundary (not dotted with the normal), which is used
-        to determine if the boundary conditions is necessary.
-    """
-
+    #: Velocity at the boundary (not dotted with the normal), which is used
+    #: to determine if the boundary conditions is necessary.
     velocity: ScalarLike
 
 
@@ -662,6 +659,8 @@ class OneSidedDiffusionSATBoundary(OneSidedSATBoundary):
     energy stable if the derivative at the boundary vanishes.
     """
 
+    #: The boundary operator used to describe the second-order derivative in
+    #: [Mattsson2004]_. This is used to construct the correct boundary penalty.
     S: ClassVar[Array]
 
 

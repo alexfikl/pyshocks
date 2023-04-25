@@ -194,7 +194,7 @@ class EOCRecorder:
     #: An identifier used for the data being estimated.
     name: str
     #: :class:`numpy.dtype` of the error values.
-    dtype: jnp.dtype[Any]
+    dtype: "jnp.dtype[Any]"
     #: history
     history: List[Tuple[Scalar, Scalar]]
 

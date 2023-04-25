@@ -17,6 +17,7 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+    :members:
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: FiniteDifferenceScheme
 

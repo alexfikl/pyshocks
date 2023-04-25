@@ -11,7 +11,9 @@ Schemes
 
 .. autoclass:: SchemeBase
     :no-show-inheritance:
+    :members:
 .. autoclass:: CombineScheme
+    :members:
 
 .. autofunction:: bind
 .. autofunction:: apply_operator
@@ -43,11 +45,12 @@ Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: BoundaryType
-   :undoc-members:
-   :inherited-members:
+    :undoc-members:
+    :inherited-members:
 
 .. autoclass:: Boundary
     :no-show-inheritance:
+    :members:
 
 .. autofunction:: evaluate_boundary
 .. autofunction:: apply_boundary
@@ -84,40 +87,30 @@ class SchemeBase:
     :func:`apply_operator` needs to be provided. Optionally, :func:`predict_timestep`
     can also be implemented to take advantage of the knowledge of the
     :math:`\mathbf{A}` operator.
-
-    .. attribute:: name
-
-        A string identifier for the scheme in question (these are not expected
-        to be unique).
-
-    .. attribute:: order
-
-        Expected order of the scheme. This is the minimum convergence order
-        attainable for the scheme (e.g. WENO schemes can attain higher orders
-        for smooth solutions).
-
-    .. attribute:: stencil_width
-
-        The required stencil width for the scheme and reconstruction.
-
-    .. attribute:: rec
-
-        A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
-        to reconstruct high-order values when needed by the numerical scheme.
     """
 
+    #: A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
+    #: to reconstruct high-order values when needed by the numerical scheme.
     rec: Reconstruction
 
     @property
     def name(self) -> str:
+        """A string identifier for the scheme in question (these are not expected
+        to be unique).
+        """
         return f"{type(self).__name__}_{self.rec.name}".lower()
 
     @property
     def order(self) -> int:
+        """Expected order of the scheme. This is the minimum convergence order
+        attainable for the scheme (e.g. WENO schemes can attain higher orders
+        for smooth solutions).
+        """
         return self.rec.order
 
     @property
     def stencil_width(self) -> int:
+        """The required stencil width for the scheme and reconstruction."""
         return self.rec.stencil_width
 
 
@@ -235,11 +228,9 @@ class CombineScheme(SchemeBase):
     are combined as is. For example, one can combine a scheme implementing the
     advective operator, one for the diffusive operator and one for the
     reactive operator in a advection-diffusion-reaction equation.
-
-    .. attribute:: schemes
-
-        A tuple of :class:`SchemeBase` objects.
     """
+
+    #: A tuple of :class:`SchemeBase` objects.
     schemes: Tuple[SchemeBase, ...]
 
     def __post_init__(self) -> None:
@@ -420,18 +411,14 @@ class BoundaryType(enum.Enum):
 
 @dataclass(frozen=True)
 class Boundary(ABC):
-    """Boundary conditions for one-dimensional domains.
-
-    .. attribute:: boundary_type
-
-        A :class:`BoundaryType` describing the general form of the boundary
-        condition.
-    """
+    """Boundary conditions for one-dimensional domains."""
 
     @property
     @abstractmethod
     def boundary_type(self) -> BoundaryType:
-        pass
+        """A :class:`~pyshocks.BoundaryType` describing the general form of the
+        boundary condition.
+        """
 
 
 @singledispatch

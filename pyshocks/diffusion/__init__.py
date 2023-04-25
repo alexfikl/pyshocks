@@ -19,10 +19,12 @@ Schemes
 ^^^^^^^
 
 .. autoclass:: Scheme
+    :members:
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: FiniteDifferenceScheme
 .. autoclass:: CenteredScheme
 .. autoclass:: SBPSAT
+    :members:
 
 .. autofunction:: scheme_ids
 .. autofunction:: make_scheme_from_name

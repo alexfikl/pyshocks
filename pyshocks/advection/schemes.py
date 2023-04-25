@@ -41,13 +41,10 @@ class SpatialVelocity:
 class Scheme(SchemeBase):
     """Base class for numerical schemes for the linear advection equation.
 
-    .. attribute:: velocity
-
-        Advection velocity.
-
     .. automethod:: __init__
     """
 
+    #: Advection velocity.
     velocity: Array
 
 

@@ -6,7 +6,9 @@ Weighted Essentially Non-Oscillatory (WENO) Reconstruction
 ----------------------------------------------------------
 
 .. autoclass:: Stencil
+    :members:
 .. autoclass:: BoundaryStencil
+    :members:
 .. autofunction:: weno_smoothness
 .. autofunction:: weno_interp
 
@@ -81,55 +83,29 @@ class Stencil:
         \omega_{i, m} = \frac{\alpha_{i, m}}{\sum_n \alpha_{i, n}}.
 
     The general setup is more akin to the description provided in [Shu1998]_.
-
-    .. attribute:: a
-
-        Coefficients that are part of the smoothness coefficient expressions.
-
-    .. attribute:: b
-
-        Coefficients that define the smoothness stencils.
-
-    .. attribute:: c
-
-        Coefficients that define the solution interpolation stencils.
-
-    .. attribute:: d
-
-        Ideal weights for the WENO scheme, that define a high-order
-        reconstruction using the stencils :attr:`c`.
     """
 
+    #: Coefficients that are part of the smoothness coefficient expressions.
     a: Optional[Array]
+    #: Coefficients that define the smoothness stencils.
     b: Optional[Array]
+    #: Coefficients that define the solution interpolation stencils.
     c: Array
+    #: Ideal weights for the WENO scheme, that define a high-order
+    #: reconstruction using the stencils :attr:`c`.
     d: Array
 
 
 @dataclass(frozen=True)
 class BoundaryStencil:
-    """
-    .. attribute:: si
-
-        Interior stencil coefficients.
-
-    .. attribute:: bc
-
-        The type of the boundary, as given by :class:`~pyshocks.BoundaryType`.
-
-    .. attribute:: sl
-
-        If not *None*, the stencil for the left boundary.
-
-    .. attribute:: sr
-
-        If not *None*, the stencil for the right boundary.
-    """
-
+    #: Interior stencil coefficients.
     si: Stencil
 
+    #: The type of the boundary, as given by :class:`~pyshocks.BoundaryType`.
     bc: "BoundaryType"
+    #: If not *None*, the stencil for the left boundary.
     sl: Optional[Stencil]
+    #: If not *None*, the stencil for the right boundary.
     sr: Optional[Stencil]
 
 

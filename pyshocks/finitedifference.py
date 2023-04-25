@@ -6,6 +6,7 @@ Finite Difference Approximations
 --------------------------------
 
 .. autoclass:: Stencil
+    :members:
 .. autofunction:: determine_stencil_truncation_error
 .. autofunction:: make_taylor_approximation
 .. autofunction:: make_fornberg_approximation
@@ -34,22 +35,21 @@ class Stencil:
     where :math:`a_i` are the given coefficients :attr:`coeffs` and :math:`f_i`
     are the point function evaluations. The approximation is to an order of
     :attr:`order` with a truncation order coefficient of :attr:`trunc`.
-
-    .. attribute:: derivative
-    .. attribute:: order
-    .. attribute:: coeffs
-    .. attribute:: indices
-    .. attribute:: trunc
-
-    .. attribute:: padded_coeffs
     """
 
+    #: Order of the derivative approximated by the stencil.
     derivative: int
+    #: Order of the approximation.
     order: int
+    #: Coefficients used in the stencil.
     coeffs: Array
+    #: Indices around the centered :math:`0` used in the stencil.
     indices: Array
+    #: Estimated truncation error, which assumes the next derivative in the
+    #: expansion is :math:`\mathcal{O}(1)`.
     trunc: Scalar
 
+    #: A version of :attr:`coeffs` that is symmetric around 0.
     padded_coeffs: Array
 
     def __str__(self) -> str:

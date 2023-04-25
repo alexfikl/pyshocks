@@ -100,11 +100,10 @@ class Rusanov(FiniteVolumeScheme):
     r"""Modified Rusanov scheme with the flux given by
     :func:`~pyshocks.scalar.scalar_flux_rusanov`.
 
-    .. attribute:: alpha
-
     .. automethod:: __init__
     """
 
+    #: Coefficient controlling the amount of artificial dissipation.
     alpha: float = 1.0
 
 
@@ -138,8 +137,6 @@ def _predict_timestep_burgers_rusanov(
 class LaxFriedrichs(Rusanov):
     r"""Modified Lax-Friedrichs scheme with the flux given by
     :func:`~pyshocks.scalar.scalar_flux_lax_friedrichs`.
-
-    .. attribute:: alpha
 
     .. automethod:: __init__
     """
@@ -181,11 +178,10 @@ class EngquistOsher(FiniteVolumeScheme):
     Here, :math:`\omega = 0` is the point at which the Burgers flux attains its
     minimum.
 
-    .. attribute:: omega
-
     .. automethod:: __init__
     """
 
+    #: Point at which the flux attains a global minimum.
     omega: float = field(default=0, init=False, repr=False)
 
 
@@ -273,15 +269,12 @@ class SSMUSCL(FiniteVolumeScheme):
     This implements the entropy stable schemes described in Example 8.15
     from [Hesthaven2018]_. The variants define a first-order and a second-order
     scheme.
-
-    .. attribute:: variant
-
-        An integer denoting the version of the schemes described in
-        [Hesthaven2018]_. First variant denotes the limiter defined on
-        page 193 and the second variant denotes the limiter defined on
-        page 194.
     """
 
+    #: An integer denoting the version of the schemes described in
+    #: [Hesthaven2018]_. First variant denotes the limiter defined on
+    #: page 193 and the second variant denotes the limiter defined on
+    #: page 194.
     variant: int = 2
 
     @property
@@ -352,9 +345,17 @@ def _numerical_flux_burgers_ssmuscl(
 
 @dataclass(frozen=True)
 class FluxSplitRusanov(FiniteDifferenceScheme):
+    """A standard Rusanov scheme using flux-splitting techniques.
+
+    .. automethod:: __init__
+    """
+
+    #: Order of the one sided flux finite difference approximations.
     sorder: int
 
+    #: Finite difference stencil biased to the right.
     sp: ClassVar[fd.Stencil]
+    #: Finite difference stencil biased to the left.
     sm: ClassVar[fd.Stencil]
 
     @property

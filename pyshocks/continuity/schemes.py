@@ -25,14 +25,11 @@ from pyshocks.tools import Array, ScalarLike
 class Scheme(SchemeBase):
     """Base class for numerical schemes for the continuity equation.
 
-    .. attribute:: velocity
-
-        Advection velocity.
-
     .. automethod:: __init__
     """
 
     # NOTE: this is Optional just for mypy, but should never be `None` in practice
+    #: Advection velocity
     velocity: Optional[Array]
 
 

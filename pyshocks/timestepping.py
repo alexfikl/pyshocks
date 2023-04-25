@@ -7,6 +7,7 @@ Integrators
 
 .. autoclass:: Stepper
     :no-show-inheritance:
+    :members:
 .. autoclass:: ForwardEuler
 .. autoclass:: SSPRK33
 .. autoclass:: RK44
@@ -14,7 +15,9 @@ Integrators
 
 .. autoclass:: StepCompleted
     :no-show-inheritance:
+    :members:
 .. autoclass:: AdjointStepCompleted
+    :members:
 
 .. autofunction:: step
 .. autofunction:: adjoint_step
@@ -36,18 +39,16 @@ from pyshocks.tools import Array, Scalar, ScalarFunction, ScalarLike, VectorFunc
 
 @dataclass(frozen=True)
 class StepCompleted:
-    """
-    .. attribute:: t
-    .. attribute:: tfinal
-    .. attribute:: dt
-    .. attribute:: iteration
-    .. attribute:: u
-    """
-
+    #: Current time.
     t: Scalar
+    #: Final time of the simulation.
     tfinal: Scalar
+    #: Time step used to get to :attr:`t` in the current step. Note that for
+    #: multi-stage schemes, this is the step used by the all stages.
     dt: Scalar
+    #: Current iteration.
     iteration: int
+    #: Solution at the time :attr:`t`.
     u: Array
 
     def __str__(self) -> str:
@@ -59,34 +60,21 @@ class StepCompleted:
 
 @dataclass(frozen=True)
 class AdjointStepCompleted(StepCompleted):
-    """
-    .. attribute:: p
-    """
-
+    #: Adjoint solution at the time :attr:`~StepCompleted.t`.
     p: Array
 
 
 @dataclass(frozen=True)
 class Stepper:
-    """Generic time stepping method for first-order ODEs.
+    """Generic time stepping method for first-order ODEs."""
 
-    .. attribute:: predict_step
-
-        A callable taking ``(t, u)`` and returning a maximum time step
-        based on a priori estimates.
-
-    .. attribute:: source
-
-        A callable taking ``(t, u)`` that acts as a source term to the ODE.
-
-    .. attribute:: checkpoint
-
-        A :class:`~pyshocks.checkpointing.Checkpoint` used to save the solution
-        values at every timestep.
-    """
-
+    #: A callable taking ``(t, u)`` and returning a maximum time step
+    #: based on a priori estimates.
     predict_timestep: ScalarFunction
+    #: A callable taking ``(t, u)`` that acts as a source term to the ODE.
     source: VectorFunction
+    #: A :class:`~pyshocks.checkpointing.Checkpoint` used to save the solution
+    #: values at every timestep.
     checkpoint: Optional[Checkpoint]
 
 

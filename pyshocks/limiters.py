@@ -7,15 +7,18 @@ Limiters
 
 .. autoclass:: Limiter
     :no-show-inheritance:
+    :members:
 .. autofunction:: evaluate
 .. autofunction:: flux_limit
 .. autofunction:: slope_limit
 
 .. autoclass:: UnlimitedLimiter
 .. autoclass:: MINMODLimiter
+    :members:
 .. autoclass:: MonotonizedCentralLimiter
 .. autoclass:: SUPERBEELimiter
 .. autoclass:: VanAlbadaLimiter
+    :members:
 .. autoclass:: VanLeerLimiter
 .. autoclass:: KorenLimiter
 
@@ -56,15 +59,13 @@ class Limiter:
 
     On the other hand, a slope limiter gives an estimate of a TVD slope.
     This limiter is applied by calling :func:`slope_limit`.
-
-    .. attribute:: is_symmetric
-
-        Is *True* for flux limiters that exhibit the above symmetry. This can be
-        used to simplify the reconstruction procedure.
     """
 
     @property
     def is_symmetric(self) -> bool:
+        """Is *True* for flux limiters that exhibit the above symmetry. This can be
+        used to simplify the reconstruction procedure.
+        """
         return False
 
 
@@ -173,6 +174,7 @@ class MINMODLimiter(Limiter):
     properties.
     """
 
+    #: Coefficient used in the limiter.
     theta: float
 
     def __post_init__(self) -> None:
@@ -288,13 +290,10 @@ class VanAlbadaLimiter(Limiter):
 
     where :math:`v` denotes the :attr:`variant` of the limiter. Note that the
     second variant of the van Albada limiter is not symmetric.
-
-    .. attribute:: variant
-
-        Choses one of the two variants of the van Albada limiter. This is an
-        integer that takes values in :math:`\{1, 2\}`.
     """
 
+    #: Choses one of the two variants of the van Albada limiter. This is an
+    #: integer that takes values in :math:`\{1, 2\}`.
     variant: int
 
     def __post_init__(self) -> None:

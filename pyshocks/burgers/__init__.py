@@ -20,14 +20,20 @@ Schemes
 
 .. autoclass:: Godunov
 .. autoclass:: Rusanov
+    :members:
 .. autoclass:: LaxFriedrichs
+    :members:
 .. autoclass:: EngquistOsher
+    :members:
 
 .. autoclass:: ESWENO32
 .. autoclass:: SSMUSCL
+    :members:
 
 .. autoclass:: FluxSplitRusanov
+    :members:
 .. autoclass:: SSWENO242
+    :members:
 
 .. autofunction:: scheme_ids
 .. autofunction:: make_scheme_from_name
