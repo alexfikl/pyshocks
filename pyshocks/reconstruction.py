@@ -301,7 +301,7 @@ def _reconstruct_muscls(
 
 
 @dataclass(frozen=True)
-class WENOJS(Reconstruction):  # pylint: disable=abstract-method
+class WENOJS(Reconstruction):
     """A WENO-JS reconstruction from [JiangShu1996]_."""
 
     #: Small fudge factor used in smoothness indicators.
@@ -554,7 +554,7 @@ def make_reconstruction_from_name(name: str, **kwargs: Any) -> Reconstruction:
 
         raise ValueError(
             f"Flux limiter {name!r} not found. Try one of "
-            + f"{join_or(reconstruction_ids())}."
+            f"{join_or(reconstruction_ids())}."
         )
 
     from dataclasses import fields

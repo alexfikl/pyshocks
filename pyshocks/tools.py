@@ -281,7 +281,7 @@ def stringify_eoc(*eocs: EOCRecorder) -> str:
     :returns: a string representing the results in *eocs* in the
         GitHub Markdown format.
     """
-    histories = [eoc._history for eoc in eocs]  # pylint: disable=protected-access
+    histories = [eoc._history for eoc in eocs]
     orders = [
         estimate_gliding_order_of_convergence(h, error, gliding_mean=2)
         for h, error in histories
@@ -292,23 +292,21 @@ def stringify_eoc(*eocs: EOCRecorder) -> str:
     nrows = h.size
 
     lines = []
-    lines.append(("h",) + flatten([(eoc.name, "EOC") for eoc in eocs]))
+    lines.append(("h", *flatten([(eoc.name, "EOC") for eoc in eocs])))
 
     lines.append((":-:",) * ncolumns)
 
     for i in range(nrows):
-        lines.append(
-            (f"{h[i]:.3e}",)
-            + flatten(
-                [
-                    (f"{error[i]:.6e}", "---" if i == 0 else f"{order[i - 1, i]:.3f}")
-                    for (_, error), order in zip(histories, orders)
-                ]
-            )
+        values = flatten(
+            [
+                (f"{error[i]:.6e}", "---" if i == 0 else f"{order[i - 1, i]:.3f}")
+                for (_, error), order in zip(histories, orders)
+            ]
         )
+        lines.append((f"{h[i]:.3e}", *values))
 
     lines.append(
-        ("Overall",) + flatten([("", f"{eoc.estimated_order:.3f}") for eoc in eocs])
+        ("Overall", *flatten([("", f"{eoc.estimated_order:.3f}") for eoc in eocs]))
     )
 
     widths = [max(len(line[i]) for line in lines) for i in range(ncolumns)]
@@ -344,7 +342,7 @@ def visualize_eoc(
 
     # {{{ plot eoc
 
-    h, error = eoc._history  # pylint: disable=protected-access
+    h, error = eoc._history
     ax.loglog(h, error, "o-", label=ylabel)
 
     # }}}
@@ -446,7 +444,7 @@ class BlockTimer:
 
 @dataclass(frozen=True)
 class TimeResult:
-    __slots__ = {"walltime", "mean", "std"}
+    __slots__ = ("walltime", "mean", "std")
 
     #: Smallest value of the walltime for all the runs.
     walltime: Scalar
@@ -646,11 +644,7 @@ def is_single_valued(
 
         predicate = operator.eq
 
-    for other_item in it:
-        if not predicate(other_item, first_item):
-            return False
-
-    return True
+    return all(predicate(other_item, first_item) for other_item in it)
 
 
 # }}}
@@ -715,14 +709,11 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
         "ytick.minor": {"size": 4.0},
     }
 
-    try:
+    from contextlib import suppress
+
+    with suppress(ImportError):
         # NOTE: since v1.1.0 an import is required to import the styles
         import SciencePlots  # noqa: F401
-    except ImportError:
-        try:
-            import scienceplots  # noqa: F401
-        except ImportError:
-            pass
 
     if "science" in mp.style.library:
         mp.style.use(["science", "ieee"])
@@ -742,10 +733,8 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
                 mp.style.use("seaborn-white")
 
     for group, params in defaults.items():
-        try:
+        with suppress(KeyError):
             mp.rc(group, **params)
-        except KeyError:
-            pass
 
 
 @contextmanager
@@ -894,7 +883,7 @@ def save_animation(
     from matplotlib import animation
 
     anim_kwargs = {"interval": 25, "blit": True, **anim_kwargs}
-    anim = animation.FuncAnimation(  # noqa: F841
+    anim = animation.FuncAnimation(
         fig,
         _anim_func,
         jnp.arange(1, ys[0].shape[1]),

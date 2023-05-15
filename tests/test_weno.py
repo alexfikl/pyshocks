@@ -63,7 +63,7 @@ def test_weno_smoothness_indicator_vectorization(
 
     # loop-based
     beta0: np.ndarray[Any, Any] = np.zeros((nstencils, n), dtype=jnp.float64)
-    for j in range(*m.indices(n)):  # pylint: disable=no-member
+    for j in range(*m.indices(n)):
         for i, k in product(range(nstencils), range(a.size)):
             beta0[i, j] += a[k] * jnp.sum(u[j + stencil] * b[i, k, ::-1]) ** 2
 
@@ -78,7 +78,7 @@ def test_weno_smoothness_indicator_vectorization(
 
     # loop-based
     uhat0: np.ndarray[Any, Any] = np.zeros((nstencils, n), dtype=jnp.float64)
-    for j in range(*m.indices(n)):  # pylint: disable=no-member
+    for j in range(*m.indices(n)):
         for i in range(nstencils):
             uhat0[i, j] = jnp.sum(u[j + stencil] * c[i, ::-1])
 
@@ -206,7 +206,7 @@ def test_weno_vs_pyweno(
     from pyshocks import cell_average, make_leggauss_quadrature
 
     quad = make_leggauss_quadrature(grid, order=order)
-    u = cell_average(quad, lambda x: jnp.sin(x))  # pylint: disable=W0108
+    u = cell_average(quad, lambda x: jnp.sin(x))
 
     uhost = u.copy()
     ul, sl = _pyweno_reconstruct(uhost, order, "left")

@@ -73,7 +73,7 @@ class ConvergenceTestCase:
 
 
 @dataclass(frozen=True)
-class FiniteVolumeTestCase(ConvergenceTestCase):  # pylint: disable=abstract-method
+class FiniteVolumeTestCase(ConvergenceTestCase):
     def make_grid(self, a: float, b: float, n: int) -> Grid:
         from pyshocks import make_uniform_cell_grid
 
@@ -88,7 +88,7 @@ class FiniteVolumeTestCase(ConvergenceTestCase):  # pylint: disable=abstract-met
 
 
 @dataclass(frozen=True)
-class FiniteDifferenceTestCase(ConvergenceTestCase):  # pylint: disable=abstract-method
+class FiniteDifferenceTestCase(ConvergenceTestCase):
     def make_grid(self, a: float, b: float, n: int) -> Grid:
         from pyshocks import make_uniform_point_grid
 

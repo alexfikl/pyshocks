@@ -95,13 +95,10 @@ def weno_242_downwind(
     i = np.arange(dw.size)
     beta[dw, i] = bmax
 
-    if __debug__:
-        if not weighted:
-            # NOTE: the downwind weight is supposed to be smaller
-            flags = np.array(
-                [np.all(beta[dw[i], i] >= beta[:, i]) for i in range(dw.size)]
-            )
-            assert np.all(flags), flags
+    if __debug__ and not weighted:
+        # NOTE: the downwind weight is supposed to be smaller
+        flags = np.array([np.all(beta[dw[i], i] >= beta[:, i]) for i in range(dw.size)])
+        assert np.all(flags), flags
 
     return beta
 
@@ -186,15 +183,14 @@ def weno_242_reconstruct(
     # interpolate flux: [Fisher2011] Equation 68
     fbar = weno_242_interp(f)
 
-    if __debug__:
-        if k is not None and not weighted:
-            # NOTE: the downwind weight is supposed to be smaller
-            assert dw is not None
-            flags = np.array(
-                [np.all(omega[dw[i], i] <= omega[:, i]) for i in range(dw.size)]
-            )
+    if __debug__ and k is not None and not weighted:
+        # NOTE: the downwind weight is supposed to be smaller
+        assert dw is not None
+        flags = np.array(
+            [np.all(omega[dw[i], i] <= omega[:, i]) for i in range(dw.size)]
+        )
 
-            assert np.all(flags), flags
+        assert np.all(flags), flags
 
     return np.sum(omega * fbar, axis=0)
 
@@ -456,6 +452,7 @@ def evaluate_at(t: Array, x: Array, fn: Callable[[Array, Array], Array]) -> Arra
 
 
 def main(
+    *,
     nx: int = 65,
     nt: Optional[int] = None,
     a: float = -1.0,
@@ -618,7 +615,8 @@ def main(
 
         plotted_solution: Tuple[Any, ...] = (solution.y,)
         if ic == "tophat":
-            plotted_solution = plotted_solution + (
+            plotted_solution = (
+                *plotted_solution,
                 evaluate_at(tspan, x, lambda t, x: ic_tophat(t, x, us=ur, uc=ul)),
             )
 
@@ -759,7 +757,7 @@ def main(
 # {{{ experiments
 
 
-def run_periodic_test0(suffix: str = "", animate: bool = True) -> None:
+def run_periodic_test0(suffix: str = "", *, animate: bool = True) -> None:
     main(
         nx=65,
         nt=None,
@@ -778,7 +776,7 @@ def run_periodic_test0(suffix: str = "", animate: bool = True) -> None:
     )
 
 
-def run_periodic_test1(suffix: str = "", animate: bool = True) -> None:
+def run_periodic_test1(suffix: str = "", *, animate: bool = True) -> None:
     main(
         nx=127,
         nt=None,
@@ -821,7 +819,7 @@ def cell_averaged(x: Array, f: Callable[[Array], Array], *, order: int) -> Array
     return favg
 
 
-def test_interpolation(visualize: bool = True) -> None:
+def test_interpolation(*, visualize: bool = True) -> None:
     r"""Tests the WENO interpolation on a smooth function:
     * for the individual stencils :math:`S_L, S_C` and :math:`S_R`.
     * for the full stencil :math:`S_L \cup S_C \cup S_R`.
@@ -882,7 +880,7 @@ def test_interpolation(visualize: bool = True) -> None:
         mp.close(fig)
 
 
-def test_smoothness(visualize: bool = True) -> None:
+def test_smoothness(*, visualize: bool = True) -> None:
     from pyshocks import EOCRecorder
 
     stencils = ["L", "C", "R"]
@@ -940,7 +938,7 @@ def test_smoothness(visualize: bool = True) -> None:
         mp.close(fig)
 
 
-def test_stencil_pick(visualize: bool = False) -> None:
+def test_stencil_pick(*, visualize: bool = False) -> None:
     n = 32
     a, b = -1.0, 1.0
     xm = (b + a) / 2
@@ -1002,7 +1000,7 @@ def test_stencil_pick(visualize: bool = False) -> None:
         fig.clf()
 
 
-def run_tests(visualize: bool = False) -> None:
+def run_tests(*, visualize: bool = False) -> None:
     test_interpolation(visualize=visualize)
     test_smoothness(visualize=visualize)
     test_stencil_pick(visualize=visualize)

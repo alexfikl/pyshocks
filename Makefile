@@ -22,15 +22,10 @@ black:			## Run black over the source code
 		pyshocks tests examples drivers
 .PHONY: black
 
-flake8:			## Run flake8 checks over the source code
-	$(PYTHON) -m flake8 pyshocks examples drivers tests docs
-	@echo -e "\e[1;32mflake8 clean!\e[0m"
-.PHONY: flake8
-
-pylint:			## Run pylint checks over the source code
-	PYTHONWARNINGS=ignore $(PYTHON) -m pylint pyshocks examples/*.py drivers/*.py tests/*.py
-	@echo -e "\e[1;32mpylint clean!\e[0m"
-.PHONY: pylint
+ruff:			## Run ruff checks over the source code
+	ruff pyshocks tests examples drivers
+	@echo -e "\e[1;32mruff clean!\e[0m"
+.PHONY: ruff
 
 mypy:			## Run mypy checks over the source code
 	$(PYTHON) -m mypy \
@@ -69,28 +64,6 @@ reuse:			## Check REUSE license compliance
 	reuse lint
 	@echo -e "\e[1;32mREUSE compliant!\e[0m"
 .PHONY: reuse
-
-# }}}
-
-# {{{ alternative linting
-
-pyright:		## Run pyright checks over the source code
-	pyright --stats pyshocks tests examples drivers
-	@echo -e "\e[1;32mpyright clean!\e[0m"
-.PHONY: pyright
-
-ruff:			## Run ruff checks over the source code
-	ruff pyshocks tests examples drivers
-	@echo -e "\e[1;32mruff clean!\e[0m"
-.PHONY: ruff
-
-pytype:			## Run pytype checks over the source code
-	$(PYTHON) -m pytype \
-		--strict-parameter-checks \
-		--strict-primitive-comparisons \
-		pyshocks tests examples drivers
-	@echo -e "\e[1;32mpytype clean!\e[0m"
-.PHONY: pytype
 
 # }}}
 

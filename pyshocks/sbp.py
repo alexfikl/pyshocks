@@ -233,11 +233,10 @@ def make_sbp_matrix_from_stencil(
             s = replace(s, left=None, right=None)
 
         mat = make_sbp_diagonal_matrix(n, s, weight=weight)
+    elif bc == BoundaryType.Periodic:
+        mat = make_sbp_circulant_matrix(n, s, weight=weight)
     else:
-        if bc == BoundaryType.Periodic:
-            mat = make_sbp_circulant_matrix(n, s, weight=weight)
-        else:
-            mat = make_sbp_banded_matrix(n, s, weight=weight)
+        mat = make_sbp_banded_matrix(n, s, weight=weight)
 
     return mat
 
@@ -362,7 +361,7 @@ def make_sbp_mattsson2012_second_derivative(
     assert jnp.linalg.norm(M - M.T) < 1.0e-8
     assert jnp.linalg.norm(jnp.sum(M, axis=1)) < 1.0e-8
 
-    return cast(Array, invP @ (-M + BS))  # pylint: disable=invalid-unary-operand-type
+    return cast(Array, invP @ (-M + BS))
 
 
 @singledispatch
@@ -1200,7 +1199,7 @@ def make_sbp_42_second_derivative_d_stencils(
 
 
 @dataclass(frozen=True)
-class SBP64(SBPOperator):  # pylint: disable=abstract-method
+class SBP64(SBPOperator):
     """An SBP operator the is sixth-order accurate in the interior and
     fourth-order accurate at the boundary.
 

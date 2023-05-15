@@ -484,7 +484,7 @@ def sbp_42_p_matrix(n: int, dtype: Any) -> Array:
 
     P = np.full(n, P[0], dtype=dtype)
     P[: Pb.size] = Pb
-    P[-Pb.size :] = Pb[::-1]  # pylint: disable=invalid-unary-operand-type
+    P[-Pb.size :] = Pb[::-1]
 
     return P
 
@@ -792,6 +792,7 @@ def burgers_rhs(
 
 
 def main(
+    *,
     nx: int = 65,
     nt: Optional[int] = None,
     a: float = -1.0,
@@ -1127,7 +1128,7 @@ def main(
 # {{{ experiments
 
 
-def run_fisher2013_test0(suffix: str = "", animate: bool = True) -> None:
+def run_fisher2013_test0(suffix: str = "", *, animate: bool = True) -> None:
     main(
         nx=64,
         nt=None,
@@ -1147,7 +1148,7 @@ def run_fisher2013_test0(suffix: str = "", animate: bool = True) -> None:
     )
 
 
-def run_fisher2013_test1(suffix: str = "", animate: bool = True) -> None:
+def run_fisher2013_test1(suffix: str = "", *, animate: bool = True) -> None:
     main(
         nx=65,
         nt=None,
@@ -1189,14 +1190,14 @@ def cell_averaged(x: Array, f: Callable[[Array], Array], *, order: int) -> Array
     return favg
 
 
-def run_tests(visualize: bool = False) -> None:
+def run_tests(*, visualize: bool = False) -> None:
     test_weno_242_smoothness(visualize=visualize)
     test_weno_242_interp(visualize=visualize)
     test_weno_242_entropy_flux(visualize=visualize)
 
 
 def test_weno_242_smoothness(
-    a: float = -3.0, b: float = 3.0, visualize: bool = False
+    a: float = -3.0, b: float = 3.0, *, visualize: bool = False
 ) -> None:
     from pyshocks import EOCRecorder
 
@@ -1271,7 +1272,7 @@ def test_weno_242_smoothness(
 
 
 def test_weno_242_interp(
-    a: float = -3.0, b: float = 3.0, visualize: bool = False
+    a: float = -3.0, b: float = 3.0, *, visualize: bool = False
 ) -> None:
     from pyshocks import EOCRecorder
 
@@ -1341,7 +1342,7 @@ def test_weno_242_interp(
 
 
 def test_weno_242_entropy_flux(
-    a: float = -3.0, b: float = 3.0, visualize: bool = False
+    a: float = -3.0, b: float = 3.0, *, visualize: bool = False
 ) -> None:
     if visualize:
         import matplotlib.pyplot as mp
