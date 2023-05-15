@@ -20,7 +20,7 @@ Requirements
 ============
 
 The project currently supports Python 3.8 and later. The (full) requirements are
-listed in ``setup.cfg``.
+listed in ``pyproject.toml``.
 
 * ``jax`` and ``jaxlib``: base numeric and automatic differentiation package
   used throughout. See
@@ -28,6 +28,12 @@ listed in ``setup.cfg``.
   for details on supported versions.
 * ``rich``: recommended for nicer logging.
 * ``matplotlib`` and ``SciencePlots``: recommended for nicer plotting.
+
+For development, it is recommended to run
+
+.. code:: bash
+
+    python -m pip install -e '.[dev,vis]'
 
 A pinned version of all the requirements is kept in ``requirements.txt``.
 For a quick install with the versions that are currently being tested on the CI
@@ -37,7 +43,7 @@ For a quick install with the versions that are currently being tested on the CI
    python -m pip install -r requirements.txt -e .
 
 or use ``requirements-dev.txt`` to also install development packages
-(e.g. ``ruff``)
+(e.g. ``ruff``).
 
 Documentation
 =============

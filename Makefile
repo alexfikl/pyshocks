@@ -81,7 +81,7 @@ requirements-build.txt: requirements-build.in
 requirements-dev.txt: pyproject.toml
 	$(PYTHON) -m piptools compile \
 		--resolver=backtracking --upgrade \
-		--extra dev --extra pyweno \
+		--extra dev --extra vis --extra pyweno \
 		-o $@ $<
 
 requirements.txt: pyproject.toml
