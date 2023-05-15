@@ -7,8 +7,8 @@ from importlib import metadata
 
 m = metadata.metadata("pyshocks")
 project = m["Name"]
-author = m["Author"]
-copyright = f"2021-2022 {author}"
+author = m["Author-email"]
+copyright = f"2021-2022 {author}"  # noqa: A001
 version = m["Version"]
 release = version
 

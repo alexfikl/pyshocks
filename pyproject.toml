@@ -1,3 +1,67 @@
+[project]
+name = "pyshocks"
+version = "2022.7"
+description = "Adjoint-based optimization of flows with shocks"
+readme = "README.rst"
+keywords = [
+    "jax",
+    "optimization",
+    "shocks",
+    "weno",
+]
+license = { text = "MIT" }
+maintainers = [{ name = "Alexandru Fikl", email = "alexfikl@gmail.com" }]
+authors = [{ name = "Alexandru Fikl", email = "alexfikl@gmail.com" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Other Audience",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "jax",
+    "jaxlib",
+    "numpy>=1.19",
+    "rich",
+    'typing-extensions; python_version < "3.10"',
+]
+[project.optional-dependencies]
+dev = [
+    "codespell",
+    "doc8",
+    "mypy",
+    "pip-tools",
+    "pytest",
+    "ruff",
+    "sphinx-lint",
+    "types-dataclasses",
+]
+pyweno = [
+    "PyWENO@ git+https://github.com/memmett/PyWENO.git#egg=PyWENO",
+    "sympy",
+]
+vis = [
+    "matplotlib",
+    "SciencePlots",
+]
+[project.urls]
+Documentation = "https://pyshocks.readthedocs.io"
+Repository = "https://github.com/alexfikl/pyshocks"
+
+[tool.setuptools]
+packages = ["pyshocks"]
+
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
@@ -12,6 +76,26 @@ exclude='\.eggs|\.git|\.mypy_cache|build|dist|\.pytest_cache|\.pytype'
 
 [tool.isort]
 profile = "black"
+
+[tool.mypy]
+warn_unused_ignores = true
+plugins = "numpy.typing.mypy_plugin"
+
+[[tool.mypy.overrides]]
+module = [
+    "cloudpickle.*",
+    "matplotlib.*",
+    "pyweno.*",
+    "seaborn.*",
+    "SciencePlots.*",
+    "scipy.*",
+    "jaxlib.cpu.*",
+]
+ignore_missing_imports = true
+
+[tool.doc8]
+max-line-length = 88
+ignore-path = "docs/_build"
 
 [tool.ruff]
 target-version = "py38"

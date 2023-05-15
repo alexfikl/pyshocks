@@ -11,7 +11,6 @@ help: 			## Show this help
 # {{{ linting
 
 fmt: black		## Run all formatting scripts
-	$(PYTHON) -m setup_cfg_fmt --include-version-classifiers setup.cfg
 	$(PYTHON) -m pyproject_fmt --indent 4 pyproject.toml
 	$(PYTHON) -m isort pyshocks tests examples docs drivers
 .PHONY: fmt
@@ -19,7 +18,7 @@ fmt: black		## Run all formatting scripts
 black:			## Run black over the source code
 	$(PYTHON) -m black \
 		--safe --target-version py38 --preview \
-		pyshocks tests examples drivers
+		pyshocks tests examples drivers docs
 .PHONY: black
 
 ruff:			## Run ruff checks over the source code
@@ -79,13 +78,13 @@ requirements-build.txt: requirements-build.in
 		--resolver=backtracking --upgrade \
 		-o $@ $<
 
-requirements-dev.txt: setup.cfg
+requirements-dev.txt: pyproject.toml
 	$(PYTHON) -m piptools compile \
 		--resolver=backtracking --upgrade \
 		--extra dev --extra pyweno \
 		-o $@ $<
 
-requirements.txt: setup.cfg
+requirements.txt: pyproject.toml
 	$(PYTHON) -m piptools compile \
 		--resolver=backtracking --upgrade \
 		-o $@ $<
