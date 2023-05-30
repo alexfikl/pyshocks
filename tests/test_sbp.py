@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from typing import Union
+from __future__ import annotations
 
 import jax.numpy as jnp
 import pytest
@@ -225,7 +225,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
 # {{{ test_sbp_matrices_convergence
 
 
-def _sbp_rnorm(P: Array, x: Union[float, Array], y: Union[float, Array]) -> Scalar:
+def _sbp_rnorm(P: Array, x: float | Array, y: float | Array) -> Scalar:
     if isinstance(x, float) or x.shape == ():
         return jnp.array(jnp.abs(x - y) / jnp.abs(y))
 

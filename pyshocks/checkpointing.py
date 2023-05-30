@@ -18,11 +18,13 @@ Checkpointing
     :members:
 """
 
+from __future__ import annotations
+
 import pathlib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from functools import singledispatch
-from typing import Any, Dict, Hashable, Optional, Tuple
+from typing import Any, Hashable
 
 import jax.numpy as jnp
 
@@ -67,7 +69,7 @@ class Checkpoint(ABC):
 
 
 @singledispatch
-def save(chk: Checkpoint, idx: int, values: Dict[str, Any]) -> None:
+def save(chk: Checkpoint, idx: int, values: dict[str, Any]) -> None:
     """
     :arg idx: an integer index denoting the checkpoint.
     :arg values: a :class:`dict` of values to be checkpointed.
@@ -77,8 +79,8 @@ def save(chk: Checkpoint, idx: int, values: Dict[str, Any]) -> None:
 
 @singledispatch
 def load(
-    chk: Checkpoint, idx: int, *, include: Optional[Tuple[str, ...]] = None
-) -> Dict[str, Any]:
+    chk: Checkpoint, idx: int, *, include: tuple[str, ...] | None = None
+) -> dict[str, Any]:
     """
     :arg idx: an integer index denoting the checkpot.
     :arg include: if provided, only the keys in this
@@ -97,7 +99,7 @@ class InMemoryCheckpoint(Checkpoint):
     """
 
     #: Internal data structure used to store the checkpoints.
-    storage: Dict[Hashable, Dict[str, Any]] = field(default_factory=dict)
+    storage: dict[Hashable, dict[str, Any]] = field(default_factory=dict)
 
     def index_to_key(self, i: int) -> Hashable:
         return (self.basename, i)
@@ -107,7 +109,7 @@ class InMemoryCheckpoint(Checkpoint):
 
 
 @save.register(InMemoryCheckpoint)
-def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]) -> None:
+def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: dict[str, Any]) -> None:
     key = chk.index_to_key(idx)
     if key in chk.storage:
         raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
@@ -117,8 +119,8 @@ def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: Dict[str, Any]) -
 
 @load.register(InMemoryCheckpoint)
 def _load_in_memory(
-    chk: InMemoryCheckpoint, idx: int, *, include: Optional[Tuple[str, ...]] = None
-) -> Dict[str, Any]:
+    chk: InMemoryCheckpoint, idx: int, *, include: tuple[str, ...] | None = None
+) -> dict[str, Any]:
     key = chk.index_to_key(idx)
     if key not in chk.storage:
         raise KeyError(f"Cannot find checkpoint at index {idx!r}.")
@@ -152,7 +154,7 @@ class PickleCheckpoint(Checkpoint):
 
 
 @save.register(PickleCheckpoint)
-def _save_pickle(chk: PickleCheckpoint, idx: int, values: Dict[str, Any]) -> None:
+def _save_pickle(chk: PickleCheckpoint, idx: int, values: dict[str, Any]) -> None:
     filename = chk.index_to_key(idx)
     if not filename.exists():
         raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
@@ -173,8 +175,8 @@ def _load_pickle(
     chk: PickleCheckpoint,
     idx: int,
     *,
-    include: Optional[Tuple[str, ...]] = None,
-) -> Dict[str, Any]:
+    include: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
     filename = chk.index_to_key(idx)
     if not filename.exists():
         raise KeyError(f"Cannot find checkpoint at index {idx!r}.")
@@ -221,7 +223,7 @@ class NumpyCheckpoint(Checkpoint):
 
 
 @save.register(NumpyCheckpoint)
-def _save_npz(chk: NumpyCheckpoint, idx: int, values: Dict[str, Any]) -> None:
+def _save_npz(chk: NumpyCheckpoint, idx: int, values: dict[str, Any]) -> None:
     filename = chk.index_to_key(idx)
     if not filename.exists():
         raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
@@ -234,8 +236,8 @@ def _load_npz(
     chk: NumpyCheckpoint,
     idx: int,
     *,
-    include: Optional[Tuple[str, ...]] = None,
-) -> Dict[str, Any]:
+    include: tuple[str, ...] | None = None,
+) -> dict[str, Any]:
     filename = chk.index_to_key(idx)
     if not filename.exists():
         raise KeyError(f"Cannot find checkpoint at index {idx!r}.")

@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import partial
-from typing import List, Union
 
 import jax
 import jax.numpy as jnp
@@ -65,7 +66,7 @@ class ConvergenceTestCase:
         grid: Grid,
         u: Array,
         *,
-        p: Union[int, ScalarLike, str] = 1,
+        p: str | int | ScalarLike = 1,
     ) -> Array:
         from pyshocks import norm
 
@@ -242,7 +243,7 @@ class BurgersTestCase(FiniteVolumeTestCase):
 def test_burgers_convergence(
     case: BurgersTestCase,
     order: int,
-    resolutions: List[int],
+    resolutions: list[int],
     *,
     a: float = -1.0,
     b: float = 1.0,
@@ -364,7 +365,7 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
         grid: Grid,
         u: Array,
         *,
-        p: Union[int, ScalarLike, str] = 2,
+        p: str | int | ScalarLike = 2,
     ) -> Array:
         from pyshocks import norm
 
@@ -393,7 +394,7 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
 def test_advection_convergence(
     case: AdvectionTestCase,
     order: int,
-    resolutions: List[int],
+    resolutions: list[int],
     *,
     a: float = -1.0,
     b: float = +1.0,
@@ -514,7 +515,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         grid: Grid,
         u: Array,
         *,
-        p: Union[int, ScalarLike, str] = 2,
+        p: str | int | ScalarLike = 2,
     ) -> Array:
         from pyshocks import norm
 
@@ -539,7 +540,7 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
 def test_diffusion_convergence(
     case: DiffusionTestCase,
     order: int,
-    resolutions: List[int],
+    resolutions: list[int],
     *,
     a: float = -1.0,
     b: float = 1.0,

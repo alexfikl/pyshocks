@@ -25,9 +25,11 @@ Reconstruction
 .. autofunction:: make_reconstruction_from_name
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import jax.numpy as jnp
 
@@ -82,7 +84,7 @@ def reconstruct(
     f: Array,
     u: Array,
     wavespeed: Array,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     r"""Reconstruct *f* as a function of *u*.
 
     In this implementation, we use the convention that::
@@ -156,7 +158,7 @@ def _reconstruct_first_order(
     f: Array,
     u: Array,
     wavespeed: Array,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     assert grid.nghosts >= rec.stencil_width
     return f, f
 
@@ -215,7 +217,7 @@ def _reconstruct_muscl(
     f: Array,
     u: Array,
     wavespeed: Array,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     # FIXME: would this work on non-uniform grids? may need to change the
@@ -274,7 +276,7 @@ def _reconstruct_muscls(
     f: Array,
     u: Array,
     wavespeed: Array,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     # FIXME: would this work on non-uniform grids? may need to change the
@@ -361,7 +363,7 @@ def _reconstruct_wenojs(
     f: Array,
     u: Array,
     wavespeed: Array,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     assert grid.nghosts >= rec.stencil_width
@@ -423,7 +425,7 @@ def _reconstruct_esweno32(
     f: Array,
     u: Array,
     wavespeed: Array,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     assert grid.nghosts >= rec.stencil_width
@@ -506,7 +508,7 @@ def _reconstruct_ssweno242(
     f: Array,
     u: Array,
     wavespeed: Array,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     from pyshocks import UniformGrid
 
     if not isinstance(grid, UniformGrid):
@@ -523,7 +525,7 @@ def _reconstruct_ssweno242(
 
 # {{{ make_reconstruction_from_name
 
-_RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
+_RECONSTRUCTION: dict[str, type[Reconstruction]] = {
     "default": ConstantReconstruction,
     "constant": ConstantReconstruction,
     "muscl": MUSCL,
@@ -535,7 +537,7 @@ _RECONSTRUCTION: Dict[str, Type[Reconstruction]] = {
 }
 
 
-def reconstruction_ids() -> Tuple[str, ...]:
+def reconstruction_ids() -> tuple[str, ...]:
     """
     :returns: a :class:`tuple` of available reconstruction algorithms.
     """

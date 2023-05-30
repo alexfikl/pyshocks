@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from typing import Optional
+from __future__ import annotations
 
 import jax.experimental.sparse as js
 
@@ -14,8 +14,8 @@ def sparse_banded(qi: Array) -> js.BCOO:
 
 def sparse_banded_boundary(
     qi: Array,
-    qb_l: Optional[Array],
-    qb_r: Optional[Array],
+    qb_l: Array | None,
+    qb_r: Array | None,
 ) -> js.BCOO:
     raise NotImplementedError
 

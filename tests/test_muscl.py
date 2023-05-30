@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 from functools import partial
-from typing import Any, Dict
+from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -53,7 +55,7 @@ def func_step(x: Array, w: float = 0.25, a: float = -1.0, b: float = 1.0) -> Arr
     ],
 )
 def test_flux_limiters(
-    lm_name: str, lm_kwargs: Dict[str, Any], *, smooth: bool, visualize: bool = False
+    lm_name: str, lm_kwargs: dict[str, Any], *, smooth: bool, visualize: bool = False
 ) -> None:
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_cell_grid(-1.0, 1.0, n=128, nghosts=1)
@@ -166,7 +168,7 @@ def test_flux_limiters(
     ],
 )
 def test_tvd_slope_limiter_burgers(
-    lm_name: str, lm_kwargs: Dict[str, Any], *, smooth: bool, visualize: bool = False
+    lm_name: str, lm_kwargs: dict[str, Any], *, smooth: bool, visualize: bool = False
 ) -> None:
     from pyshocks import burgers
     from pyshocks.reconstruction import MUSCL

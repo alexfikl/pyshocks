@@ -46,12 +46,11 @@ def two_point_entropy_flux_42(qi: Array, u: Array) -> Array:
     )
 
     def body(i: int, fss: Array) -> Array:
-        result = fss.at[i].set(
+        return fss.at[i].set(
             2 * qr[1] * fs(u[i - 2], u[i])
             + 2 * qr[0] * fs(u[i - 1], u[i])
             + 2 * qr[1] * fs(u[i - 1], u[i + 1])
         )
-        return cast(Array, result)
 
     return cast(
         Array,

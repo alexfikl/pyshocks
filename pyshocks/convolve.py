@@ -14,8 +14,11 @@ Convolutions
 
 .. autofunction:: convolve1d
 """
+
+from __future__ import annotations
+
 import enum
-from typing import Optional, cast
+from typing import cast
 
 import jax.numpy as jnp
 
@@ -91,7 +94,7 @@ def convolve1d(
     ary: Array,
     weights: Array,
     *,
-    mode: Optional[ConvolutionType] = None,
+    mode: ConvolutionType | None = None,
 ) -> Array:
     """Perform a convolution of one-dimensional arrays.
 

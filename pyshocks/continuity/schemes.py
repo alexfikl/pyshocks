@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
 
 import jax.numpy as jnp
 
@@ -30,7 +31,7 @@ class Scheme(SchemeBase):
 
     # NOTE: this is Optional just for mypy, but should never be `None` in practice
     #: Advection velocity
-    velocity: Optional[Array]
+    velocity: Array | None
 
 
 @flux.register(Scheme)

@@ -24,9 +24,11 @@ Integrators
 .. autofunction:: advance
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import partial, singledispatch
-from typing import Callable, ClassVar, Iterator, List, Optional, Tuple
+from typing import Callable, ClassVar, Iterator
 
 import jax
 import jax.numpy as jnp
@@ -75,16 +77,16 @@ class Stepper:
     source: VectorFunction
     #: A :class:`~pyshocks.checkpointing.Checkpoint` used to save the solution
     #: values at every timestep.
-    checkpoint: Optional[Checkpoint]
+    checkpoint: Checkpoint | None
 
 
 def step(
     stepper: Stepper,
     u0: Array,
     *,
-    maxit: Optional[int] = None,
+    maxit: int | None = None,
     tstart: ScalarLike = 0.0,
-    tfinal: Optional[ScalarLike] = None,
+    tfinal: ScalarLike | None = None,
 ) -> Iterator[StepCompleted]:
     """Advance a given ODE description in time to *tfinal*.
 
@@ -147,7 +149,7 @@ def adjoint_step(
     p0: Array,
     *,
     maxit: int,
-    apply_boundary: Optional[Callable[[Scalar, Array, Array], Array]] = None,
+    apply_boundary: Callable[[Scalar, Array, Array], Array] | None = None,
 ) -> Iterator[AdjointStepCompleted]:
     if stepper.checkpoint is None:
         raise ValueError("Adjoint time stepping requires a checkpoint.")
@@ -229,7 +231,7 @@ def advance(stepper: Stepper, dt: ScalarLike, t: ScalarLike, u: Array) -> Array:
 # {{{ fixed time step
 
 
-def predict_timestep_from_maxit(tfinal: ScalarLike, maxit: int) -> Tuple[int, Scalar]:
+def predict_timestep_from_maxit(tfinal: ScalarLike, maxit: int) -> tuple[int, Scalar]:
     """Determine time step from *tfinal* and *maxit*.
 
     :returns: a tuple of ``(maxit, dt)`` with the approximated values.
@@ -240,7 +242,7 @@ def predict_timestep_from_maxit(tfinal: ScalarLike, maxit: int) -> Tuple[int, Sc
 
 def predict_maxit_from_timestep(
     tfinal: ScalarLike, dt: ScalarLike
-) -> Tuple[int, Scalar]:
+) -> tuple[int, Scalar]:
     """Determine the maximum number of iteration for a fixed time step *dt*.
 
     :returns: a tuple ``(maxit, dt)`` with the approximated values.
@@ -254,7 +256,7 @@ def predict_maxit_from_timestep(
 def predict_timestep_from_resolutions(
     a: ScalarLike,
     b: ScalarLike,
-    resolutions: List[int],
+    resolutions: list[int],
     *,
     umax: ScalarLike = 1.0,
     p: int = 1,

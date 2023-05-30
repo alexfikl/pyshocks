@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import pathlib
-from typing import Tuple
 
 import jax
 import jax.numpy as jnp
@@ -40,7 +41,7 @@ def ic_func(grid: Grid, t: ScalarLike, x: Array, *, variant: int = 1) -> Array:
 
 def make_finite_volume(
     order: float, sw: int, *, a: float, b: float, n: int, periodic: bool = True
-) -> Tuple[Grid, Boundary, VectorFunction]:
+) -> tuple[Grid, Boundary, VectorFunction]:
     from pyshocks import cell_average, make_leggauss_quadrature, make_uniform_cell_grid
     from pyshocks.scalar import PeriodicBoundary, make_dirichlet_boundary
 
@@ -67,7 +68,7 @@ def make_finite_difference(
     b: float,
     n: int,
     periodic: bool = True,
-) -> Tuple[Grid, Boundary, VectorFunction]:
+) -> tuple[Grid, Boundary, VectorFunction]:
     from pyshocks import make_uniform_point_grid
     from pyshocks.scalar import PeriodicBoundary, make_burgers_sat_boundary
 

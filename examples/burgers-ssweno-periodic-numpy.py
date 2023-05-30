@@ -6,9 +6,11 @@
 #  https://github.com/omersan/5.9.Burgers-Equation-WENO5-FluxSplitting/blob/master/burger_sol.f90
 #  https://github.com/wme7/WENO/blob/master/Non-lineard1/WENO3resAdv1d.m
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable
 
 import numpy as np
 import scipy.ndimage as snd
@@ -106,10 +108,10 @@ def weno_242_downwind(
 def weno_242_smoothness(
     u: Array,
     *,
-    dw: Optional[Array] = None,
-    k: Optional[int] = None,
+    dw: Array | None = None,
+    k: int | None = None,
     weighted: bool = False,
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     n = u.size
 
     # beta: Equation 71
@@ -154,11 +156,11 @@ def weno_242_reconstruct(
     u: Array,
     f: Array,
     *,
-    k: Optional[int] = None,
-    dw: Optional[Array] = None,
+    k: int | None = None,
+    dw: Array | None = None,
     weighted: bool = True,
-    epsilon: Optional[float] = None,
-    dx: Optional[float] = None,
+    epsilon: float | None = None,
+    dx: float | None = None,
 ) -> Array:
     """
     :arg epsilon: tolerance used in computing the WENO weights.
@@ -256,7 +258,7 @@ def ssprk33(
     u0: Array,
     t_eval: Array,
     *,
-    callback: Optional[Callable[[float, Array], None]],
+    callback: Callable[[float, Array], None] | None,
 ) -> Solution:
     y = np.empty((u0.size, t_eval.size), dtype=u0.dtype)
     y[:, 0] = u0
@@ -287,7 +289,7 @@ def ckrk45(
     u0: Array,
     t_eval: Array,
     *,
-    callback: Optional[Callable[[float, Array], None]],
+    callback: Callable[[float, Array], None] | None,
 ) -> Solution:
     y = np.empty((u0.size, t_eval.size), dtype=u0.dtype)
     y[:, 0] = u0
@@ -355,9 +357,9 @@ def ckrk45(
 def weno_lf_flux_242(
     u: Array,
     *,
-    k: Optional[int],
-    epsilon: Optional[float],
-    dx: Optional[float],
+    k: int | None,
+    epsilon: float | None,
+    dx: float | None,
 ) -> Array:
     # Burgers flux
     f = u**2 / 2
@@ -412,8 +414,8 @@ def burgers_rhs(
     ul: Callable[[float], Array],
     ur: Callable[[float], Array],
     c: float,
-    epsilon: Optional[float] = None,
-    k: Optional[int] = None,
+    epsilon: float | None = None,
+    k: int | None = None,
 ) -> Array:
     logger.info(
         "t = %.7e max %.12e norm = %.12e", t, np.max(np.abs(u)), np.sqrt(u @ (dx * u))
@@ -454,7 +456,7 @@ def evaluate_at(t: Array, x: Array, fn: Callable[[Array, Array], Array]) -> Arra
 def main(
     *,
     nx: int = 65,
-    nt: Optional[int] = None,
+    nt: int | None = None,
     a: float = -1.0,
     b: float = 1.0,
     t0: float = 0.0,
@@ -463,7 +465,7 @@ def main(
     ul: float = +1.0,
     ur: float = -1.0,
     c: float = 1.0e-12,
-    k: Optional[int] = 4,
+    k: int | None = 4,
     ivp: str = "ckrk45",
     ic: str = "linear",
     suffix: str = "",
@@ -512,14 +514,14 @@ def main(
 
     @dataclass(frozen=True)
     class Callback:
-        beta: List[Array] = field(default_factory=list)
-        tau: List[Array] = field(default_factory=list)
-        omega: List[Array] = field(default_factory=list)
-        delta: List[Array] = field(default_factory=list)
+        beta: list[Array] = field(default_factory=list)
+        tau: list[Array] = field(default_factory=list)
+        omega: list[Array] = field(default_factory=list)
+        delta: list[Array] = field(default_factory=list)
 
-        energy: List[float] = field(default_factory=list)
-        energy_per_h: List[float] = field(default_factory=list)
-        entropy: List[float] = field(default_factory=list)
+        energy: list[float] = field(default_factory=list)
+        energy_per_h: list[float] = field(default_factory=list)
+        entropy: list[float] = field(default_factory=list)
 
         def __call__(self, t: float, u: Array) -> None:
             # get downwind stencils
@@ -613,7 +615,7 @@ def main(
     if animate:
         from pyshocks.tools import save_animation
 
-        plotted_solution: Tuple[Any, ...] = (solution.y,)
+        plotted_solution: tuple[Any, ...] = (solution.y,)
         if ic == "tophat":
             plotted_solution = (
                 *plotted_solution,

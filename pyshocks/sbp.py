@@ -100,10 +100,12 @@ SBP 6-4
 .. autofunction:: make_sbp_64_first_derivative_q_stencil
 """
 
+from __future__ import annotations
+
 import enum
 from dataclasses import dataclass, replace
 from functools import singledispatch
-from typing import Any, Dict, Optional, Tuple, Type, Union, cast
+from typing import Any, cast
 
 import jax
 import jax.numpy as jnp
@@ -120,11 +122,11 @@ class Stencil:
     #: Interior stencil, as an array of shape ``(n_i,)``.
     int: Array  # noqa: A003
     #: Left boundary stencil, as an array of shape ``(n_l, m_l)``.
-    left: Optional[Array]
+    left: Array | None
     #: Left boundary stencil, as an array of shape ``(n_r, m_r)``. If not
     #: provided and :attr:`left` is provided, the right boundary stencil
     #: is taken to be ``-left[::-1, ::-1]``.
-    right: Optional[Array]
+    right: Array | None
 
     #: If *True*, the resulting operator is assumed to be diagonal only.
     #: This is used to return an array of shape ``(n,)`` instead of a
@@ -292,7 +294,7 @@ class SBPOperator:
 
     def make_second_derivative_s_matrix(
         self, grid: UniformGrid, bc: BoundaryType, b: Array
-    ) -> Optional[Array]:
+    ) -> Array | None:
         raise NotImplementedError
 
 
@@ -327,7 +329,7 @@ def make_sbp_mattsson2012_second_derivative(
     grid: UniformGrid,
     bc: BoundaryType,
     b: Array,
-    M: Optional[Array] = None,
+    M: Array | None = None,
 ) -> Array:
     assert isinstance(grid, UniformGrid)
     # get mass matrix
@@ -380,7 +382,7 @@ def sbp_first_derivative_matrix(
 
 @singledispatch
 def sbp_second_derivative_matrix(
-    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: Union[float, Array]
+    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: float | Array
 ) -> Array:
     """Construct a wide-stencil second derivative :math:`D_2` operator
     that is compatible with :func:`sbp_first_derivative_matrix`.
@@ -402,7 +404,7 @@ def apply_sbp_second_derivative(
     op: SBPOperator,
     grid: UniformGrid,
     bc: BoundaryType,
-    b: Union[float, Array],
+    b: float | Array,
     u: Array,
 ) -> Array:
     """A (potentially) matrix-free version of :func:`sbp_second_derivative_matrix`."""
@@ -439,7 +441,7 @@ class SBP21(SBPOperator):
 
     def make_second_derivative_s_matrix(
         self, grid: UniformGrid, bc: BoundaryType, b: Array
-    ) -> Optional[Array]:
+    ) -> Array | None:
         if bc == BoundaryType.Periodic:
             return None
 
@@ -476,7 +478,7 @@ def _sbp_21_first_derivative_matrix(
 
 @sbp_second_derivative_matrix.register(SBP21)
 def _sbp_21_second_derivative_matrix(
-    op: SBP21, grid: UniformGrid, bc: BoundaryType, b: Union[float, Array]
+    op: SBP21, grid: UniformGrid, bc: BoundaryType, b: float | Array
 ) -> Array:
     from numbers import Number
 
@@ -506,7 +508,7 @@ def _sbp_21_second_derivative_matrix(
 
 def make_sbp_21_second_derivative_b_matrices(
     bc: BoundaryType, b: Array
-) -> Tuple[Array]:
+) -> tuple[Array]:
     # [Mattsson2012] Appendix A.1
     return (jnp.diag(b),)  # type: ignore[no-untyped-call]
 
@@ -616,7 +618,7 @@ def make_sbp_21_second_derivative_s_stencil(
 
 def make_sbp_21_second_derivative_c_stencils(
     dtype: Any = None,
-) -> Tuple[Stencil, ...]:
+) -> tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -632,7 +634,7 @@ def make_sbp_21_second_derivative_c_stencils(
 
 def make_sbp_21_second_derivative_d_stencils(
     dtype: Any = None,
-) -> Tuple[Stencil, ...]:
+) -> tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -677,7 +679,7 @@ class SBP42(SBPOperator):
 
     def make_second_derivative_s_matrix(
         self, grid: UniformGrid, bc: BoundaryType, b: Array
-    ) -> Optional[Array]:
+    ) -> Array | None:
         if bc == BoundaryType.Periodic:
             return None
 
@@ -714,7 +716,7 @@ def _sbp_42_first_derivative_matrix(
 
 @sbp_second_derivative_matrix.register(SBP42)
 def _sbp_42_second_derivative_matrix(
-    op: SBP42, grid: UniformGrid, bc: BoundaryType, b: Union[float, Array]
+    op: SBP42, grid: UniformGrid, bc: BoundaryType, b: float | Array
 ) -> Array:
     from numbers import Number
 
@@ -744,7 +746,7 @@ def _sbp_42_second_derivative_matrix(
 
 def make_sbp_42_second_derivative_b_matrices(
     bc: BoundaryType, b: Array
-) -> Tuple[Array, Array]:
+) -> tuple[Array, Array]:
     # [Mattsson2012] Appendix A.2
     B34 = jnp.pad((b[2:] + b[:-2]) / 2, 1)
 
@@ -1113,7 +1115,7 @@ def make_sbp_42_second_derivative_s_stencil(
 
 def make_sbp_42_second_derivative_c_stencils(
     dtype: Any = None,
-) -> Tuple[Stencil, ...]:
+) -> tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -1147,7 +1149,7 @@ def make_sbp_42_second_derivative_c_stencils(
 
 def make_sbp_42_second_derivative_d_stencils(
     dtype: Any = None,
-) -> Tuple[Stencil, ...]:
+) -> tuple[Stencil, ...]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)
@@ -1299,7 +1301,7 @@ def make_sbp_64_first_derivative_q_stencil(
 
 # {{{ make_operator_from_name
 
-_OPERATORS: Dict[str, Type[SBPOperator]] = {
+_OPERATORS: dict[str, type[SBPOperator]] = {
     "default": SBP42,
     "sbp21": SBP21,
     "sbp42": SBP42,
@@ -1307,7 +1309,7 @@ _OPERATORS: Dict[str, Type[SBPOperator]] = {
 }
 
 
-def operator_ids() -> Tuple[str, ...]:
+def operator_ids() -> tuple[str, ...]:
     return tuple(_OPERATORS.keys())
 
 

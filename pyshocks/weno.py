@@ -35,8 +35,10 @@ SS-WENO
 .. autofunction:: ss_weno_242_weights
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 import jax.numpy as jnp
 
@@ -86,9 +88,9 @@ class Stencil:
     """
 
     #: Coefficients that are part of the smoothness coefficient expressions.
-    a: Optional[Array]
+    a: Array | None
     #: Coefficients that define the smoothness stencils.
-    b: Optional[Array]
+    b: Array | None
     #: Coefficients that define the solution interpolation stencils.
     c: Array
     #: Ideal weights for the WENO scheme, that define a high-order
@@ -104,13 +106,13 @@ class BoundaryStencil:
     #: The type of the boundary, as given by :class:`~pyshocks.BoundaryType`.
     bc: "BoundaryType"
     #: If not *None*, the stencil for the left boundary.
-    sl: Optional[Stencil]
+    sl: Stencil | None
     #: If not *None*, the stencil for the right boundary.
-    sr: Optional[Stencil]
+    sr: Stencil | None
 
 
 def weno_smoothness(
-    s: Stencil, u: Array, *, mode: Optional["ConvolutionType"] = None
+    s: Stencil, u: Array, *, mode: "ConvolutionType" | None = None
 ) -> Array:
     r"""Compute the smoothness coefficients for a WENO scheme.
 
@@ -141,7 +143,7 @@ def weno_smoothness(
 
 
 def weno_interp(
-    s: Stencil, u: Array, *, mode: Optional["ConvolutionType"] = None
+    s: Stencil, u: Array, *, mode: "ConvolutionType" | None = None
 ) -> Array:
     r"""Interpolate the variable *u* at the cell faces for WENO-JS.
 
@@ -264,7 +266,7 @@ def weno_js_weights(s: Stencil, u: Array, *, eps: ScalarLike) -> Array:
 # {{{ ESWENO
 
 
-def es_weno_parameters(grid: Grid, u0: Array) -> Tuple[Scalar, Scalar]:
+def es_weno_parameters(grid: Grid, u0: Array) -> tuple[Scalar, Scalar]:
     """Estimate the ESWENO32 parameters from the grid and initial condition.
 
     :returns: ``(eps, delta)``, where ``eps`` is given by Equation 65
@@ -409,7 +411,7 @@ def ss_weno_242_interior_coefficients(dtype: Any = None) -> Stencil:
 
 def ss_weno_242_boundary_coefficients(
     dtype: Any = None,
-) -> Tuple[Stencil, Stencil]:
+) -> tuple[Stencil, Stencil]:
     if dtype is None:
         dtype = jnp.dtype(jnp.float64)
     dtype = jnp.dtype(dtype)

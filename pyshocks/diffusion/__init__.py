@@ -30,7 +30,9 @@ Schemes
 .. autofunction:: make_scheme_from_name
 """
 
-from typing import Any, Dict, Tuple, Type
+from __future__ import annotations
+
+from typing import Any
 
 from pyshocks.diffusion.schemes import (
     SBPSAT,
@@ -42,14 +44,14 @@ from pyshocks.diffusion.schemes import (
 
 # {{{ make_scheme_from_name
 
-_SCHEMES: Dict[str, Type[Scheme]] = {
+_SCHEMES: dict[str, type[Scheme]] = {
     "default": CenteredScheme,
     "centered": CenteredScheme,
     "sbp": SBPSAT,
 }
 
 
-def scheme_ids() -> Tuple[str, ...]:
+def scheme_ids() -> tuple[str, ...]:
     return tuple(_SCHEMES.keys())
 
 

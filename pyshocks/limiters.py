@@ -26,9 +26,11 @@ Limiters
 .. autofunction:: make_limiter_from_name
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Any, Dict, Tuple, Type
+from typing import Any
 
 import jax.numpy as jnp
 
@@ -151,7 +153,7 @@ def _slope_limit_unlimited(lm: UnlimitedLimiter, grid: Grid, u: Array) -> Array:
 
 
 def minmod(a: Array, b: Array) -> Array:
-    return jnp.where(  # type: ignore[call-overload]
+    return jnp.where(
         a * b < 0.0,
         0.0,
         jnp.where(jnp.abs(a) < jnp.abs(b), a, b),
@@ -385,7 +387,7 @@ def _evaluate_koren(lm: KorenLimiter, r: Array) -> Array:
 # {{{ make_flux_limiter_from_name
 
 
-_LIMITERS: Dict[str, Type[Limiter]] = {
+_LIMITERS: dict[str, type[Limiter]] = {
     # NOTE: this is the default for now because it's popular
     "default": MINMODLimiter,
     "none": UnlimitedLimiter,
@@ -398,7 +400,7 @@ _LIMITERS: Dict[str, Type[Limiter]] = {
 }
 
 
-def limiter_ids() -> Tuple[str, ...]:
+def limiter_ids() -> tuple[str, ...]:
     """
     :returns: a :class:`tuple` of available limiters.
     """

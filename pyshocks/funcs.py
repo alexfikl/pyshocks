@@ -43,7 +43,7 @@ Misc Functions
 .. autofunction:: ic_boxcar
 """
 
-from typing import Optional, Tuple
+from __future__ import annotations
 
 import jax.numpy as jnp
 
@@ -69,7 +69,7 @@ def ic_rarefaction(
     *,
     ul: ScalarLike = 0.0,
     ur: ScalarLike = 1.0,
-    x0: Optional[ScalarLike] = None,
+    x0: ScalarLike | None = None,
 ) -> Array:
     r"""A step function.
 
@@ -89,7 +89,7 @@ def ic_rarefaction(
     return ul * h + (1 - h) * ur
 
 
-def ic_sign(grid: Grid, x: Array, *, x0: Optional[ScalarLike] = None) -> Array:
+def ic_sign(grid: Grid, x: Array, *, x0: ScalarLike | None = None) -> Array:
     r"""A step function like :func:`ic_rarefaction` with :math:`u_L = -1`
     and :math:`u_R = 1`.
     """
@@ -140,8 +140,8 @@ def ic_cut_sine(
     *,
     k: int = 1,
     us: ScalarLike = 1.0,
-    xa: Optional[ScalarLike] = None,
-    xb: Optional[ScalarLike] = None,
+    xa: ScalarLike | None = None,
+    xb: ScalarLike | None = None,
 ) -> Array:
     r"""A discontinuous sine function.
 
@@ -183,8 +183,8 @@ def ic_gaussian(
     x: Array,
     *,
     sigma: ScalarLike = 0.1,
-    xc: Optional[ScalarLike] = None,
-    amplitude: Optional[ScalarLike] = None,
+    xc: ScalarLike | None = None,
+    amplitude: ScalarLike | None = None,
 ) -> Array:
     r"""A standard Gaussian function.
 
@@ -206,8 +206,8 @@ def ic_boxcar(
     x: Array,
     *,
     amplitude: ScalarLike = 1.0,
-    xa: Optional[ScalarLike] = None,
-    xb: Optional[ScalarLike] = None,
+    xa: ScalarLike | None = None,
+    xb: ScalarLike | None = None,
 ) -> Array:
     r"""A boxcar function.
 
@@ -239,8 +239,8 @@ def diffusion_expansion(
     t: ScalarLike,
     x: Array,
     *,
-    modes: Tuple[ScalarLike, ...] = (1.0,),
-    amplitudes: Tuple[ScalarLike, ...] = (1.0,),
+    modes: tuple[ScalarLike, ...] = (1.0,),
+    amplitudes: tuple[ScalarLike, ...] = (1.0,),
     diffusivity: ScalarLike = 1.0,
 ) -> Array:
     r"""A series expansion solution for the heat equation.
@@ -277,7 +277,7 @@ def diffusion_tophat(
     t: ScalarLike,
     x: Array,
     *,
-    x0: Optional[ScalarLike] = None,
+    x0: ScalarLike | None = None,
     diffusivity: ScalarLike = 1.0,
 ) -> Array:
     r"""A tophat exact solution for the diffusion equation.
@@ -312,7 +312,7 @@ def burgers_riemann(
     *,
     ul: ScalarLike = 1.0,
     ur: ScalarLike = 0.0,
-    x0: Optional[ScalarLike] = None,
+    x0: ScalarLike | None = None,
 ) -> Array:
     r"""Construct a solution for the pure Burgers Riemann problem.
 
@@ -361,8 +361,8 @@ def burgers_linear_shock(
     *,
     ul: ScalarLike = 1.0,
     ur: ScalarLike = 0.0,
-    xa: Optional[ScalarLike] = None,
-    xb: Optional[ScalarLike] = None,
+    xa: ScalarLike | None = None,
+    xb: ScalarLike | None = None,
 ) -> Array:
     r"""Construct a shock solution for the initial condition
 
@@ -427,8 +427,8 @@ def burgers_tophat(
     *,
     us: ScalarLike = 0.0,
     uc: ScalarLike = 1.0,
-    xa: Optional[ScalarLike] = None,
-    xb: Optional[ScalarLike] = None,
+    xa: ScalarLike | None = None,
+    xb: ScalarLike | None = None,
 ) -> Array:
     r"""Constructs an rarefaction-shock exact solution for the initial condition
 

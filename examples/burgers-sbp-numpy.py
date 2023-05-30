@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2022 Daniel J. Bodony <bodony@illinois.edu>
 # SPDX-License-Identifier: MIT
 
-from typing import Any, Tuple
+from __future__ import annotations
+
+from typing import Any
 
 import numpy as np
 
@@ -318,12 +320,12 @@ def main(
     # prepare for animated lines
     (line,) = ax.plot(x, x, color="b", linestyle="-", linewidth=2, marker="*")
 
-    def animate(n: int) -> Tuple[Any, ...]:
+    def animate(n: int) -> tuple[plt.Line2D, ...]:
         line.set_ydata(sol.y[:, n])
         return (line,)
 
     # Init only required for blitting to give a clean slate.
-    def init() -> Tuple[Any, ...]:
+    def init() -> tuple[plt.Line2D, ...]:
         line.set_ydata(x)
         return (line,)
 

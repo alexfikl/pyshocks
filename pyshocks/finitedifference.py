@@ -12,9 +12,11 @@ Finite Difference Approximations
 .. autofunction:: make_fornberg_approximation
 """
 
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
-from typing import Any, Tuple
+from typing import Any
 
 import jax.numpy as jnp
 
@@ -81,7 +83,7 @@ def determine_stencil_truncation_error(
     indices: Array,
     *,
     atol: float = 1.0e-6,
-) -> Tuple[int, Scalar]:
+) -> tuple[int, Scalar]:
     r"""Determine the order and truncation error for the stencil *a* and *indices*.
 
     .. math::
@@ -118,7 +120,7 @@ def apply_derivative(d: Stencil, f: Array, h: ScalarLike) -> Array:
 
 def make_taylor_approximation(
     derivative: int,
-    stencil: Tuple[int, int],
+    stencil: tuple[int, int],
     *,
     atol: float = 1.0e-6,
     dtype: Any = None,
@@ -181,7 +183,7 @@ def make_taylor_approximation(
 
 def make_fornberg_approximation(
     derivative: int,
-    stencil: Tuple[int, int],
+    stencil: tuple[int, int],
     *,
     atol: float = 1.0e-6,
     dtype: Any = None,

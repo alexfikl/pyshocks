@@ -29,9 +29,11 @@ Quadrature
 .. autofunction:: rnorm
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -89,7 +91,7 @@ class Grid:
         return jnp.s_[self.nghosts : self.f.size - self.nghosts]
 
     @property
-    def b_(self) -> Tuple[int, int, int]:
+    def b_(self) -> tuple[int, int, int]:
         """Gives the index of the first and last point :attr:`x` that is not a
         ghost point. The indices are obtained from ``Grid.b_[-1]`` and
         ``Grid.b_[+1]``, respectively. Note that these can be the same as
@@ -99,7 +101,7 @@ class Grid:
         return (-1, self.x.size - self.nghosts - 1, self.nghosts)
 
     @property
-    def g_(self) -> Tuple[None, slice, slice]:
+    def g_(self) -> tuple[None, slice, slice]:
         """A :class:`tuple` of ghost indices. ``Grid.g_[+1]`` and ``Grid.g_[-1]``
         give a :class:`slice` for the ghost indices on the right and left sides,
         respectively.
@@ -107,7 +109,7 @@ class Grid:
         return (None, jnp.s_[self.x.size - self.nghosts :], jnp.s_[: self.nghosts])
 
     @property
-    def gi_(self) -> Tuple[None, slice, slice]:
+    def gi_(self) -> tuple[None, slice, slice]:
         """Similar to :attr:`g_`, but gives the first and last ``nghosts`` interior
         points."""
         g = self.nghosts
@@ -372,7 +374,7 @@ class Quadrature:
         """Number of cells in the domain."""
         return int(self.x.shape[1])
 
-    def __call__(self, fn: SpatialFunction, axis: Optional[int] = None) -> Array:
+    def __call__(self, fn: SpatialFunction, axis: int | None = None) -> Array:
         """Integral over the grid of the function.
 
         :arg axis: If *None*, this computes the integral over the full grid.
@@ -438,7 +440,7 @@ def cell_average(quad: Quadrature, fn: SpatialFunction) -> Array:
 
 
 @partial(jax.jit, static_argnums=(2,))
-def _norm(u: Array, dx: Array, p: Union[str, ScalarLike]) -> Scalar:
+def _norm(u: Array, dx: Array, p: str | ScalarLike) -> Scalar:
     u = jnp.abs(u)
 
     if p == 1:
@@ -468,9 +470,9 @@ def _norm(u: Array, dx: Array, p: Union[str, ScalarLike]) -> Scalar:
 
 def norm(
     grid: Grid,
-    u: Union[float, Array],
+    u: float | Array,
     *,
-    p: Union[str, ScalarLike] = 1,
+    p: str | ScalarLike = 1,
     weighted: bool = False,
 ) -> Scalar:
     r"""Computes the interior :math:`\ell^p` norm of *u*.
@@ -504,10 +506,10 @@ def norm(
 
 def rnorm(
     grid: Grid,
-    u: Union[float, Array],
-    v: Union[float, Array],
+    u: float | Array,
+    v: float | Array,
     *,
-    p: Union[str, ScalarLike] = 1,
+    p: str | ScalarLike = 1,
     weighted: bool = False,
     atol: ScalarLike = 1.0e-14,
 ) -> Scalar:

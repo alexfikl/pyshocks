@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable
 
 import numpy as np
 import numpy.linalg as la
@@ -24,7 +26,7 @@ LL, L, C, R, RR = 0, 1, 2, 3, 4
 # {{{ initial conditions
 
 
-def ic_riemann(x: Array, *, ul: float, ur: float, xc: Optional[float] = None) -> Array:
+def ic_riemann(x: Array, *, ul: float, ur: float, xc: float | None = None) -> Array:
     if xc is None:
         dx = x[-1] - x[0]
         xc = x[0] + 0.25 * dx
@@ -48,7 +50,7 @@ def ic_tophat(t: float, x: Array, *, us: float, uc: float) -> Array:
     )
 
 
-def ic_sine(x: Array, *, k: float, dx: Optional[float] = None) -> Array:
+def ic_sine(x: Array, *, k: float, dx: float | None = None) -> Array:
     if dx is None:
         dx = x[-1] - x[0]
 
@@ -64,9 +66,7 @@ def ic_linear(x: Array, *, ul: float, ur: float) -> Array:
     return ul + (ur - ul) * (x - a) / (b - a)
 
 
-def ic_gaussian(
-    x: Array, *, sigma: float = 1.0e-2, xm: Optional[float] = None
-) -> Array:
+def ic_gaussian(x: Array, *, sigma: float = 1.0e-2, xm: float | None = None) -> Array:
     if xm is None:
         xm = (x[-1] + x[0]) / 2
     return np.exp(-((x - xm) ** 2) / (2 * sigma))
@@ -97,7 +97,7 @@ def weno_242_flux_points(x: Array) -> Array:
 
 
 @lru_cache
-def weno_242_ops_interp(n: int, dtype: Any) -> Tuple[Array, Array, Array, Array, Array]:
+def weno_242_ops_interp(n: int, dtype: Any) -> tuple[Array, Array, Array, Array, Array]:
     """
     :returns: a :class:`tuple` of arrays of shape ``(2, n + 1)``, corresponding
         to :math:`(I_{LL}, I_L, I_C, I_R, I_{RR})`.
@@ -164,7 +164,7 @@ def weno_242_ops_interp(n: int, dtype: Any) -> Tuple[Array, Array, Array, Array,
     return ILL, IL, IC, IR, IRR
 
 
-def weno_242_interp(f: Array, *, stencil: Optional[int] = None) -> Array:
+def weno_242_interp(f: Array, *, stencil: int | None = None) -> Array:
     n = f.size
     ILL, IL, IC, IR, IRR = weno_242_ops_interp(n, f.dtype)
 
@@ -236,9 +236,9 @@ def weno_242_smoothness(
     u: Array,
     *,
     p: int = 2,
-    k: Optional[int] = None,
-    dw: Optional[Array] = None,
-) -> Tuple[Array, Array]:
+    k: int | None = None,
+    dw: Array | None = None,
+) -> tuple[Array, Array]:
     n = u.size
     b = 3
 
@@ -371,8 +371,8 @@ def weno_242_reconstruct(
     f: Array,
     *,
     epsilon: float = 1.0e-8,
-    k: Optional[int] = None,
-    dw: Optional[Array] = None,
+    k: int | None = None,
+    dw: Array | None = None,
 ) -> Array:
     """
     :arg epsilon: tolerance used in computing the WENO weights.
@@ -442,7 +442,7 @@ def weno_242_reconstruct(
 
 
 @lru_cache
-def sbp_42_p_stencil(dtype: Any) -> Tuple[Array, Array]:
+def sbp_42_p_stencil(dtype: Any) -> tuple[Array, Array]:
     """
     :returns: a :class:`tuple` containing the interior and the left boundary
         stencils. The right boundary stencil is obtained by symmetry.
@@ -454,7 +454,7 @@ def sbp_42_p_stencil(dtype: Any) -> Tuple[Array, Array]:
 
 
 @lru_cache
-def sbp_42_q_stencil(dtype: Any) -> Tuple[Array, Array, Array]:
+def sbp_42_q_stencil(dtype: Any) -> tuple[Array, Array, Array]:
     """
     :returns: a :class:`tuple` containing the interior and the left boundary
         stencils. The right boundary stencil is obtained by symmetry.
@@ -587,7 +587,7 @@ def ssprk33(
     u0: Array,
     t_eval: Array,
     *,
-    callback: Optional[Callable[[float, Array], None]],
+    callback: Callable[[float, Array], None] | None,
 ) -> Solution:
     y = np.empty((u0.size, t_eval.size), dtype=u0.dtype)
     y[:, 0] = u0
@@ -618,7 +618,7 @@ def ckrk45(
     u0: Array,
     t_eval: Array,
     *,
-    callback: Optional[Callable[[float, Array], None]],
+    callback: Callable[[float, Array], None] | None,
 ) -> Solution:
     y = np.empty((u0.size, t_eval.size), dtype=u0.dtype)
     y[:, 0] = u0
@@ -683,7 +683,7 @@ def ckrk45(
 # {{{ flux
 
 
-def weno_lf_flux_242(u: Array, *, epsilon: float, k: Optional[int]) -> Array:
+def weno_lf_flux_242(u: Array, *, epsilon: float, k: int | None) -> Array:
     from numpy.lib.stride_tricks import sliding_window_view
 
     a = np.abs(u)
@@ -748,7 +748,7 @@ def burgers_rhs(
     ur: Callable[[float], Array],
     c: float,
     epsilon: float,
-    k: Optional[int],
+    k: int | None,
     method: str = "ssweno",
 ) -> Array:
     sym_error = la.norm(u + u[::-1]) / la.norm(u)
@@ -794,7 +794,7 @@ def burgers_rhs(
 def main(
     *,
     nx: int = 65,
-    nt: Optional[int] = None,
+    nt: int | None = None,
     a: float = -1.0,
     b: float = 1.0,
     t0: float = 0.0,
@@ -804,7 +804,7 @@ def main(
     ur: float = -1.0,
     alpha: float = 1.0,
     c: float = 1.0e-12,
-    k: Optional[int] = 8,
+    k: int | None = 8,
     ivp: str = "ckrk45",
     ic: str = "linear",
     suffix: str = "",
@@ -862,16 +862,16 @@ def main(
 
     @dataclass(frozen=True)
     class Callback:
-        beta: List[Array] = field(default_factory=list)
-        tau: List[Array] = field(default_factory=list)
-        omega: List[Array] = field(default_factory=list)
-        delta: List[Array] = field(default_factory=list)
+        beta: list[Array] = field(default_factory=list)
+        tau: list[Array] = field(default_factory=list)
+        omega: list[Array] = field(default_factory=list)
+        delta: list[Array] = field(default_factory=list)
 
-        energy: List[float] = field(default_factory=list)
-        energy_per_h: List[float] = field(default_factory=list)
-        entropy: List[float] = field(default_factory=list)
+        energy: list[float] = field(default_factory=list)
+        energy_per_h: list[float] = field(default_factory=list)
+        entropy: list[float] = field(default_factory=list)
 
-        symmetry: List[float] = field(default_factory=list)
+        symmetry: list[float] = field(default_factory=list)
 
         def __call__(self, t: float, u: Array) -> None:
             w = u

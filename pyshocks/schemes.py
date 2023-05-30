@@ -57,11 +57,13 @@ Boundary Conditions
 
 """
 
+from __future__ import annotations
+
 import enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Tuple, TypeVar
+from typing import TypeVar
 
 import jax.numpy as jnp
 
@@ -231,7 +233,7 @@ class CombineScheme(SchemeBase):
     """
 
     #: A tuple of :class:`SchemeBase` objects.
-    schemes: Tuple[SchemeBase, ...]
+    schemes: tuple[SchemeBase, ...]
 
     def __post_init__(self) -> None:
         assert len(self.schemes) > 1
@@ -344,7 +346,7 @@ def _apply_operator_conservation_law(
 
 @dataclass(frozen=True)
 class CombineConservationLawScheme(CombineScheme, ConservationLawScheme):
-    schemes: Tuple[ConservationLawScheme, ...]
+    schemes: tuple[ConservationLawScheme, ...]
 
     def __post_init__(self) -> None:
         assert len(self.schemes) > 1

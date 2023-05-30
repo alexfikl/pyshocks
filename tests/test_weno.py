@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 from itertools import product
-from typing import Any, List, Tuple, cast
+from typing import Any, cast
 
 import jax
 import jax.numpy as jnp
@@ -166,7 +168,7 @@ def test_weno_smoothness_indicator(rec_name: str, n: int, *, is_smooth: bool) ->
 # {{{ test_weno_vs_pyweno
 
 
-def _pyweno_reconstruct(u: Array, order: int, side: str) -> Tuple[Array, Array]:
+def _pyweno_reconstruct(u: Array, order: int, side: str) -> tuple[Array, Array]:
     import pyweno
 
     ul, sl = pyweno.weno.reconstruct(
@@ -304,7 +306,7 @@ def get_function(name: str) -> SpatialFunction:
 def test_weno_smooth_reconstruction_order_cell_values(
     name: str,
     order: int,
-    resolutions: List[int],
+    resolutions: list[int],
     func_name: str,
     *,
     visualize: bool = False,
@@ -355,7 +357,7 @@ def test_ss_weno_242_interpolation(
     is_periodic = bc == BoundaryType.Periodic
     if is_periodic:
         nstencils = 3
-        stencils: Tuple[str, ...] = ("L", "C", "R")
+        stencils: tuple[str, ...] = ("L", "C", "R")
     else:
         nstencils = 5
         stencils = ("LL", "L", "C", "R", "RR")
@@ -416,8 +418,7 @@ def two_point_entropy_flux_21(qi: Array, u: Array) -> Array:
     fss = fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i + 1]))
 
     def body(i: int, fss: Array) -> Array:
-        result = fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
-        return cast(Array, result)
+        return fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
 
     return cast(
         Array,

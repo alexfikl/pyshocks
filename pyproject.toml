@@ -87,7 +87,7 @@ module = [
     "matplotlib.*",
     "pyweno.*",
     "seaborn.*",
-    "SciencePlots.*",
+    "scienceplots.*",
     "scipy.*",
     "jaxlib.cpu.*",
 ]

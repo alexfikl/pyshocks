@@ -56,8 +56,10 @@ Simultaneous-Approximation-Term (SAT) Boundary Conditions
 .. autofunction:: make_burgers_sat_boundary
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import jax
 import jax.numpy as jnp
@@ -138,7 +140,7 @@ def lax_friedrichs_initial_condition_correction(
     grid: UniformGrid,
     func: SpatialFunction,
     *,
-    order: Optional[int] = None,
+    order: int | None = None,
 ) -> Array:
     """Implements a correction to the initial condition that ensures local
     total variation preservation with the Lax-Friedrichs scheme.
@@ -224,7 +226,7 @@ def scalar_flux_rusanov(
     assert scheme.rec is not None
 
     # artificial viscosity
-    if abs(alpha - 1.0) > 1.0e-8:
+    if abs(alpha - 1.0) > 1.0e-8:  # type: ignore[operator]
         nu = grid.df ** (alpha - 1)
     else:
         nu = jnp.array(1.0, dtype=u.dtype)
@@ -422,7 +424,7 @@ def _apply_boundary_scalar_dirichlet(
 
 
 def make_dirichlet_boundary(
-    ga: VectorFunction, gb: Optional[VectorFunction] = None
+    ga: VectorFunction, gb: VectorFunction | None = None
 ) -> TwoSidedBoundary:
     if gb is None:
         gb = ga
@@ -494,7 +496,7 @@ def _apply_boundary_scalar_neumann(
 
 
 def make_neumann_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+    ga: TemporalFunction, gb: TemporalFunction | None = None
 ) -> TwoSidedBoundary:
     if gb is None:
         gb = ga
@@ -595,7 +597,7 @@ class SATBoundary(TwoSidedBoundary):
 
 
 def make_sat_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+    ga: TemporalFunction, gb: TemporalFunction | None = None
 ) -> SATBoundary:
     if gb is None:
         gb = ga
@@ -634,7 +636,7 @@ def _evaluate_boundary_advection_sat(
 
 
 def make_advection_sat_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+    ga: TemporalFunction, gb: TemporalFunction | None = None
 ) -> SATBoundary:
     if gb is None:
         gb = ga
@@ -679,7 +681,7 @@ def _evaluate_boundary_diffusion_sat(
 
 
 def make_diffusion_sat_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+    ga: TemporalFunction, gb: TemporalFunction | None = None
 ) -> SATBoundary:
     if gb is None:
         gb = ga
@@ -721,7 +723,7 @@ def _evaluate_boundary_ssweno_burgers(
 
 
 def make_burgers_sat_boundary(
-    ga: TemporalFunction, gb: Optional[TemporalFunction] = None
+    ga: TemporalFunction, gb: TemporalFunction | None = None
 ) -> SATBoundary:
     if gb is None:
         gb = ga

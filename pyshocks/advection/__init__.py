@@ -37,7 +37,9 @@ Schemes
 .. autofunction:: make_scheme_from_name
 """
 
-from typing import Any, Dict, Tuple, Type
+from __future__ import annotations
+
+from typing import Any
 
 from pyshocks.advection.schemes import (
     ESWENO32,
@@ -54,7 +56,7 @@ Upwind = Godunov
 
 # {{{ make_scheme_from_name
 
-_SCHEMES: Dict[str, Type[Scheme]] = {
+_SCHEMES: dict[str, type[Scheme]] = {
     "default": Godunov,
     "godunov": Godunov,
     "upwind": Godunov,
@@ -64,7 +66,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
 }
 
 
-def scheme_ids() -> Tuple[str, ...]:
+def scheme_ids() -> tuple[str, ...]:
     """
     :returns: a :class:`tuple` of available schemes.
     """

@@ -1,10 +1,11 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import pathlib
 from dataclasses import dataclass, replace
 from functools import partial
-from typing import Tuple
 
 import jax
 import jax.numpy as jnp
@@ -47,7 +48,7 @@ def evolve_forward(
     dirname: pathlib.Path,
     interactive: bool,
     visualize: bool,
-) -> Tuple[Array, int]:
+) -> tuple[Array, int]:
     grid = sim.grid
     stepper = sim.stepper
 

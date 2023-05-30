@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: 2022 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
+from __future__ import annotations
+
 import pathlib
-from typing import Tuple
 
 import jax
 import jax.numpy as jnp
@@ -26,7 +27,7 @@ logger = get_logger("advection")
 
 def make_solution(
     name: str, grid: Grid, a: float = 1.0, offset: float = 1.0
-) -> Tuple[VectorFunction, VectorFunction]:
+) -> tuple[VectorFunction, VectorFunction]:
     from pyshocks import funcs
 
     if name == "const":
@@ -92,7 +93,7 @@ def main(
     interactive: bool = False,
     visualize: bool = False,
     verbose: bool = True,
-) -> Tuple[Array, Array, Array]:
+) -> tuple[Array, Array, Array]:
     r"""
     :arg a: left boundary of the domain :math:`[a, b]`.
     :arg b: right boundary of the domain :math:`[a, b]`.

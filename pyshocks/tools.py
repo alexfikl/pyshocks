@@ -49,22 +49,20 @@ Timing and Profiling
 .. autofunction:: profileit
 """
 
+from __future__ import annotations
+
 import os
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import wraps
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
-    Dict,
     Iterable,
     Iterator,
-    List,
-    Optional,
     Protocol,
     Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -79,7 +77,9 @@ except ImportError:
 import pathlib
 from types import TracebackType
 
+import jax
 import jax.numpy as jnp
+import numpy as np
 
 from pyshocks.logging import get_logger
 
@@ -91,12 +91,14 @@ P = ParamSpec("P")
 
 PathLike = Union[pathlib.Path, str]
 
-# TODO: these should be set to jax.Array, but that breaks pylint because it
-# defines Array.[size,shape,dtype] only in the pyi file
-Array: TypeAlias = jnp.ndarray  # type: ignore[name-defined,attr-defined]
-Scalar: TypeAlias = jnp.ndarray  # type: ignore[name-defined,attr-defined]
+Array: TypeAlias = jax.Array
+Scalar: TypeAlias = jax.Array
 ScalarLike = Union[float, Scalar]
 
+if TYPE_CHECKING:
+    ArrayOrNumpy = Array | np.ndarray[Any, Any]
+else:
+    ArrayOrNumpy = Array | np.ndarray
 
 # {{{ callable protocols
 
@@ -147,7 +149,7 @@ class TemporalFunction(Protocol):
 # {{{ eoc
 
 
-def estimate_order_of_convergence(x: Array, y: Array) -> Tuple[Scalar, Scalar]:
+def estimate_order_of_convergence(x: Array, y: Array) -> tuple[Scalar, Scalar]:
     """Computes an estimate of the order of convergence in the least-square sense.
     This assumes that the :math:`(x, y)` pair follows a law of the form
 
@@ -167,7 +169,7 @@ def estimate_order_of_convergence(x: Array, y: Array) -> Tuple[Scalar, Scalar]:
 
 
 def estimate_gliding_order_of_convergence(
-    x: Array, y: Array, *, gliding_mean: Optional[int] = None
+    x: Array, y: Array, *, gliding_mean: int | None = None
 ) -> Array:
     assert x.size == y.size
     if x.size <= 1:
@@ -196,7 +198,7 @@ class EOCRecorder:
     #: :class:`numpy.dtype` of the error values.
     dtype: "jnp.dtype[Any]"
     #: history
-    history: List[Tuple[Scalar, Scalar]]
+    history: list[tuple[Scalar, Scalar]]
 
     def __init__(self, *, name: str = "Error", dtype: Any = None) -> None:
         if dtype is None:
@@ -244,7 +246,7 @@ class EOCRecorder:
         )
 
     def satisfied(
-        self, order: float, atol: Optional[float] = None, *, slack: float = 0
+        self, order: float, atol: float | None = None, *, slack: float = 0
     ) -> bool:
         """
         :arg order: expected order of convergence of the data.
@@ -268,7 +270,7 @@ class EOCRecorder:
         return stringify_eoc(self)
 
 
-def flatten(iterable: Iterable[Iterable[T]]) -> Tuple[T, ...]:
+def flatten(iterable: Iterable[Iterable[T]]) -> tuple[T, ...]:
     from itertools import chain
 
     return tuple(chain.from_iterable(iterable))
@@ -430,9 +432,9 @@ class BlockTimer:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         self.finalize()
 
@@ -490,7 +492,7 @@ class IterationTimer:
     #: An identifier used to differentiate the timer.
     name: str = "iteration"
     #: A list of timings.
-    t_deltas: List[Scalar] = field(default_factory=list, init=False, repr=False)
+    t_deltas: list[Scalar] = field(default_factory=list, init=False, repr=False)
 
     def tick(self) -> BlockTimer:
         """
@@ -500,7 +502,7 @@ class IterationTimer:
 
         @dataclass
         class _BlockTimer(BlockTimer):
-            t_deltas: Optional[List[Scalar]] = None
+            t_deltas: list[Scalar] | None = None
 
             def finalize(self) -> None:
                 super().finalize()
@@ -555,9 +557,9 @@ def profileit(func: Callable[P, T]) -> Callable[P, T]:
 
 
 def repeatit(
-    stmt: Union[str, Callable[[], Any]],
+    stmt: str | Callable[[], Any],
     *,
-    setup: Union[str, Callable[[], Any]] = "pass",
+    setup: str | Callable[[], Any] = "pass",
     repeat: int = 16,
     number: int = 1,
 ) -> TimeResult:
@@ -631,7 +633,7 @@ def join_or(strings: Sequence[str], *, preposition: str = "or") -> str:
 
 
 def is_single_valued(
-    iterable: Iterable[Any], predicate: Optional[Callable[[T, T], bool]] = None
+    iterable: Iterable[Any], predicate: Callable[[T, T], bool] | None = None
 ) -> bool:
     it = iter(iterable)
     try:
@@ -679,7 +681,7 @@ def check_usetex(*, s: bool) -> bool:
     return True
 
 
-def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
+def set_recommended_matplotlib(use_tex: bool | None = None) -> None:
     try:
         import matplotlib.pyplot as mp
     except ImportError:
@@ -711,9 +713,9 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
 
     from contextlib import suppress
 
+    # NOTE: since v1.1.0 an import is required to import the styles
     with suppress(ImportError):
-        # NOTE: since v1.1.0 an import is required to import the styles
-        import SciencePlots  # noqa: F401
+        import scienceplots  # noqa: F401
 
     if "science" in mp.style.library:
         mp.style.use(["science", "ieee"])
@@ -738,7 +740,7 @@ def set_recommended_matplotlib(use_tex: Optional[bool] = None) -> None:
 
 
 @contextmanager
-def figure(filename: Optional[PathLike] = None, **kwargs: Any) -> Iterator[Any]:
+def figure(filename: PathLike | None = None, **kwargs: Any) -> Iterator[Any]:
     import matplotlib.pyplot as mp
 
     fig = mp.figure()
@@ -756,7 +758,7 @@ def figure(filename: Optional[PathLike] = None, **kwargs: Any) -> Iterator[Any]:
 @contextmanager
 def gca(
     fig: Any,
-    filename: Optional[PathLike] = None,
+    filename: PathLike | None = None,
     *,
     clear: bool = True,
     **kwargs: Any,
@@ -787,19 +789,19 @@ def savefig(fig: Any, filename: PathLike, **kwargs: Any) -> None:
 
 
 def save_animation(
-    filename: Optional[Union[str, pathlib.Path]],
-    x: Array,
-    ys: Union[Array, Tuple[Array, ...]],
+    filename: str | pathlib.Path | None,
+    x: ArrayOrNumpy,
+    ys: ArrayOrNumpy | tuple[ArrayOrNumpy, ...],
     *,
-    fps: Optional[int] = None,
-    xlabel: Optional[str] = None,
-    ylabel: Optional[str] = None,
-    ymin: Optional[ScalarLike] = None,
-    ymax: Optional[ScalarLike] = None,
-    legends: Optional[Sequence[str]] = None,
-    fig_kwargs: Optional[Dict[str, Any]] = None,
-    plot_kwargs: Optional[Dict[str, Any]] = None,
-    anim_kwargs: Optional[Dict[str, Any]] = None,
+    fps: int | None = None,
+    xlabel: str | None = None,
+    ylabel: str | None = None,
+    ymin: ScalarLike | None = None,
+    ymax: ScalarLike | None = None,
+    legends: Sequence[str] | None = None,
+    fig_kwargs: dict[str, Any] | None = None,
+    plot_kwargs: dict[str, Any] | None = None,
+    anim_kwargs: dict[str, Any] | None = None,
 ) -> None:
     # {{{ handle inputs
 
@@ -838,13 +840,13 @@ def save_animation(
 
     # {{{ plot
 
-    def _anim_init() -> Tuple[Any, ...]:
+    def _anim_init() -> tuple[Any, ...]:
         for line in lines:
             line.set_ydata(x)
 
         return lines
 
-    def _anim_func(n: int) -> Tuple[Any, ...]:
+    def _anim_func(n: int) -> tuple[Any, ...]:
         for line, y in zip(lines, ys):
             line.set_ydata(y[:, n])
 

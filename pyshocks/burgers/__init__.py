@@ -39,7 +39,9 @@ Schemes
 .. autofunction:: make_scheme_from_name
 """
 
-from typing import Any, Dict, Tuple, Type
+from __future__ import annotations
+
+from typing import Any
 
 from pyshocks.burgers.schemes import (
     ESWENO32,
@@ -57,7 +59,7 @@ from pyshocks.burgers.ssweno import SSWENO242
 
 # {{{ make_scheme_from_name
 
-_SCHEMES: Dict[str, Type[Scheme]] = {
+_SCHEMES: dict[str, type[Scheme]] = {
     "default": LaxFriedrichs,
     "godunov": Godunov,
     "rusanov": Rusanov,
@@ -70,7 +72,7 @@ _SCHEMES: Dict[str, Type[Scheme]] = {
 }
 
 
-def scheme_ids() -> Tuple[str, ...]:
+def scheme_ids() -> tuple[str, ...]:
     """
     :returns: a :class:`tuple` of available schemes.
     """
