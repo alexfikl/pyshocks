@@ -55,11 +55,6 @@ autodoc_default_options = {
 
 # autodoc_typehints = "description"
 
-nitpick_ignore = [
-    ("py:class", "jax._src.basearray.Array"),
-    ("py:class", "jax.Array"),
-]
-
 # }}}
 
 # {{{ links

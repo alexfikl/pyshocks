@@ -104,7 +104,7 @@ class BoundaryStencil:
     si: Stencil
 
     #: The type of the boundary, as given by :class:`~pyshocks.BoundaryType`.
-    bc: "BoundaryType"
+    bc: BoundaryType
     #: If not *None*, the stencil for the left boundary.
     sl: Stencil | None
     #: If not *None*, the stencil for the right boundary.
@@ -112,7 +112,7 @@ class BoundaryStencil:
 
 
 def weno_smoothness(
-    s: Stencil, u: Array, *, mode: "ConvolutionType" | None = None
+    s: Stencil, u: Array, *, mode: ConvolutionType | None = None
 ) -> Array:
     r"""Compute the smoothness coefficients for a WENO scheme.
 
@@ -143,7 +143,7 @@ def weno_smoothness(
 
 
 def weno_interp(
-    s: Stencil, u: Array, *, mode: "ConvolutionType" | None = None
+    s: Stencil, u: Array, *, mode: ConvolutionType | None = None
 ) -> Array:
     r"""Interpolate the variable *u* at the cell faces for WENO-JS.
 
@@ -333,7 +333,7 @@ def ss_weno_242_weights(s: Stencil, u: Array, *, eps: ScalarLike) -> Array:
 # {{{ interpolation
 
 
-def ss_weno_242_coefficients(bc: "BoundaryType", dtype: Any = None) -> BoundaryStencil:
+def ss_weno_242_coefficients(bc: BoundaryType, dtype: Any = None) -> BoundaryStencil:
     from pyshocks.schemes import BoundaryType
 
     si = ss_weno_242_interior_coefficients(dtype)

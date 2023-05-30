@@ -17,6 +17,16 @@ Typing
 
     Generic unbound invariant :class:`typing.ParamSpec`.
 
+.. class:: Array
+    :canonical: pyshocks.tools.Array
+
+    A :class:`jax.Array` like object.
+
+.. class:: Scalar
+    :canonical: pyshocks.tools.Scalar
+
+    A :class:`jax.Array` object with an empty shape `()`.
+
 .. autoclass:: ScalarFunction
 .. autoclass:: VectorFunction
 .. autoclass:: SpatialFunction
