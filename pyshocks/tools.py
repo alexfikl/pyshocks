@@ -106,9 +106,9 @@ Scalar: TypeAlias = jax.Array
 ScalarLike = Union[float, Scalar]
 
 if TYPE_CHECKING:
-    ArrayOrNumpy = Array | np.ndarray[Any, Any]
+    ArrayOrNumpy = Union[Array, np.ndarray[Any, Any]]
 else:
-    ArrayOrNumpy = Array | np.ndarray
+    ArrayOrNumpy = Union[Array, np.ndarray]
 
 # {{{ callable protocols
 
