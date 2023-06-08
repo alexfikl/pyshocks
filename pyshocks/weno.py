@@ -142,9 +142,7 @@ def weno_smoothness(
     )
 
 
-def weno_interp(
-    s: Stencil, u: Array, *, mode: ConvolutionType | None = None
-) -> Array:
+def weno_interp(s: Stencil, u: Array, *, mode: ConvolutionType | None = None) -> Array:
     r"""Interpolate the variable *u* at the cell faces for WENO-JS.
 
     The interpolation has the form
@@ -352,7 +350,8 @@ def ss_weno_242_mask(sb: BoundaryStencil, u: Array) -> Array:
     if sb.bc == BoundaryType.Periodic:
         mask = jnp.ones((3, u.size), dtype=u.dtype)
     else:
-        assert sb.sl is not None and sb.sr is not None
+        assert sb.sl is not None
+        assert sb.sr is not None
         mask = jnp.ones((5, u.size + 1), dtype=u.dtype)
         mask = mask.at[0, :].set(0)
         mask = mask.at[-1, :].set(0)
@@ -481,10 +480,12 @@ def ss_weno_242_interp(sb: BoundaryStencil, u: Array) -> Array:
 
     assert isinstance(sb.bc, BoundaryType)
     if sb.bc == BoundaryType.Periodic:
-        assert sb.sl is None and sb.sr is None
+        assert sb.sl is None
+        assert sb.sr is None
         uhat = weno_interp(sb.si, u, mode=ConvolutionType.Wrap)
     else:
-        assert sb.sl is not None and sb.sr is not None
+        assert sb.sl is not None
+        assert sb.sr is not None
 
         uhat = jnp.empty((5, u.size + 1), dtype=u.dtype)
         uhat = uhat.at[1:-1, 1:].set(weno_interp(sb.si, u))

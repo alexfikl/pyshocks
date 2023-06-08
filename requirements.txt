@@ -4,15 +4,15 @@
 #
 #    pip-compile --output-file=requirements.txt --resolver=backtracking pyproject.toml
 #
-jax==0.4.10
+jax==0.4.11
     # via pyshocks (pyproject.toml)
-jaxlib==0.4.10
+jaxlib==0.4.11
     # via pyshocks (pyproject.toml)
 markdown-it-py==2.2.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-ml-dtypes==0.1.0
+ml-dtypes==0.2.0
     # via
     #   jax
     #   jaxlib
@@ -28,7 +28,7 @@ opt-einsum==3.3.0
     # via jax
 pygments==2.15.1
     # via rich
-rich==13.3.5
+rich==13.4.1
     # via pyshocks (pyproject.toml)
 scipy==1.10.1
     # via

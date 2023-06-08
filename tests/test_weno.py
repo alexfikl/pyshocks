@@ -45,7 +45,8 @@ def test_weno_smoothness_indicator_vectorization(
     a = rec.s.a
     b = rec.s.b
     c = rec.s.c
-    assert a is not None and b is not None
+    assert a is not None
+    assert b is not None
 
     nghosts = b.shape[-1] // 2
     nstencils = b.shape[0]
@@ -227,14 +228,16 @@ def test_weno_vs_pyweno(
     error_l = rnorm(grid, sl, betal)
     error_r = rnorm(grid, sr, betar)
     logger.info("error smoothness: left %.5e right %.5e", error_l, error_r)
-    assert error_l < 1.0e-5 and error_r < 1.0e-8
+    assert error_l < 1.0e-5
+    assert error_r < 1.0e-8
 
     ulhat, urhat = reconstruct(rec, grid, BoundaryType.Dirichlet, u, u, u)
 
     error_l = rnorm(grid, ul, ulhat)
     error_r = rnorm(grid, ur, urhat)
     logger.info("error reconstruct: left %.5e right %.5e", error_l, error_r)
-    assert error_l < 1.0e-12 and error_r < 1.0e-12
+    assert error_l < 1.0e-12
+    assert error_r < 1.0e-12
 
     # }}}
 
