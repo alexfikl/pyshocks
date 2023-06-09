@@ -40,7 +40,7 @@ html_theme_options = {
     "show_toc_level": 2,
     "use_source_button": True,
     "use_repository_button": True,
-    "repository_url": "https://github.com/alexfikl/pycgdescent",
+    "repository_url": "https://github.com/alexfikl/pyshocks",
     "repository_branch": "main",
 }
 
