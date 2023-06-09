@@ -24,9 +24,9 @@ fonttools==4.39.4
     # via matplotlib
 iniconfig==2.0.0
     # via pytest
-jax==0.4.11
+jax==0.4.12
     # via pyshocks (pyproject.toml)
-jaxlib==0.4.11
+jaxlib==0.4.12
     # via pyshocks (pyproject.toml)
 kiwisolver==1.4.4
     # via matplotlib

@@ -47,6 +47,10 @@ dev = [
     "sphinx-lint",
     "types-dataclasses",
 ]
+docs = [
+    "sphinx>=6.0",
+    "sphinx-book-theme",
+]
 pyweno = [
     "PyWENO@ git+https://github.com/memmett/PyWENO.git#egg=PyWENO",
     "sympy",

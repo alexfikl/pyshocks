@@ -29,13 +29,20 @@ source_suffix = ".rst"
 # name of the main (master) document
 master_doc = "index"
 # min sphinx version
-needs_sphinx = "4.0"
+needs_sphinx = "6.0"
 # files to ignore
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # highlighting
 pygments_style = "sphinx"
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_book_theme"
+html_theme_options = {
+    "show_toc_level": 2,
+    "use_source_button": True,
+    "use_repository_button": True,
+    "repository_url": "https://github.com/alexfikl/pycgdescent",
+    "repository_branch": "main",
+}
 
 # }}}
 
