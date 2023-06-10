@@ -36,12 +36,39 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 pygments_style = "sphinx"
 
 html_theme = "sphinx_book_theme"
+html_title = project
 html_theme_options = {
     "show_toc_level": 2,
     "use_source_button": True,
     "use_repository_button": True,
     "repository_url": "https://github.com/alexfikl/pyshocks",
     "repository_branch": "main",
+    "icon_links": [
+        # {
+        #     "name": "Release",
+        #     "url": "https://github.com/alexfikl/pyshocks/releases",
+        #     "icon": "https://img.shields.io/github/v/release/alexfikl/pyshocks",
+        #     "type": "url",
+        # },
+        {
+            "name": "License",
+            "url": "https://github.com/alexfikl/pyshocks/tree/main/LICENSES",
+            "icon": "https://img.shields.io/badge/License-GPL_2.0-blue.svg",
+            "type": "url",
+        },
+        {
+            "name": "CI",
+            "url": "https://github.com/alexfikl/pyshocks",
+            "icon": "https://github.com/alexfikl/pyshocks/workflows/CI/badge.svg",
+            "type": "url",
+        },
+        {
+            "name": "Issues",
+            "url": "https://github.com/alexfikl/pyshocks/issues",
+            "icon": "https://img.shields.io/github/issues/alexfikl/pyshocks",
+            "type": "url",
+        },
+    ],
 }
 
 # }}}
