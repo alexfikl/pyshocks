@@ -42,13 +42,14 @@ dev = [
     "doc8",
     "mypy",
     "pip-tools",
+    "pyproject-fmt",
     "pytest",
     "ruff",
     "sphinx-lint",
     "types-dataclasses",
 ]
 docs = [
-    "sphinx>=6.0",
+    "sphinx>=6",
     "sphinx-book-theme",
 ]
 pyweno = [
