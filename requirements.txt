@@ -16,7 +16,7 @@ ml-dtypes==0.2.0
     # via
     #   jax
     #   jaxlib
-numpy==1.24.3
+numpy==1.25.0
     # via
     #   jax
     #   jaxlib

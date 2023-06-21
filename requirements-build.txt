@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements-build.txt --resolver=backtracking requirements-build.in
 #
-numpy==1.24.3
+numpy==1.25.0
     # via -r requirements-build.in
 wheel==0.40.0
     # via -r requirements-build.in
