@@ -53,7 +53,9 @@ sphinxlint: linkcheck doc8		## Run sphinxlint checks over the source code
 .PHONY: sphinxlint
 
 codespell:		## Run codespell checks over the documentation
-	codespell --summary \
+	@codespell --summary \
+		--skip _build \
+		--uri-ignore-words-list '*' \
 		--ignore-words .codespell-ignore \
 		pyshocks tests examples drivers README.rst
 	@echo -e "\e[1;32mcodespell clean!\e[0m"
