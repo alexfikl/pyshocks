@@ -67,7 +67,11 @@ jax.config.update("jax_enable_x64", True)  # type: ignore[no-untyped-call]
 jax.config.update("jax_platform_name", "cpu")  # type: ignore[no-untyped-call]
 
 # NOTE: enabled on more recent versions of jax
-jax.config.update("jax_array", True)  # type: ignore[no-untyped-call]
+try:  # noqa: SIM105
+    # NOTE: this option is removed in newer version
+    jax.config.update("jax_array", True)  # type: ignore[no-untyped-call]
+except AttributeError:
+    pass
 
 # NOTE: useful options while debugging
 if __debug__:
