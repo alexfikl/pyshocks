@@ -224,6 +224,8 @@ def _bind_burgers_esweno32(  # type: ignore[misc]
 
     # NOTE: prefer the parameters recommended by Carpenter!
     eps, delta = es_weno_parameters(grid, jnp.ones_like(grid.x))
+
+    assert isinstance(scheme.rec, reconstruction.ESWENO32)
     return replace(scheme, rec=replace(scheme.rec, eps=eps, delta=delta))
 
 
