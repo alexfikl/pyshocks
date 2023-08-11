@@ -77,18 +77,18 @@ REQUIREMENTS=\
 
 requirements-build.txt: requirements-build.in
 	$(PYTHON) -m piptools compile \
-		--resolver=backtracking --upgrade \
+		--resolver=backtracking --strip-extras --upgrade \
 		-o $@ $<
 
 requirements-dev.txt: pyproject.toml
 	$(PYTHON) -m piptools compile \
-		--resolver=backtracking --upgrade \
+		--resolver=backtracking --strip-extras --upgrade \
 		--extra dev --extra vis --extra pyweno \
 		-o $@ $<
 
 requirements.txt: pyproject.toml
 	$(PYTHON) -m piptools compile \
-		--resolver=backtracking --upgrade \
+		--resolver=backtracking --strip-extras --upgrade \
 		-o $@ $<
 
 pin: $(REQUIREMENTS)	## Pin dependencies versions to requirements.txt
