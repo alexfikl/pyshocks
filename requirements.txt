@@ -30,7 +30,7 @@ pygments==2.16.1
     # via rich
 rich==13.5.2
     # via pyshocks (pyproject.toml)
-scipy==1.11.1
+scipy==1.11.2
     # via
     #   jax
     #   jaxlib
