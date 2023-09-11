@@ -18,7 +18,7 @@ jobs:
     name: Linting (sphinxlint)
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     -
       uses: actions/setup-python@v4
       with:
@@ -34,7 +34,7 @@ jobs:
     name: Linting (ruff)
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     -
       uses: actions/setup-python@v4
       with:
@@ -49,7 +49,7 @@ jobs:
     name: Annotations (mypy)
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     -
       uses: actions/setup-python@v4
       with:
@@ -69,7 +69,7 @@ jobs:
         jax_default_bits: [32, 64]
       fail-fast: false
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     -
       uses: actions/setup-python@v4
       with:
@@ -86,7 +86,7 @@ jobs:
     name: Examples
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     -
       uses: actions/setup-python@v4
       with:
