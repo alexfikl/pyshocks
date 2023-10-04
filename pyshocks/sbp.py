@@ -105,7 +105,7 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, replace
 from functools import singledispatch
-from typing import Any, cast
+from typing import Any
 
 import jax
 import jax.numpy as jnp
@@ -363,7 +363,7 @@ def make_sbp_mattsson2012_second_derivative(
     assert jnp.linalg.norm(M - M.T) < 1.0e-8
     assert jnp.linalg.norm(jnp.sum(M, axis=1)) < 1.0e-8
 
-    return cast(Array, invP @ (-M + BS))
+    return invP @ (-M + BS)
 
 
 @singledispatch
@@ -562,7 +562,7 @@ def make_sbp_21_second_derivative_m_matrix(
         n, m = mb_r.shape
         M = M.at[-n:, -m:].set(mb_r)
 
-    return cast(Array, M / dx)
+    return M / dx
 
 
 def make_sbp_21_norm_stencil(dtype: Any = None) -> Stencil:
@@ -780,10 +780,8 @@ def make_sbp_42_second_derivative_r_matrix(
     C34 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c34))
     C44 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c44))
 
-    return cast(
-        Array,
-        dx**5 / 18 * D34.T @ C34 @ B34 @ D34
-        + dx**7 / 144 * D44.T @ C44 @ B44 @ D44,
+    return (
+        dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
     )
 
 
@@ -1042,7 +1040,7 @@ def make_sbp_42_second_derivative_m_matrix(
         n, m = mb_r.shape
         M = M.at[-n:, -m:].set(mb_r)
 
-    return cast(Array, -M / dx)
+    return -M / dx
 
 
 def make_sbp_42_norm_stencil(dtype: Any = None) -> Stencil:

@@ -107,7 +107,7 @@ def step(
     """
     if tfinal is None:
         # NOTE: can't set this to jnp.inf because we have a debug check for it
-        tfinal = jnp.finfo(u0.dtype).max
+        tfinal = jnp.finfo(u0.dtype).max  # type: ignore[no-untyped-call]
 
     m = 0
     t = jnp.array(tstart, dtype=u0.dtype)

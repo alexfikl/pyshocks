@@ -333,7 +333,7 @@ def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
             ax.set_xlabel("$k h$")
             ax.set_ylabel(r"$\tilde{k} h$")
             ax.set_xlim((0.0, jnp.pi))
-            ax.set_ylim((0.0, sign * jnp.pi**s.derivative))
+            ax.set_ylim((0.0, float(sign * jnp.pi**s.derivative)))
 
             fig.savefig(f"finite_difference_wavenumber_{s.derivative}_{s.order}")
             fig.clf()

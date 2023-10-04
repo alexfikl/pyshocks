@@ -18,7 +18,6 @@ Convolutions
 from __future__ import annotations
 
 import enum
-from typing import cast
 
 import jax.numpy as jnp
 
@@ -123,4 +122,4 @@ def convolve1d(
         result = u[n:-n]
 
     assert result.shape == ary.shape
-    return cast(Array, result)
+    return result

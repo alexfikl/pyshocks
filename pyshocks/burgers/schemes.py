@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass, field, replace
-from typing import ClassVar, cast
+from typing import ClassVar
 
 import jax.numpy as jnp
 
@@ -324,7 +324,7 @@ def hesthaven_limiter(u: Array, *, variant: int = 1) -> Array:
     else:
         raise ValueError(f"Unknown variant: {variant!r}")
 
-    return cast(Array, phi)
+    return phi
 
 
 @numerical_flux.register(SSMUSCL)

@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 
 import pathlib
-from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -32,7 +31,7 @@ def cosine_pulse(
     r = (0.5 + 0.5 * jnp.cos(w * (x - xc))) ** p
     mask = (jnp.abs(x - xc) < sigma).astype(x.dtype)
 
-    return cast(Array, r * mask)
+    return r * mask
 
 
 def main(
