@@ -106,7 +106,8 @@ def step(
     :returns: a :class:`StepCompleted` at the end of each taken time step.
     """
     if tfinal is None:
-        tfinal = jnp.inf
+        # NOTE: can't set this to jnp.inf because we have a debug check for it
+        tfinal = jnp.finfo(u0.dtype).max
 
     m = 0
     t = jnp.array(tstart, dtype=u0.dtype)
