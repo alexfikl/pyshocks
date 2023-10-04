@@ -591,14 +591,16 @@ def main(
     # https://matplotlib.org/examples/animation/simple_anim.html
 
     import matplotlib.pyplot as plt
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
-    def gca(f: plt.Figure) -> plt.Axes:
+    def gca(f: Figure) -> Axes:
         ax = f.gca()
         ax.set_xlabel(r"$x$")
         ax.set_ylabel(r"$u(x, t)$")
-        ax.set_xlim([a, b])
-        ax.set_ylim([np.min(solution.y) - 0.25, np.max(solution.y) + 0.25])
-        # ax.set_ylim([-2.0, 2.0])
+        ax.set_xlim((a, b))
+        ax.set_ylim((np.min(solution.y) - 0.25, np.max(solution.y) + 0.25))
+        # ax.set_ylim((-2.0, 2.0))
         ax.margins(0.05)
 
         return ax
@@ -720,10 +722,10 @@ def main(
     if not animate:
         # NOTE: this needs updating when the domain changes
         ax = gca(fig)
-        # ax.set_xlim([1.7, 2.1])
-        # ax.set_ylim([1.2, 1.55])
-        ax.set_xlim([-0.15, +0.15])
-        ax.set_ylim([0.75, 1.05])
+        # ax.set_xlim((1.7, 2.1))
+        # ax.set_ylim((1.2, 1.55))
+        ax.set_xlim((-0.15, +0.15))
+        ax.set_ylim((0.75, 1.05))
 
         if uf is not None:
             ax.plot(x, uf, "k--")
@@ -733,10 +735,10 @@ def main(
         fig.clf()
 
         ax = gca(fig)
-        # ax.set_xlim([-1.5, -1.1])
-        # ax.set_ylim([0.4, 0.6])
-        ax.set_xlim([-0.15, +0.15])
-        ax.set_ylim([-1.05, -0.75])
+        # ax.set_xlim((-1.5, -1.1))
+        # ax.set_ylim((0.4, 0.6))
+        ax.set_xlim((-0.15, +0.15))
+        ax.set_ylim((-1.05, -0.75))
 
         if uf is not None:
             ax.plot(x, uf, "k--")
@@ -875,7 +877,7 @@ def test_interpolation(*, visualize: bool = True) -> None:
         # ax.plot(y, fhat[R], label="$f^R$")
         # ax.semilogy(np.abs(fbar - fhathat), "o-")
         ax.set_xlabel(r"$\bar{x}$")
-        # ax.set_ylim([1.0e-16, 1])
+        # ax.set_ylim((1.0e-16, 1))
         # ax.legend()
 
         fig.savefig("burgers_ssweno_interp_convergence")

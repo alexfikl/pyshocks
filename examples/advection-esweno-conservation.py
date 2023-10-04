@@ -92,8 +92,8 @@ def main(
 
         (ln0,) = ax.plot(grid.x[s], u0[s], "o-", ms=1)
 
-        ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([jnp.min(u0) - 1, jnp.max(u0) + 1])
+        ax.set_xlim((float(grid.a), float(grid.b)))
+        ax.set_ylim((float(jnp.min(u0) - 1), float(jnp.max(u0) + 1)))
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
 
@@ -154,7 +154,7 @@ def main(
         ax.plot(grid.x[s], event.u[s], "o-")
         ax.plot(grid.x[s], u0[s], "k--")
         ax.axhline(1.0, color="k", ls=":", lw=1)
-        ax.set_xlim([grid.a, grid.b])
+        ax.set_xlim((float(grid.a), float(grid.b)))
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
 

@@ -113,6 +113,7 @@ def step(
     tfinal = jnp.array(tfinal, dtype=u0.dtype)
     u = u0
 
+    assert isinstance(tfinal, jax.Array)
     yield StepCompleted(
         t=t, tfinal=tfinal, dt=jnp.array(0.0, dtype=u0.dtype), iteration=m, u=u
     )

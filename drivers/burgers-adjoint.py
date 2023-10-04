@@ -148,8 +148,8 @@ def evolve_forward(
         mp.ion()
 
         _, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
-        ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([jnp.min(u0) - 1.0, jnp.max(u0) + 1.0])
+        ax.set_xlim((float(grid.a), float(grid.b)))
+        ax.set_ylim((float(jnp.min(u0) - 1.0), float(jnp.max(u0) + 1.0)))
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
 
@@ -236,8 +236,8 @@ def evolve_adjoint(
         # chosen in `main`; modify as needed
         ax.axhline(0.5, color="k", linestyle="--", lw=1)
 
-        ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
+        ax.set_xlim((float(grid.a), float(grid.b)))
+        ax.set_ylim((float(pmin - 0.1 * pmag), float(pmax + 0.1 * pmag)))
         ax.set_xlabel("$x$")
 
     from pyshocks import norm
@@ -339,7 +339,7 @@ def main(
     ax.plot(grid.x[i], uf[i], label="$u(T)$")
     ax.plot(grid.x[i], sim.u0[i], "k--", label="$u(0)$")
 
-    ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
+    ax.set_ylim((float(umin - 0.1 * umag), float(umax + 0.1 * umag)))
     ax.set_xlabel("$x$")
     ax.set_ylabel("$u$")
     ax.legend()
@@ -361,7 +361,7 @@ def main(
     ax.plot(grid.x[i], sim.u0[i], "k--", label="$u(0)$")
     ax.axhline(0.5, color="k", linestyle=":", lw=1)
 
-    ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
+    ax.set_ylim((float(pmin - 0.1 * pmag), float(pmax + 0.1 * pmag)))
     ax.set_xlabel("$x$")
     ax.legend()
 

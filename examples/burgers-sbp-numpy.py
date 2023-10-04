@@ -308,6 +308,8 @@ def main(
     except ImportError:
         return
 
+    from matplotlib.lines import Line2D
+
     fig = plt.figure()
     ax = plt.axes()
 
@@ -320,12 +322,12 @@ def main(
     # prepare for animated lines
     (line,) = ax.plot(x, x, color="b", linestyle="-", linewidth=2, marker="*")
 
-    def animate(n: int) -> tuple[plt.Line2D, ...]:
+    def animate(n: int) -> tuple[Line2D, ...]:
         line.set_ydata(sol.y[:, n])
         return (line,)
 
     # Init only required for blitting to give a clean slate.
-    def init() -> tuple[plt.Line2D, ...]:
+    def init() -> tuple[Line2D, ...]:
         line.set_ydata(x)
         return (line,)
 
@@ -334,7 +336,7 @@ def main(
     anim = animation.FuncAnimation(  # noqa: F841
         fig, animate, np.arange(1, nt), init_func=init, interval=25, blit=True
     )
-    plt.show()
+    plt.show()  # type: ignore[no-untyped-call]
 
 
 if __name__ == "__main__":

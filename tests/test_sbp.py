@@ -85,7 +85,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
         fig.clf()
 
     # NOTE: allow negative values larger than eps because floating point..
-    mask = jnp.real(s) > -jnp.finfo(dtype).eps  # type: ignore[no-untyped-call]
+    mask = jnp.real(s) > -jnp.finfo(dtype).eps
     assert jnp.all(mask), jnp.real(s[~mask])
 
     # }}}
@@ -178,7 +178,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
 
     # check SBP compatibility property [Mattsson2004] Equation 10
     if op.second_derivative != sbp.SecondDerivativeType.Narrow:
-        Rhat = jnp.diag(1 / P) @ R  # type: ignore[no-untyped-call]
+        Rhat = jnp.diag(1 / P) @ R
         if is_periodic:
             error = abs(
                 dotp(v, D2 @ v)
