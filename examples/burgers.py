@@ -148,8 +148,8 @@ def main(
             phi = hesthaven_limiter(u0, variant=scheme.variant)
             (ln2,) = ax.plot(grid.f[1:-1], phi, "k", lw=1)
 
-        ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([jnp.min(u0) - 1.5, jnp.max(u0) + 1])
+        ax.set_xlim((float(grid.a), float(grid.b)))
+        ax.set_ylim((float(jnp.min(u0) - 1.5), float(jnp.max(u0) + 1)))
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
         ax.set_title(f"t = {0.0:.3f}")
@@ -245,7 +245,7 @@ def main(
         ax = fig.gca()
         ax.plot(grid.x[s], event.u[s])
         ax.plot(grid.x[s], uhat[s])
-        ax.set_xlim([grid.a, grid.b])
+        ax.set_xlim((float(grid.a), float(grid.b)))
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
 

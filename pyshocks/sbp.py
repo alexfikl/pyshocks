@@ -334,7 +334,7 @@ def make_sbp_mattsson2012_second_derivative(
     assert isinstance(grid, UniformGrid)
     # get mass matrix
     P = sbp_norm_matrix(op, grid, bc)
-    invP = jnp.diag(1 / P)  # type: ignore[no-untyped-call]
+    invP = jnp.diag(1 / P)
 
     # put it all together ([Mattsson2012] Definition 2.4)
     S = op.make_second_derivative_s_matrix(grid, bc, b)
@@ -351,9 +351,9 @@ def make_sbp_mattsson2012_second_derivative(
         BS = Bbar @ S
 
     if M is None:
-        P = jnp.diag(P)  # type: ignore[no-untyped-call]
+        P = jnp.diag(P)
         D = sbp_first_derivative_matrix(op, grid, bc)
-        B = jnp.diag(b)  # type: ignore[no-untyped-call]
+        B = jnp.diag(b)
         R = op.make_second_derivative_r_matrix(grid, bc, b)
 
         M = D.T @ P @ B @ D + R
@@ -473,7 +473,7 @@ def _sbp_21_first_derivative_matrix(
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
-    return cast(Array, jnp.diag(1.0 / P) @ Q)  # type: ignore[no-untyped-call]
+    return jnp.diag(1.0 / P) @ Q
 
 
 @sbp_second_derivative_matrix.register(SBP21)
@@ -489,6 +489,7 @@ def _sbp_21_second_derivative_matrix(
     else:
         raise TypeError(f"Unknown coefficient type: {type(b).__name__!r}.")
 
+    assert isinstance(b, jax.Array)
     assert isinstance(grid, UniformGrid)
     assert b.shape == (grid.n,)
 
@@ -510,7 +511,7 @@ def make_sbp_21_second_derivative_b_matrices(
     bc: BoundaryType, b: Array
 ) -> tuple[Array]:
     # [Mattsson2012] Appendix A.1
-    return (jnp.diag(b),)  # type: ignore[no-untyped-call]
+    return (jnp.diag(b),)
 
 
 def make_sbp_21_second_derivative_r_matrix(
@@ -542,9 +543,9 @@ def make_sbp_21_second_derivative_m_matrix(
         )
 
     M = (
-        jnp.diag(-b[:-1] / 2 - b[1:] / 2, k=-1)  # type: ignore
-        + jnp.diag(jnp.pad(b[:-2] / 2 + b[1:-1] + b[2:] / 2, 1), k=0)  # type: ignore
-        + jnp.diag(-b[:-1] / 2 - b[1:] / 2, k=+1)  # type: ignore
+        jnp.diag(-b[:-1] / 2 - b[1:] / 2, k=-1)
+        + jnp.diag(jnp.pad(b[:-2] / 2 + b[1:-1] + b[2:] / 2, 1), k=0)
+        + jnp.diag(-b[:-1] / 2 - b[1:] / 2, k=+1)
     )
 
     if bc == BoundaryType.Periodic:
@@ -711,7 +712,7 @@ def _sbp_42_first_derivative_matrix(
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
-    return cast(Array, jnp.diag(1.0 / P) @ Q)  # type: ignore[no-untyped-call]
+    return jnp.diag(1.0 / P) @ Q
 
 
 @sbp_second_derivative_matrix.register(SBP42)
@@ -727,6 +728,7 @@ def _sbp_42_second_derivative_matrix(
     else:
         raise TypeError(f"Unknown diffusivity coefficient: {type(b).__name__!r}.")
 
+    assert isinstance(b, jax.Array)
     assert isinstance(grid, UniformGrid)
     assert b.shape == (grid.n,)
 
@@ -758,8 +760,8 @@ def make_sbp_42_second_derivative_b_matrices(
         B34 = B34.at[0].set(b[0])
         B34 = B34.at[-1].set(b[-1])
 
-    B34 = jnp.diag(B34)  # type: ignore[no-untyped-call]
-    B44 = jnp.diag(b)  # type: ignore[no-untyped-call]
+    B34 = jnp.diag(B34)
+    B44 = jnp.diag(b)
 
     return B34, B44
 
@@ -775,8 +777,8 @@ def make_sbp_42_second_derivative_r_matrix(
     B34, B44 = make_sbp_42_second_derivative_b_matrices(bc, b)
     D34 = make_sbp_matrix_from_stencil(bc, n, d34)
     D44 = make_sbp_matrix_from_stencil(bc, n, d44)
-    C34 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c34))  # type: ignore
-    C44 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c44))  # type: ignore
+    C34 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c34))
+    C44 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c44))
 
     return cast(
         Array,
@@ -981,12 +983,12 @@ def make_sbp_42_second_derivative_m_matrix(
         return -jnp.stack([m0, m1, m2, m3, m4, m5])
 
     M = (
-        jnp.diag(b[1:-1] / 6 - b[:-2] / 8 - b[2:] / 8, k=-2)  # type: ignore
-        + jnp.diag(  # type: ignore[no-untyped-call]
+        jnp.diag(b[1:-1] / 6 - b[:-2] / 8 - b[2:] / 8, k=-2)
+        + jnp.diag(
             jnp.pad(b[:-3] / 6 + b[3:] / 6 + b[1:-2] / 2 + b[2:-1] / 2, 1),
             k=-1,
         )
-        + jnp.diag(  # type: ignore[no-untyped-call]
+        + jnp.diag(
             jnp.pad(
                 -b[:-4] / 24
                 - 5 * b[1:-3] / 6
@@ -997,13 +999,11 @@ def make_sbp_42_second_derivative_m_matrix(
             ),
             k=0,
         )
-        + jnp.diag(  # type: ignore[no-untyped-call]
+        + jnp.diag(
             jnp.pad(b[:-3] / 6 + b[3:] / 6 + b[1:-2] / 2 + b[2:-1] / 2, 1),
             k=+1,
         )
-        + jnp.diag(  # type: ignore[no-untyped-call]
-            b[1:-1] / 6 - b[:-2] / 8 - b[2:] / 8, k=+2
-        )
+        + jnp.diag(b[1:-1] / 6 - b[:-2] / 8 - b[2:] / 8, k=+2)
     )
 
     if bc == BoundaryType.Periodic:
@@ -1238,7 +1238,7 @@ def _sbp_64_first_derivative_matrix(
     Q = make_sbp_matrix_from_stencil(bc, grid.n, q)
     P = sbp_norm_matrix(op, grid, bc)
 
-    return cast(Array, jnp.diag(1.0 / P) @ Q)  # type: ignore[no-untyped-call]
+    return jnp.diag(1.0 / P) @ Q
 
 
 # }}}

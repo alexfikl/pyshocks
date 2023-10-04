@@ -65,8 +65,8 @@ def evolve_forward(
         mp.ion()
 
         _, ln1 = ax.plot(grid.x[s], u0[s], "k--", grid.x[s], u0[s], "o-", ms=1)
-        ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([jnp.min(u0) - 1.0, jnp.max(u0) + 1.0])
+        ax.set_xlim((float(grid.a), float(grid.b)))
+        ax.set_ylim((float(jnp.min(u0) - 1.0), float(jnp.max(u0) + 1.0)))
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
 
@@ -110,7 +110,7 @@ def evolve_forward(
         ax.plot(grid.x[grid.i_], event.u[grid.i_], label="$u(T)$")
         ax.plot(grid.x[grid.i_], u0[grid.i_], "k--", label="$u(0)$")
 
-        ax.set_ylim([umin - 0.1 * umag, umax + 0.1 * umag])
+        ax.set_ylim((float(umin - 0.1 * umag), float(umax + 0.1 * umag)))
         ax.set_xlabel("$x$")
         ax.set_ylabel("$u$")
         ax.set_title(f"$T = {event.t:.3f}$")
@@ -171,8 +171,8 @@ def evolve_adjoint(
 
         ln0, ln1 = ax.plot(grid.x[s], uf[s], "k--", grid.x[s], p0[s], "o-", ms=1)
 
-        ax.set_xlim([grid.a, grid.b])
-        ax.set_ylim([pmin - 0.25 * pmag, pmax + 0.25 * pmag])
+        ax.set_xlim((float(grid.a), float(grid.b)))
+        ax.set_ylim((float(pmin - 0.25 * pmag), float(pmax + 0.25 * pmag)))
         ax.set_xlabel("$x$")
 
     from pyshocks import norm
@@ -209,7 +209,7 @@ def evolve_adjoint(
     ax.plot(grid.x[s], event.p[s])
     ax.plot(grid.x[s], p0[s], "k--")
 
-    ax.set_ylim([pmin - 0.1 * pmag, pmax + 0.1 * pmag])
+    ax.set_ylim((float(pmin - 0.1 * pmag), float(pmax + 0.1 * pmag)))
     ax.set_xlabel("$x$")
     ax.set_ylabel("$p$")
 

@@ -173,7 +173,7 @@ def estimate_order_of_convergence(x: Array, y: Array) -> tuple[Scalar, Scalar]:
     if x.size <= 1:
         raise RuntimeError("Need at least two values to estimate order.")
 
-    eps = jnp.finfo(x.dtype).eps  # type: ignore[no-untyped-call]
+    eps = jnp.finfo(x.dtype).eps
     c = jnp.polyfit(jnp.log10(x + eps), jnp.log10(y + eps), 1)
     return 10 ** c[-1], c[-2]
 
@@ -272,7 +272,7 @@ class EOCRecorder:
 
         _, error = self._history
         if atol is None:
-            atol = 1.0e2 * jnp.finfo(error.dtype).eps  # type: ignore[no-untyped-call]
+            atol = 1.0e2 * jnp.finfo(error.dtype).eps
 
         return bool(self.estimated_order >= (order - slack) or jnp.max(error) < atol)
 
@@ -672,7 +672,7 @@ def check_usetex(*, s: bool) -> bool:
         return False
 
     if matplotlib.__version__ < "3.6.0":
-        return bool(matplotlib.checkdep_usetex(s))
+        return bool(matplotlib.checkdep_usetex(s))  # type: ignore[attr-defined]
 
     # NOTE: simplified version from matplotlib
     # https://github.com/matplotlib/matplotlib/blob/ec85e725b4b117d2729c9c4f720f31cf8739211f/lib/matplotlib/__init__.py#L439=L456
@@ -700,7 +700,7 @@ def set_recommended_matplotlib(use_tex: bool | None = None) -> None:
     if use_tex is None:
         use_tex = "GITHUB_REPOSITORY" not in os.environ and check_usetex(s=True)
 
-    defaults = {
+    defaults: dict[str, dict[str, Any]] = {
         "figure": {"figsize": (8, 8), "dpi": 300, "constrained_layout": {"use": True}},
         "text": {"usetex": use_tex},
         "legend": {"fontsize": 32},
@@ -760,7 +760,7 @@ def figure(filename: PathLike | None = None, **kwargs: Any) -> Iterator[Any]:
         if filename is not None:
             savefig(fig, filename, **kwargs)
         else:
-            mp.show()
+            mp.show()  # type: ignore[no-untyped-call]
 
         mp.close(fig)
 
@@ -781,7 +781,7 @@ def gca(
         else:
             import matplotlib.pyplot as mp
 
-            mp.show()
+            mp.show()  # type: ignore[no-untyped-call]
 
         if clear:
             fig.clf()
@@ -876,8 +876,8 @@ def save_animation(
     ax.set_xlabel(xlabel)
     if legends is not None:
         ax.set_ylabel(ylabel)
-    ax.set_xlim([x[0], x[-1]])
-    ax.set_ylim([ymin - 0.1 * jnp.abs(ymin), ymax + 0.1 * jnp.abs(ymax)])
+    ax.set_xlim((float(x[0]), float(x[-1])))
+    ax.set_ylim((ymin - 0.1 * jnp.abs(ymin), ymax + 0.1 * jnp.abs(ymax)))
     ax.margins(0.05)
 
     if legends:
@@ -904,7 +904,7 @@ def save_animation(
     )
 
     if filename is None:
-        mp.show()
+        mp.show()  # type: ignore[no-untyped-call]
     else:
         writer = animation.FFMpegWriter(fps=fps)
         anim.save(filename, writer=writer)
