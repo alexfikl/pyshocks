@@ -4,15 +4,15 @@
 #
 #    pip-compile --extra=dev --extra=pyweno --extra=vis --output-file=requirements-dev.txt --strip-extras pyproject.toml
 #
-build==0.10.0
+build==1.0.3
     # via pip-tools
 click==8.1.7
     # via pip-tools
-codespell==2.2.5
+codespell==2.2.6
     # via pyshocks (pyproject.toml)
-contourpy==1.1.0
+contourpy==1.1.1
     # via matplotlib
-cycler==0.11.0
+cycler==0.12.0
     # via matplotlib
 doc8==1.1.1
     # via pyshocks (pyproject.toml)
@@ -20,25 +20,25 @@ docutils==0.20.1
     # via
     #   doc8
     #   restructuredtext-lint
-fonttools==4.42.1
+fonttools==4.43.0
     # via matplotlib
 iniconfig==2.0.0
     # via pytest
-jax==0.4.14
+jax==0.4.17
     # via pyshocks (pyproject.toml)
-jaxlib==0.4.14
+jaxlib==0.4.17
     # via pyshocks (pyproject.toml)
 kiwisolver==1.4.5
     # via matplotlib
 markdown-it-py==3.0.0
     # via rich
-matplotlib==3.7.2
+matplotlib==3.8.0
     # via
     #   pyshocks (pyproject.toml)
     #   scienceplots
 mdurl==0.1.2
     # via markdown-it-py
-ml-dtypes==0.2.0
+ml-dtypes==0.3.1
     # via
     #   jax
     #   jaxlib
@@ -50,7 +50,7 @@ mypy-extensions==1.0.0
     # via mypy
 natsort==8.4.0
     # via pyproject-fmt
-numpy==1.25.2
+numpy==1.26.0
     # via
     #   contourpy
     #   jax
@@ -62,7 +62,7 @@ numpy==1.25.2
     #   scipy
 opt-einsum==3.3.0
     # via jax
-packaging==23.1
+packaging==23.2
     # via
     #   build
     #   matplotlib
@@ -70,7 +70,7 @@ packaging==23.1
     #   pytest
 pbr==5.11.1
     # via stevedore
-pillow==10.0.0
+pillow==10.0.1
     # via matplotlib
 pip-tools==7.3.0
     # via pyshocks (pyproject.toml)
@@ -82,29 +82,29 @@ pygments==2.16.1
     # via
     #   doc8
     #   rich
-pyparsing==3.0.9
+pyparsing==3.1.1
     # via matplotlib
-pyproject-fmt==1.1.0
+pyproject-fmt==1.2.0
     # via pyshocks (pyproject.toml)
 pyproject-hooks==1.0.0
     # via build
-pytest==7.4.0
+pytest==7.4.2
     # via pyshocks (pyproject.toml)
 python-dateutil==2.8.2
     # via matplotlib
 pyweno @ git+https://github.com/memmett/PyWENO.git
     # via pyshocks (pyproject.toml)
-regex==2023.8.8
+regex==2023.10.3
     # via sphinx-lint
 restructuredtext-lint==1.4.0
     # via doc8
-rich==13.5.2
+rich==13.6.0
     # via pyshocks (pyproject.toml)
-ruff==0.0.286
+ruff==0.0.292
     # via pyshocks (pyproject.toml)
 scienceplots==2.1.0
     # via pyshocks (pyproject.toml)
-scipy==1.11.2
+scipy==1.11.3
     # via
     #   jax
     #   jaxlib
@@ -120,7 +120,7 @@ tomlkit==0.12.1
     # via pyproject-fmt
 types-dataclasses==0.6.6
     # via pyshocks (pyproject.toml)
-typing-extensions==4.7.1
+typing-extensions==4.8.0
     # via mypy
 wheel==0.41.2
     # via pip-tools
