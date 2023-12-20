@@ -209,7 +209,7 @@ def test_weno_vs_pyweno(
     from pyshocks import cell_average, make_leggauss_quadrature
 
     quad = make_leggauss_quadrature(grid, order=order)
-    u = cell_average(quad, lambda x: jnp.sin(x))
+    u = cell_average(quad, lambda x: jnp.sin(x))  # noqa: PLW0108
 
     uhost = u.copy()
     ul, sl = _pyweno_reconstruct(uhost, order, "left")
@@ -423,10 +423,7 @@ def two_point_entropy_flux_21(qi: Array, u: Array) -> Array:
     def body(i: int, fss: Array) -> Array:
         return fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
 
-    return cast(
-        Array,
-        jax.lax.fori_loop(2, u.size - 1, body, fss),  # type: ignore[no-untyped-call]
-    )
+    return cast(Array, jax.lax.fori_loop(2, u.size - 1, body, fss))
 
 
 def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:

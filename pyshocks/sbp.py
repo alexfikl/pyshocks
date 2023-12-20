@@ -434,7 +434,7 @@ class SBP21(SBPOperator):
     def boundary_order(self) -> int:
         return 1
 
-    def make_second_derivative_r_matrix(
+    def make_second_derivative_r_matrix(  # noqa: PLR6301
         self, grid: UniformGrid, bc: BoundaryType, b: Array
     ) -> Array:
         return make_sbp_21_second_derivative_r_matrix(bc, b, dx=grid.dx_min)
@@ -673,7 +673,7 @@ class SBP42(SBPOperator):
     def boundary_order(self) -> int:
         return 2
 
-    def make_second_derivative_r_matrix(
+    def make_second_derivative_r_matrix(  # noqa: PLR6301
         self, grid: UniformGrid, bc: BoundaryType, b: Array
     ) -> Array:
         return make_sbp_42_second_derivative_r_matrix(bc, b, dx=grid.dx_min)

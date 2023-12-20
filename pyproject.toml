@@ -135,9 +135,11 @@ ignore = [
     "I001",     # unsorted-imports
     "N803",     # invalid-argument-name
     "N806",     # non-lowercase-variable-in-function
+    "PLC0415",  # import-outside-top-level
     "PLR0912",  # too-many-branches
     "PLR0913",  # too-many-arguments
     "PLR0915",  # too-many-statements
+    "PLR0917",  # too-many-positional
     "PLR2004",  # magic-value-comparison
     "S101",     # assert
     "S102",     # exec-builtin

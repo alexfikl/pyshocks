@@ -52,10 +52,7 @@ def two_point_entropy_flux_42(qi: Array, u: Array) -> Array:
             + 2 * qr[1] * fs(u[i - 1], u[i + 1])
         )
 
-    return cast(
-        Array,
-        jax.lax.fori_loop(2, u.size - 1, body, fss),  # type: ignore[no-untyped-call]
-    )
+    return cast(Array, jax.lax.fori_loop(2, u.size - 1, body, fss))
 
 
 # }}}

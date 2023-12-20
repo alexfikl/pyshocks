@@ -48,7 +48,8 @@ class Result:
 class ConvergenceTestCase:
     scheme_name: str
 
-    def make_grid(self, a: float, b: float, n: int) -> Grid:
+    @classmethod
+    def make_grid(cls, a: float, b: float, n: int) -> Grid:
         raise NotImplementedError
 
     def make_boundary(self, grid: Grid) -> Boundary:
@@ -60,8 +61,9 @@ class ConvergenceTestCase:
     def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         raise NotImplementedError
 
+    @classmethod
     def norm(
-        self,
+        cls,
         scheme: SchemeBase,
         grid: Grid,
         u: Array,
@@ -75,13 +77,15 @@ class ConvergenceTestCase:
 
 @dataclass(frozen=True)
 class FiniteVolumeTestCase(ConvergenceTestCase):
-    def make_grid(self, a: float, b: float, n: int) -> Grid:
+    @classmethod
+    def make_grid(cls, a: float, b: float, n: int) -> Grid:
         from pyshocks import make_uniform_cell_grid
 
         # NOTE: number of ghosts cells should depend on the scheme?
         return make_uniform_cell_grid(a=a, b=b, n=n, nghosts=3)
 
-    def cell_average(self, grid: Grid, func: SpatialFunction) -> Array:
+    @classmethod
+    def cell_average(cls, grid: Grid, func: SpatialFunction) -> Array:
         from pyshocks import cell_average, make_leggauss_quadrature
 
         quad = make_leggauss_quadrature(grid, order=5)
@@ -90,7 +94,8 @@ class FiniteVolumeTestCase(ConvergenceTestCase):
 
 @dataclass(frozen=True)
 class FiniteDifferenceTestCase(ConvergenceTestCase):
-    def make_grid(self, a: float, b: float, n: int) -> Grid:
+    @classmethod
+    def make_grid(cls, a: float, b: float, n: int) -> Grid:
         from pyshocks import make_uniform_point_grid
 
         return make_uniform_point_grid(a=a, b=b, n=n, nghosts=0)
@@ -216,7 +221,7 @@ class BurgersTestCase(FiniteVolumeTestCase):
     def __str__(self) -> str:
         return f"burgers_{self.scheme_name}_constant"
 
-    def make_boundary(self, grid: Grid) -> Boundary:
+    def make_boundary(self, grid: Grid) -> Boundary:  # noqa: PLR6301
         from pyshocks.scalar import make_dirichlet_boundary
 
         return make_dirichlet_boundary(
@@ -304,7 +309,7 @@ class AdvectionTestCase(FiniteVolumeTestCase):
     def __str__(self) -> str:
         return f"advection_{self.scheme_name}_{self.rec_name}"
 
-    def make_boundary(self, grid: Grid) -> Boundary:
+    def make_boundary(self, grid: Grid) -> Boundary:  # noqa: PLR6301
         from pyshocks.scalar import PeriodicBoundary
 
         return PeriodicBoundary()
@@ -359,8 +364,9 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
     def evaluate(self, grid: Grid, t: ScalarLike, x: Array) -> Array:
         return funcs.ic_sine_sine(grid, x - self.a * t)
 
+    @classmethod
     def norm(
-        self,
+        cls,
         scheme: SchemeBase,
         grid: Grid,
         u: Array,
@@ -509,8 +515,9 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
         return funcs.diffusion_expansion(grid, t, x, diffusivity=self.d)
         # return funcs.diffusion_tophat(grid, t, x, diffusivity=self.d)
 
+    @classmethod
     def norm(
-        self,
+        cls,
         scheme: SchemeBase,
         grid: Grid,
         u: Array,

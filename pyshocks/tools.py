@@ -687,7 +687,7 @@ def check_usetex(*, s: bool) -> bool:
     return True
 
 
-def set_recommended_matplotlib(use_tex: bool | None = None) -> None:
+def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
     try:
         import matplotlib.pyplot as mp
     except ImportError:

@@ -72,7 +72,7 @@ def make_boundary_conditions(
     bc: Boundary
     if name == "const":
         bc = PeriodicBoundary()
-    elif name in ["sign", "double_sign"]:
+    elif name in {"sign", "double_sign"}:
         bc = make_dirichlet_boundary(ga=jax.jit(solution))
     else:
         raise ValueError(f"Unknown example: {name!r}.")

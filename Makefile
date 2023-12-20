@@ -31,9 +31,7 @@ ruff:			## Run ruff checks over the source code
 .PHONY: ruff
 
 mypy:			## Run mypy checks over the source code
-	$(PYTHON) -m mypy \
-		--strict --show-error-codes \
-		pyshocks tests examples drivers
+	$(PYTHON) -m mypy pyshocks tests examples drivers
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 .PHONY: mypy
 

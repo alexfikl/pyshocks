@@ -298,8 +298,11 @@ class VanAlbadaLimiter(Limiter):
     #: integer that takes values in :math:`\{1, 2\}`.
     variant: int
 
-    def __post_init__(self) -> None:
-        assert self.variant in (1, 2)
+    if __debug__:
+
+        def __post_init__(self) -> None:
+            if self.variant not in {1, 2}:
+                raise ValueError(f"Variants 1 and 2 are supported: {self.variant}")
 
     @property
     def is_symmetric(self) -> bool:

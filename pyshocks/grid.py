@@ -382,7 +382,7 @@ class Quadrature:
             has size :attr:`ncells`.
         """
 
-        if axis not in (0, None):
+        if axis not in {0, None}:
             raise ValueError(f"Unsupported axis value: {axis!r}.")
 
         return jnp.sum(fn(self.x) * self.w, axis=axis)
@@ -449,10 +449,10 @@ def _norm(u: Array, dx: Array, p: str | ScalarLike) -> Scalar:
     if p == 2:
         return jnp.sqrt(jnp.sum(u**2 * dx))
 
-    if p in (jnp.inf, "inf"):
+    if p in {jnp.inf, "inf"}:
         return jnp.max(u)
 
-    if p in (-jnp.inf, "-inf"):
+    if p in {-jnp.inf, "-inf"}:
         return jnp.min(u)
 
     if p == "tvd":
