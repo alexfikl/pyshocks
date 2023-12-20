@@ -756,7 +756,7 @@ def figure(filename: PathLike | None = None, **kwargs: Any) -> Iterator[Any]:
         if filename is not None:
             savefig(fig, filename, **kwargs)
         else:
-            mp.show()  # type: ignore[no-untyped-call]
+            mp.show()  # type: ignore[unused-ignore,no-untyped-call]
 
         mp.close(fig)
 
@@ -777,7 +777,7 @@ def gca(
         else:
             import matplotlib.pyplot as mp
 
-            mp.show()  # type: ignore[no-untyped-call]
+            mp.show()  # type: ignore[unused-ignore,no-untyped-call]
 
         if clear:
             fig.clf()
@@ -900,7 +900,7 @@ def save_animation(
     )
 
     if filename is None:
-        mp.show()  # type: ignore[no-untyped-call]
+        mp.show()  # type: ignore[unused-ignore,no-untyped-call]
     else:
         writer = animation.FFMpegWriter(fps=fps)
         anim.save(filename, writer=writer)

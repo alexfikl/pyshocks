@@ -336,7 +336,7 @@ def main(
     anim = animation.FuncAnimation(  # noqa: F841
         fig, animate, np.arange(1, nt), init_func=init, interval=25, blit=True
     )
-    plt.show()  # type: ignore[no-untyped-call]
+    plt.show()  # type: ignore[unused-ignore,no-untyped-call]
 
 
 if __name__ == "__main__":
