@@ -780,9 +780,7 @@ def make_sbp_42_second_derivative_r_matrix(
     C34 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c34))
     C44 = jnp.diag(make_sbp_matrix_from_stencil(bc, n, c44))
 
-    return (
-        dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
-    )
+    return dx**5 / 18 * D34.T @ C34 @ B34 @ D34 + dx**7 / 144 * D44.T @ C44 @ B44 @ D44
 
 
 def make_sbp_42_second_derivative_m_matrix(

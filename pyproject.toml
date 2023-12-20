@@ -75,14 +75,18 @@ requires = [
 ]
 
 [tool.black]
+safe = true
+preview = true
 line-length = 88
-target-version = ['py38']
+target-version = ["py39", "py310", "py311", "py312"]
 exclude='\.eggs|\.git|\.mypy_cache|build|dist|\.pytest_cache|\.pytype'
 
 [tool.isort]
 profile = "black"
 
 [tool.mypy]
+strict = true
+hide_error_codes = false
 warn_unused_ignores = true
 plugins = "numpy.typing.mypy_plugin"
 
@@ -103,9 +107,9 @@ max-line-length = 88
 ignore-path = "docs/_build"
 
 [tool.ruff]
+preview = true
 target-version = "py38"
 line-length = 88
-
 select = [
     "A",        # flake8-builtins
     "B",        # flake8-bugbear

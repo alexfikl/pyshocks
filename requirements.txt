@@ -4,9 +4,9 @@
 #
 #    pip-compile --output-file=requirements.txt --strip-extras pyproject.toml
 #
-jax==0.4.17
+jax==0.4.23
     # via pyshocks (pyproject.toml)
-jaxlib==0.4.17
+jaxlib==0.4.23
     # via pyshocks (pyproject.toml)
 markdown-it-py==3.0.0
     # via rich
@@ -16,7 +16,7 @@ ml-dtypes==0.3.1
     # via
     #   jax
     #   jaxlib
-numpy==1.26.0
+numpy==1.26.2
     # via
     #   jax
     #   jaxlib
@@ -26,11 +26,11 @@ numpy==1.26.0
     #   scipy
 opt-einsum==3.3.0
     # via jax
-pygments==2.16.1
+pygments==2.17.2
     # via rich
-rich==13.6.0
+rich==13.7.0
     # via pyshocks (pyproject.toml)
-scipy==1.11.3
+scipy==1.11.4
     # via
     #   jax
     #   jaxlib

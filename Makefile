@@ -22,9 +22,7 @@ lint: ruff mypy reuse codespell sphinxlint	## Run all linting scripts
 .PHONY: lint
 
 black:			## Run black over the source code
-	$(PYTHON) -m black \
-		--safe --target-version py38 --preview \
-		pyshocks tests examples drivers docs
+	$(PYTHON) -m black pyshocks tests examples drivers docs
 .PHONY: black
 
 ruff:			## Run ruff checks over the source code

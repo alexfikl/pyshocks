@@ -119,8 +119,7 @@ class ScalarFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, t: ScalarLike, x: Array) -> Scalar:
-        ...
+    def __call__(self, t: ScalarLike, x: Array) -> Scalar: ...
 
 
 class VectorFunction(Protocol):
@@ -129,8 +128,7 @@ class VectorFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, t: ScalarLike, x: Array) -> Array:
-        ...
+    def __call__(self, t: ScalarLike, x: Array) -> Array: ...
 
 
 class SpatialFunction(Protocol):
@@ -139,8 +137,7 @@ class SpatialFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, x: Array) -> Array:
-        ...
+    def __call__(self, x: Array) -> Array: ...
 
 
 class TemporalFunction(Protocol):
@@ -149,8 +146,7 @@ class TemporalFunction(Protocol):
     .. automethod:: __call__
     """
 
-    def __call__(self, t: ScalarLike) -> Scalar:
-        ...
+    def __call__(self, t: ScalarLike) -> Scalar: ...
 
 
 # }}}
