@@ -902,13 +902,11 @@ def test_smoothness(*, visualize: bool = True) -> None:
         y = x + dx / 2
 
         u = np.sin(k * x)
-        du = np.stack(
-            [
-                np.roll(dx * k * np.cos(k * y), +1) ** 2,
-                np.roll(dx * k * np.cos(k * y), +0) ** 2,
-                np.roll(dx * k * np.cos(k * y), -1) ** 2,
-            ]
-        )
+        du = np.stack([
+            np.roll(dx * k * np.cos(k * y), +1) ** 2,
+            np.roll(dx * k * np.cos(k * y), +0) ** 2,
+            np.roll(dx * k * np.cos(k * y), -1) ** 2,
+        ])
         ddu = (dx**3 * k**3 * np.cos(k * y)) ** 2
 
         beta, tau = weno_242_smoothness(u, k=None)

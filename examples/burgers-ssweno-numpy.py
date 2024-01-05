@@ -112,32 +112,26 @@ def weno_242_ops_interp(n: int, dtype: Any) -> tuple[Array, Array, Array, Array,
     ILL[1, :b] = [0, 0, 0, 119 / 48]
 
     # IL
-    IL = np.stack(
-        [
-            np.full(n, -1 / 2, dtype=dtype),
-            np.full(n, 3 / 2, dtype=dtype),
-        ]
-    )
+    IL = np.stack([
+        np.full(n, -1 / 2, dtype=dtype),
+        np.full(n, 3 / 2, dtype=dtype),
+    ])
     IL[0, :b] = [0, 0, -7 / 12, -23 / 48]
     IL[1, :b] = [0, 0, 19 / 12, 71 / 48]
 
     # IC
-    IC = np.stack(
-        [
-            np.full(n, 1 / 2, dtype=dtype),
-            np.full(n, 1 / 2, dtype=dtype),
-        ]
-    )
+    IC = np.stack([
+        np.full(n, 1 / 2, dtype=dtype),
+        np.full(n, 1 / 2, dtype=dtype),
+    ])
     IC[0, :b] = [1, 31 / 48, 5 / 12, 25 / 48]
     IC[1, :b] = [0, 17 / 48, 7 / 12, 23 / 48]
 
     # IR
-    IR = np.stack(
-        [
-            np.full(n, 3 / 2, dtype=dtype),
-            np.full(n, -1 / 2, dtype=dtype),
-        ]
-    )
+    IR = np.stack([
+        np.full(n, 3 / 2, dtype=dtype),
+        np.full(n, -1 / 2, dtype=dtype),
+    ])
     IR[0, :b] = [0, 79 / 48, 17 / 12, 73 / 48]
     IR[1, :b] = [0, -31 / 48, -5 / 12, -25 / 48]
 
@@ -1223,15 +1217,13 @@ def test_weno_242_smoothness(
         h = x[1] - x[0]
 
         u = np.sin(k * (x + 1))
-        du = np.stack(
-            [
-                np.zeros_like(y),
-                h * k * np.roll(np.cos(k * (y + 1)), 1),
-                h * k * np.roll(np.cos(k * (y + 1)), 0),
-                h * k * np.roll(np.cos(k * (y + 1)), -1),
-                np.zeros_like(y),
-            ]
-        )
+        du = np.stack([
+            np.zeros_like(y),
+            h * k * np.roll(np.cos(k * (y + 1)), 1),
+            h * k * np.roll(np.cos(k * (y + 1)), 0),
+            h * k * np.roll(np.cos(k * (y + 1)), -1),
+            np.zeros_like(y),
+        ])
         # NOTE: these are separate because we can't nicely roll it
         du[LL, 3] = h * k * np.cos(k * (y[1] + 1))
         du[LL, -2] = h * k * np.cos(k * (y[-4] + 1))

@@ -131,15 +131,13 @@ def weno_smoothness(
     assert s.a is not None
     assert s.b is not None
 
-    return jnp.stack(
-        [
-            sum(
-                s.a[j] * convolve1d(u, s.b[i, j, :], mode=mode) ** 2
-                for j in range(s.a.size)
-            )
-            for i in range(s.b.shape[0])
-        ]
-    )
+    return jnp.stack([
+        sum(
+            s.a[j] * convolve1d(u, s.b[i, j, :], mode=mode) ** 2
+            for j in range(s.a.size)
+        )
+        for i in range(s.b.shape[0])
+    ])
 
 
 def weno_interp(s: Stencil, u: Array, *, mode: ConvolutionType | None = None) -> Array:
