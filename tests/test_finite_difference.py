@@ -343,9 +343,15 @@ def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
 
     from pyshocks.finitedifference import determine_stencil_truncation_error
 
-    a = jnp.array(
-        [-0.02651995, 0.18941314, -0.79926643, 0.0, 0.79926643, -0.18941314, 0.02651995]
-    )
+    a = jnp.array([
+        -0.02651995,
+        0.18941314,
+        -0.79926643,
+        0.0,
+        0.79926643,
+        -0.18941314,
+        0.02651995,
+    ])
     indices = jnp.arange(-3, 4)
 
     order, c = determine_stencil_truncation_error(1, a, indices, atol=1.0e-6)

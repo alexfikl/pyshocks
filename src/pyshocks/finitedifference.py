@@ -65,9 +65,9 @@ class Stencil:
         coeffs = jax.device_get(self.coeffs)
         indices = jax.device_get(self.indices)
 
-        a = ", ".join(
-            [f"{i}: {Fraction(a).limit_denominator()}" for a, i in zip(coeffs, indices)]
-        )
+        a = ", ".join([
+            f"{i}: {Fraction(a).limit_denominator()}" for a, i in zip(coeffs, indices)
+        ])
 
         return (
             f"{type(self).__name__}("

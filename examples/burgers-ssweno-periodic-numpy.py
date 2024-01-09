@@ -188,9 +188,9 @@ def weno_242_reconstruct(
     if __debug__ and k is not None and not weighted:
         # NOTE: the downwind weight is supposed to be smaller
         assert dw is not None
-        flags = np.array(
-            [np.all(omega[dw[i], i] <= omega[:, i]) for i in range(dw.size)]
-        )
+        flags = np.array([
+            np.all(omega[dw[i], i] <= omega[:, i]) for i in range(dw.size)
+        ])
 
         assert np.all(flags), flags
 

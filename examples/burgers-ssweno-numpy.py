@@ -285,9 +285,9 @@ def weno_242_smoothness(
 
         if __debug__:
             # NOTE: the downwind weight is supposed to be smaller
-            flags = np.array(
-                [np.all(beta[dw[i], i] >= beta[:, i]) for i in range(dw.size)]
-            )
+            flags = np.array([
+                np.all(beta[dw[i], i] >= beta[:, i]) for i in range(dw.size)
+            ])
             assert np.all(flags), flags
 
     return beta, tau

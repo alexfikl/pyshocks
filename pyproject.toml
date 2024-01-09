@@ -76,13 +76,6 @@ Repository = "https://github.com/alexfikl/pyshocks"
 package-dir = { "" = "src" }
 packages = { find = { where = ["src"] } }
 
-[tool.black]
-safe = true
-preview = true
-line-length = 88
-target-version = ["py39", "py310", "py311", "py312"]
-exclude='\.eggs|\.git|\.mypy_cache|build|dist|\.pytest_cache|\.pytype'
-
 [tool.ruff]
 preview = true
 target-version = "py38"
@@ -109,7 +102,7 @@ select = [
 ]
 ignore = [
     "E402",     # module-import-not-at-top-of-file
-    "I001",     # unsorted-imports
+    "ISC001",   # single-line-implicit-string-concatenation
     "N803",     # invalid-argument-name
     "N806",     # non-lowercase-variable-in-function
     "PLC0415",  # import-outside-top-level
@@ -126,16 +119,16 @@ ignore = [
     "UP037",    # quoted-annotation
 ]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "pyshocks/__init__.py" = ["FBT003"]
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 inline-quotes = "double"
 multiline-quotes = "double"
 
-[tool.isort]
-profile = "black"
+[tool.ruff.lint.isort]
+known-first-party = ["pyshocks"]
 
 [tool.check-manifest]
 ignore = [

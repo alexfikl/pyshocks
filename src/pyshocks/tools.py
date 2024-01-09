@@ -224,9 +224,10 @@ class EOCRecorder:
         :arg h: abscissa, a value representative of the "grid size".
         :arg error: error at given *h*.
         """
-        self.history.append(
-            (jnp.array(h, dtype=self.dtype), jnp.array(error, dtype=self.dtype))
-        )
+        self.history.append((
+            jnp.array(h, dtype=self.dtype),
+            jnp.array(error, dtype=self.dtype),
+        ))
 
     @property
     def estimated_order(self) -> Scalar:
@@ -311,9 +312,10 @@ def stringify_eoc(*eocs: EOCRecorder) -> str:
         ])
         lines.append((f"{h[i]:.3e}", *values))
 
-    lines.append(
-        ("Overall", *flatten([("", f"{eoc.estimated_order:.3f}") for eoc in eocs]))
-    )
+    lines.append((
+        "Overall",
+        *flatten([("", f"{eoc.estimated_order:.3f}") for eoc in eocs]),
+    ))
 
     widths = [max(len(line[i]) for line in lines) for i in range(ncolumns)]
     formats = ["{:%s}" % w for w in widths]
