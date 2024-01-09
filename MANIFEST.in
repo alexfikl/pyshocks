@@ -1,0 +1,25 @@
+include Makefile
+include pyproject.toml
+include README.rst
+include INSTALL.rst
+include requirements.txt
+include requirements-build.in
+include requirements-build.txt
+include requirements-dev.txt
+include setup.py
+include .codespell-ignore
+include .reuse/dep5
+recursive-include LICENSES *.txt
+
+recursive-include scribbles *.tex
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs *.txt
+recursive-include docs Makefile
+recursive-include drivers *.py
+recursive-include examples *.py
+recursive-include src *.py
+recursive-include src *.typed
+recursive-include tests *.py
+
+prune docs/_build

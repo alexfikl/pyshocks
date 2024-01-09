@@ -12,61 +12,52 @@ help: 			## Show this help
 
 format: black	## Run all formatting scripts
 	$(PYTHON) -m pyproject_fmt --indent 4 pyproject.toml
-	$(PYTHON) -m isort pyshocks tests examples docs drivers
+	$(PYTHON) -m isort src tests examples docs drivers
 .PHONY: format
 
 fmt: format
 .PHONY: fmt
 
-lint: ruff mypy reuse codespell sphinxlint	## Run all linting scripts
-.PHONY: lint
-
 black:			## Run black over the source code
-	$(PYTHON) -m black pyshocks tests examples drivers docs
+	$(PYTHON) -m black src tests examples docs drivers
 .PHONY: black
 
+lint: ruff mypy doc8 codespell reuse manifest	## Run linting checks
+.PHONY: lint
+
 ruff:			## Run ruff checks over the source code
-	ruff pyshocks tests examples drivers
+	ruff check src tests examples docs drivers
 	@echo -e "\e[1;32mruff clean!\e[0m"
 .PHONY: ruff
 
 mypy:			## Run mypy checks over the source code
-	$(PYTHON) -m mypy pyshocks tests examples drivers
+	$(PYTHON) -m mypy src tests examples drivers
 	@echo -e "\e[1;32mmypy clean!\e[0m"
 .PHONY: mypy
 
 doc8:			## Run doc8 checks over the source code
-	PYTHONWARNINGS=ignore $(PYTHON) -m doc8 pyshocks docs
+	$(PYTHON) -m doc8 src docs
 	@echo -e "\e[1;32mdoc8 clean!\e[0m"
 .PHONY: doc8
 
-linkcheck:		## Run sphinx linkcheck checks over the documentation
-	cd docs && make linkcheck SPHINXOPTS="-W --keep-going -n" || true
-	@echo -e "\e[1;32mlinkcheck clean!\e[0m"
-.PHONY: linkcheck
-
-sphinxlint: linkcheck doc8		## Run sphinxlint checks over the source code
-	$(PYTHON) -m sphinxlint -v \
-		--ignore docs/_build --ignore README.rst \
-		--enable all \
-		--max-line-length=88 \
-		.
-	@echo -e "\e[1;32msphinxlint clean!\e[0m"
-.PHONY: sphinxlint
-
 codespell:		## Run codespell checks over the documentation
 	@codespell --summary \
-		--skip _build \
+		--skip _build --skip src/*.egg-info \
 		--uri-ignore-words-list '*' \
 		--ignore-words .codespell-ignore \
-		pyshocks tests examples drivers README.rst
+		src tests examples docs drivers README.rst
 	@echo -e "\e[1;32mcodespell clean!\e[0m"
 .PHONY: codespell
 
 reuse:			## Check REUSE license compliance
-	reuse lint
+	$(PYTHON) -m reuse lint
 	@echo -e "\e[1;32mREUSE compliant!\e[0m"
 .PHONY: reuse
+
+manifest:		## Update MANIFEST.in file
+	$(PYTHON) -m check_manifest
+	@echo -e "\e[1;32mMANIFEST.in is up to date!\e[0m"
+.PHONY: manifest
 
 # }}}
 

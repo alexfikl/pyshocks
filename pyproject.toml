@@ -1,6 +1,13 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+    "setuptools>=62",
+    "wheel",
+]
+
 [project]
 name = "pyshocks"
-version = "2022.7"
+version = "2023.1"
 description = "Adjoint-based optimization of flows with shocks"
 readme = "README.rst"
 keywords = [
@@ -38,14 +45,15 @@ dependencies = [
 ]
 [project.optional-dependencies]
 dev = [
+    "check-manifest",
     "codespell",
     "doc8",
     "mypy",
     "pip-tools",
     "pyproject-fmt",
     "pytest",
+    "reuse",
     "ruff",
-    "sphinx-lint",
     "types-dataclasses",
 ]
 docs = [
@@ -65,14 +73,8 @@ Documentation = "https://pyshocks.readthedocs.io"
 Repository = "https://github.com/alexfikl/pyshocks"
 
 [tool.setuptools]
-packages = ["pyshocks"]
-
-[build-system]
-build-backend = "setuptools.build_meta"
-requires = [
-    "setuptools>=42",
-    "wheel",
-]
+package-dir = { "" = "src" }
+packages = { find = { where = ["src"] } }
 
 [tool.black]
 safe = true
@@ -80,31 +82,6 @@ preview = true
 line-length = 88
 target-version = ["py39", "py310", "py311", "py312"]
 exclude='\.eggs|\.git|\.mypy_cache|build|dist|\.pytest_cache|\.pytype'
-
-[tool.isort]
-profile = "black"
-
-[tool.mypy]
-strict = true
-hide_error_codes = false
-warn_unused_ignores = true
-plugins = "numpy.typing.mypy_plugin"
-
-[[tool.mypy.overrides]]
-module = [
-    "cloudpickle.*",
-    "matplotlib.*",
-    "pyweno.*",
-    "seaborn.*",
-    "scienceplots.*",
-    "scipy.*",
-    "jaxlib.cpu.*",
-]
-ignore_missing_imports = true
-
-[tool.doc8]
-max-line-length = 88
-ignore-path = "docs/_build"
 
 [tool.ruff]
 preview = true
@@ -156,3 +133,35 @@ ignore = [
 docstring-quotes = "double"
 inline-quotes = "double"
 multiline-quotes = "double"
+
+[tool.isort]
+profile = "black"
+
+[tool.check-manifest]
+ignore = [
+    "*.yml",
+    "*.yaml",
+    ".ci/*",
+]
+
+[tool.mypy]
+strict = true
+hide_error_codes = false
+warn_unused_ignores = true
+plugins = "numpy.typing.mypy_plugin"
+
+[[tool.mypy.overrides]]
+module = [
+    "cloudpickle.*",
+    "matplotlib.*",
+    "pyweno.*",
+    "seaborn.*",
+    "scienceplots.*",
+    "scipy.*",
+    "jaxlib.cpu.*",
+]
+ignore_missing_imports = true
+
+[tool.doc8]
+max-line-length = 88
+ignore-path = "docs/_build"
