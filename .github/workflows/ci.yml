@@ -27,7 +27,7 @@ jobs:
       run: |
         make pip-install
         make codespell
-        make sphinxlint
+        make doc8
 
   ruff:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
