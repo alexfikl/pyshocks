@@ -120,7 +120,7 @@ from pyshocks.tools import Array, ScalarLike
 @dataclass(frozen=True)
 class Stencil:
     #: Interior stencil, as an array of shape ``(n_i,)``.
-    int: Array  # noqa: A003
+    int: Array
     #: Left boundary stencil, as an array of shape ``(n_l, m_l)``.
     left: Array | None
     #: Left boundary stencil, as an array of shape ``(n_r, m_r)``. If not

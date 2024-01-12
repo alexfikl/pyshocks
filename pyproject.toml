@@ -106,6 +106,7 @@ ignore = [
     "N803",     # invalid-argument-name
     "N806",     # non-lowercase-variable-in-function
     "PLC0415",  # import-outside-top-level
+    "PLC2801",  # unnecessary-dunder-call
     "PLR0912",  # too-many-branches
     "PLR0913",  # too-many-arguments
     "PLR0914",  # too-many-locals
@@ -115,6 +116,7 @@ ignore = [
     "S101",     # assert
     "S102",     # exec-builtin
     "S301",     # suspicious-pickle-usage
+    "S403",     # suspicious-pickle-import
     "SIM108",   # use-ternary-operator
     "UP037",    # quoted-annotation
 ]
