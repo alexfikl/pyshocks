@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 
 def get_logger(
@@ -11,28 +12,18 @@ def get_logger(
     level: int | str | None = None,
 ) -> logging.Logger:
     if level is None:
-        level = logging.INFO
+        level = os.environ.get("PYSHOCKS_LOGGING_LEVEL", "INFO").upper()
 
     if isinstance(level, str):
         level = getattr(logging, level.upper())
 
     assert isinstance(level, int)
 
-    logger = logging.getLogger(module)
-    logger.propagate = False
-    logger.setLevel(level)
-
-    try:
+    root = logging.getLogger("pyshocks")
+    if not root.handlers:
         from rich.logging import RichHandler
 
-        logger.addHandler(RichHandler())
-    except ImportError:
-        # NOTE: rich is vendored by pip since November 2021
-        try:
-            from pip._vendor.rich.logging import RichHandler  # type: ignore
+        root.setLevel(level)
+        root.addHandler(RichHandler())
 
-            logger.addHandler(RichHandler())
-        except ImportError:
-            logger.addHandler(logging.StreamHandler())
-
-    return logger
+    return logging.getLogger(module)

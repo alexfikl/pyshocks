@@ -121,11 +121,11 @@ def check_oslc(grid: Grid, velocity: SpatialFunction, *, n: int = 512) -> Scalar
 
 
 __all__ = (
-    "Scheme",
-    "FiniteVolumeScheme",
     "FiniteDifferenceScheme",
+    "FiniteVolumeScheme",
     "Godunov",
-    "scheme_ids",
-    "make_scheme_from_name",
+    "Scheme",
     "check_oslc",
+    "make_scheme_from_name",
+    "scheme_ids",
 )

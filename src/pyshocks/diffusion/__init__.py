@@ -81,11 +81,11 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 # }}}
 
 __all__ = (
-    "Scheme",
-    "FiniteVolumeScheme",
-    "FiniteDifferenceScheme",
-    "CenteredScheme",
     "SBPSAT",
-    "scheme_ids",
+    "CenteredScheme",
+    "FiniteDifferenceScheme",
+    "FiniteVolumeScheme",
+    "Scheme",
     "make_scheme_from_name",
+    "scheme_ids",
 )

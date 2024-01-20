@@ -10,7 +10,7 @@ help: 			## Show this help
 
 # {{{ linting
 
-format: black pyproject							## Run all formatting scripts
+format: black isort pyproject					## Run all formatting scripts
 .PHONY: format
 
 fmt: format
@@ -23,9 +23,14 @@ pyproject:		## Run pyproject-fmt over the configuration
 
 black:			## Run ruff format over the source code
 	ruff format src tests examples docs drivers
-	ruff check --fix --select=I src tests examples docs
 	@echo -e "\e[1;32mruff format clean!\e[0m"
 .PHONY: black
+
+isort:			## Run ruff isort fixes over the source code
+	ruff check --fix --select=I src tests examples docs
+	ruff check --fix --select=RUF022 src
+	@echo -e "\e[1;32mruff isort clean!\e[0m"
+.PHONY: isort
 
 lint: ruff mypy doc8 codespell reuse manifest	## Run linting checks
 .PHONY: lint
