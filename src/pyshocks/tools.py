@@ -450,7 +450,7 @@ class BlockTimer:
 
 @dataclass(frozen=True)
 class TimeResult:
-    __slots__ = ("walltime", "mean", "std")
+    __slots__ = ("mean", "std", "walltime")
 
     #: Smallest value of the walltime for all the runs.
     walltime: Scalar
