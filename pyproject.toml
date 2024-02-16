@@ -49,7 +49,7 @@ dev = [
     "codespell",
     "doc8",
     "mypy",
-    "pip-tools",
+    "uv",
     "pyproject-fmt",
     "pytest",
     "reuse",
@@ -61,7 +61,7 @@ docs = [
     "sphinx-book-theme",
 ]
 pyweno = [
-    "PyWENO@ git+https://github.com/memmett/PyWENO.git#egg=PyWENO",
+    "PyWENO @ git+https://github.com/memmett/PyWENO.git#egg=PyWENO",
     "sympy",
 ]
 vis = [
