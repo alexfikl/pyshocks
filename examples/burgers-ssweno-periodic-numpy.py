@@ -659,7 +659,7 @@ def main(
             legends=(r"$\omega^L$", r"$\omega^C$", r"$\omega^R$"),
             fig_kwargs={"dpi": 100, "layout": "tight"},
             plot_kwargs={"linewidth": 2},
-            xlabel=r"$\bar{x}$",
+            xlabel=r"$\bar{x}$",  # noqa: RUF027
             ylabel=r"$\omega$",
         )
 
