@@ -84,7 +84,7 @@ requirements-build.txt: requirements-build.in
 
 requirements-dev.txt: pyproject.toml
 	uv pip compile --upgrade --resolution highest \
-		--extra dev --extra vis \
+		--extra dev --extra vis --extra pyweno \
 		-o $@ $<
 
 requirements.txt: pyproject.toml
