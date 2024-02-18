@@ -61,7 +61,7 @@ docs = [
     "sphinx-book-theme",
 ]
 pyweno = [
-    "PyWENO@ git+https://github.com/alexfikl/PyWENO.git@meson-python#egg=PyWENO"
+    "PyWENO@ git+https://github.com/alexfikl/PyWENO.git@meson-python#egg=PyWENO",
 ]
 vis = [
     "matplotlib",

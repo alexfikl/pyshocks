@@ -183,7 +183,7 @@ def evolve(
 
         ax.plot(grid.x[s], u0[s], "--", label="$u(0, x)$")
         ax.plot(grid.x[s], u[s], "-", label="$u(T, x)$")
-        ax.plot(grid.x[s], uhat[s], "k--", label=r"$\hat{u}(T, x)$")
+        ax.plot(grid.x[s], uhat[s], "k--", label=r"$\hat{u}(T, x)$")  # noqa: RUF027
         ax.set_xlabel("$x$")
         ax.legend()
 
@@ -194,7 +194,7 @@ def evolve(
         ax = fig.gca()
         ax.semilogy(grid.x[s], jnp.abs(u[s] - uhat[s]))
         ax.set_xlabel("$x$")
-        ax.set_ylabel(r"$|u - \hat{u}|$")
+        ax.set_ylabel(r"$|u - \hat{u}|$")  # noqa: RUF027
 
         filename = f"convergence_{case}_{n:04}_error"
         fig.savefig(filename)
