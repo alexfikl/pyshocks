@@ -81,15 +81,18 @@ REQUIREMENTS=\
 requirements-build.txt: requirements-build.in
 	uv pip compile --upgrade --resolution highest \
 		-o $@ $<
+.PHONY: requirements-build.txt
 
 requirements-dev.txt: pyproject.toml
 	uv pip compile --upgrade --resolution highest \
 		--extra dev --extra vis --extra pyweno \
 		-o $@ $<
+.PHONY: requirements-dev.txt
 
 requirements.txt: pyproject.toml
 	uv pip compile --upgrade --resolution highest \
 		-o $@ $<
+.PHONY: requirements.txt
 
 pin: $(REQUIREMENTS)	## Pin dependencies versions to requirements.txt
 .PHONY: pin
