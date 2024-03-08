@@ -91,9 +91,10 @@ class SchemeBase:
     :math:`\mathbf{A}` operator.
     """
 
-    #: A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
-    #: to reconstruct high-order values when needed by the numerical scheme.
     rec: Reconstruction
+    """A :class:`~pyshocks.reconstruction.Reconstruction` object that is used
+    to reconstruct high-order values when needed by the numerical scheme.
+    """
 
     @property
     def name(self) -> str:
@@ -232,8 +233,8 @@ class CombineScheme(SchemeBase):
     reactive operator in a advection-diffusion-reaction equation.
     """
 
-    #: A tuple of :class:`SchemeBase` objects.
     schemes: tuple[SchemeBase, ...]
+    """A tuple of :class:`SchemeBase` objects."""
 
     def __post_init__(self) -> None:
         assert len(self.schemes) > 1
@@ -398,17 +399,20 @@ class BoundaryType(enum.Enum):
     are described by :attr:`BoundaryType.Periodic`.
     """
 
-    #: Standard periodic boundary conditions.
     Periodic = enum.auto()
-    #: Dirichlet boundary conditions, i.e. boundary conditions which impose the
-    #: value of the state variable at the boundary.
+    """Standard periodic boundary conditions."""
     Dirichlet = enum.auto()
-    #: Neumnann boundary conditions, i.e. boundary conditions that impose the
-    #: normal gradient or flux at the boundary.
+    """Dirichlet boundary conditions, i.e. boundary conditions which impose the
+    value of the state variable at the boundary.
+    """
     Neumann = enum.auto()
-    #: Homogeneous Neumann boundary conditions, i.e. zero normal gradient or
-    #: zero flux at the boundary
+    """Neumnann boundary conditions, i.e. boundary conditions that impose the
+    normal gradient or flux at the boundary.
+    """
     HomogeneousNeumann = enum.auto()
+    """Homogeneous Neumann boundary conditions, i.e. zero normal gradient or
+    zero flux at the boundary
+    """
 
 
 @dataclass(frozen=True)

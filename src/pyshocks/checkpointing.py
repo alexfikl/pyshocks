@@ -51,10 +51,10 @@ class Checkpoint(ABC):
     .. automethod:: __contains__
     """
 
-    #: A basename for the checkpointing keys. A specific checkpoint implementation
-    #: can use this as a key in a dictionary, as a filename or something else
-    #: entirely.
     basename: str
+    """A basename for the checkpointing keys. A specific checkpoint implementation
+    can use this as a key in a dictionary, as a filename or something else entirely.
+    """
 
     @abstractmethod
     def index_to_key(self, i: int) -> Hashable:
@@ -98,8 +98,8 @@ class InMemoryCheckpoint(Checkpoint):
     As expected, this is not suitable for larger simulations.
     """
 
-    #: Internal data structure used to store the checkpoints.
     storage: dict[Hashable, dict[str, Any]] = field(default_factory=dict)
+    """Internal data structure used to store the checkpoints."""
 
     def index_to_key(self, i: int) -> Hashable:
         return (self.basename, i)
@@ -143,8 +143,8 @@ class PickleCheckpoint(Checkpoint):
     :mod:`pickle` module. The data is compressed using :mod:`lzma`.
     """
 
-    #: The directory in which to store the checkpoints.
     dirname: pathlib.Path
+    """The directory in which to store the checkpoints."""
 
     def index_to_key(self, i: int) -> pathlib.Path:
         return self.dirname / f"{self.basename}_{i:09d}.npz"
@@ -212,8 +212,8 @@ class NumpyCheckpoint(Checkpoint):
     so compression is not possible.
     """
 
-    #: The directory in which to store the checkpoints.
     dirname: pathlib.Path
+    """The directory in which to store the checkpoints."""
 
     def index_to_key(self, i: int) -> pathlib.Path:
         return self.dirname / f"{self.basename}_{i:09d}.npz"

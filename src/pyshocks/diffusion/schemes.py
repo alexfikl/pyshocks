@@ -27,8 +27,8 @@ from pyshocks.tools import Array, Scalar, ScalarLike
 
 @dataclass(frozen=True)
 class Scheme(SchemeBase):
-    #: Diffusivity coefficient.
     diffusivity: Array
+    """Diffusivity coefficient."""
 
 
 @predict_timestep.register(Scheme)
@@ -91,14 +91,15 @@ def _numerical_flux_diffusion_centered_scheme(
 
 @dataclass(frozen=True)
 class SBPSAT(FiniteDifferenceScheme):
-    #: A :class:`~pyshocks.sbp.SBPOperator` operator that is used to construct the
-    #: required second-order derivative.
     op: sbp.SBPOperator
+    """A :class:`~pyshocks.sbp.SBPOperator` operator that is used to construct the
+    required second-order derivative.
+    """
 
-    #: Diagonal norm operator used by the scheme.
     P: ClassVar[Array]
-    #: Second-order derivative operator used by the scheme.
+    """Diagonal norm operator used by the scheme."""
     D2: ClassVar[Array]
+    """Second-order derivative operator used by the scheme."""
 
     @property
     def name(self) -> str:

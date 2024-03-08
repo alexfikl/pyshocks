@@ -119,19 +119,21 @@ from pyshocks.tools import Array, ScalarLike
 
 @dataclass(frozen=True)
 class Stencil:
-    #: Interior stencil, as an array of shape ``(n_i,)``.
     int: Array
-    #: Left boundary stencil, as an array of shape ``(n_l, m_l)``.
+    """Interior stencil, as an array of shape ``(n_i,)``."""
     left: Array | None
-    #: Left boundary stencil, as an array of shape ``(n_r, m_r)``. If not
-    #: provided and :attr:`left` is provided, the right boundary stencil
-    #: is taken to be ``-left[::-1, ::-1]``.
+    """Left boundary stencil, as an array of shape ``(n_l, m_l)``."""
     right: Array | None
+    """Left boundary stencil, as an array of shape ``(n_r, m_r)``. If not
+    provided and :attr:`left` is provided, the right boundary stencil
+    is taken to be ``-left[::-1, ::-1]``.
+    """
 
-    #: If *True*, the resulting operator is assumed to be diagonal only.
-    #: This is used to return an array of shape ``(n,)`` instead of a
-    #: matrix of shape ``(n, m)`` in certain functions.
     is_diagonal: bool = False
+    """If *True*, the resulting operator is assumed to be diagonal only.
+    This is used to return an array of shape ``(n,)`` instead of a
+    matrix of shape ``(n, m)`` in certain functions.
+    """
 
     def __post_init__(self) -> None:
         if self.left is not None and self.right is None:
@@ -251,25 +253,28 @@ def make_sbp_matrix_from_stencil(
 
 @enum.unique
 class SecondDerivativeType(enum.Enum):
-    #: A second derivative that is compatible with the first derivative in
-    #: the sense described by [Mattsson2012]_.
     Compatible = enum.auto()
+    """A second derivative that is compatible with the first derivative in
+    the sense described by [Mattsson2012]_.
+    """
 
-    #: A second derivative that is compatible with the first derivative
-    #: in the sense described by [Parisi2010]_.
     FullyCompatible = enum.auto()
+    """A second derivative that is compatible with the first derivative
+    in the sense described by [Parisi2010]_.
+    """
 
-    #: A narrow-stencil second-order derivative.
     Narrow = enum.auto()
+    """A narrow-stencil second-order derivative."""
 
 
 @dataclass(frozen=True)
 class SBPOperator:
     """Generic family of SBP operators."""
 
-    #: A :class:`SecondDerivativeType` describing the construction of the
-    #: second derivative.
     second_derivative: SecondDerivativeType
+    """A :class:`SecondDerivativeType` describing the construction of the
+    second derivative.
+    """
 
     @property
     def ids(self) -> str:

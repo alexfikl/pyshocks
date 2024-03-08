@@ -44,8 +44,8 @@ class Scheme(SchemeBase):
     .. automethod:: __init__
     """
 
-    #: Advection velocity.
     velocity: Array
+    """Advection velocity."""
 
 
 @predict_timestep.register(Scheme)

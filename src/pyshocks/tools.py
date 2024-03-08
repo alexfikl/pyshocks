@@ -199,12 +199,12 @@ def estimate_gliding_order_of_convergence(
 class EOCRecorder:
     """Keep track of all your *estimated order of convergence* needs."""
 
-    #: An identifier used for the data being estimated.
     name: str
-    #: :class:`numpy.dtype` of the error values.
+    """An identifier used for the data being estimated."""
     dtype: "jnp.dtype[Any]"
-    #: history
+    """:class:`numpy.dtype` of the error values."""
     history: list[tuple[Scalar, Scalar]]
+    """History of ``(h, error)``."""
 
     def __init__(self, *, name: str = "Error", dtype: Any = None) -> None:
         if dtype is None:
@@ -400,16 +400,16 @@ class BlockTimer:
         print(bt)
     """
 
-    #: An identifier used to differentiate the timer.
     name: str = "block"
+    """An identifier used to differentiate the timer."""
 
-    #: Total wall time, obtained from :func:`time.perf_counter`
-    t_wall: ScalarLike = field(init=False)
     t_wall_start: ScalarLike = field(init=False)
+    t_wall: ScalarLike = field(init=False)
+    """Total wall time, obtained from :func:`time.perf_counter`."""
 
-    #: Total process time, obtained from :func:`time.process_time`.
-    t_proc: ScalarLike = field(init=False)
     t_proc_start: ScalarLike = field(init=False)
+    t_proc: ScalarLike = field(init=False)
+    """Total process time, obtained from :func:`time.process_time`."""
 
     @property
     def t_cpu(self) -> Scalar:
@@ -452,12 +452,12 @@ class BlockTimer:
 class TimeResult:
     __slots__ = ("mean", "std", "walltime")
 
-    #: Smallest value of the walltime for all the runs.
     walltime: Scalar
-    #: Mean value for the walltimes.
+    """Smallest value of the walltime for all the runs."""
     mean: Scalar
-    #: Standard deviations for the walltimes.
+    """Mean value for the walltimes."""
     std: Scalar
+    """Standard deviations for the walltimes."""
 
     def __str__(self) -> str:
         return f"wall {self.walltime:.3e}s mean {self.mean:.3e}s ± {self.std:.3e}"
@@ -493,10 +493,10 @@ class IterationTimer:
         print(timer.stats())
     """
 
-    #: An identifier used to differentiate the timer.
     name: str = "iteration"
-    #: A list of timings.
+    """An identifier used to differentiate the timer."""
     t_deltas: list[Scalar] = field(default_factory=list, init=False, repr=False)
+    """A list of timings."""
 
     def tick(self) -> BlockTimer:
         """

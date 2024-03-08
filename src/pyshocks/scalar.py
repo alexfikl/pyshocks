@@ -334,9 +334,10 @@ class OneSidedBoundary(Boundary):
     .. automethod:: __init__
     """
 
-    #: Integer ``+1`` or ``-1`` indicating the side on which this boundary
-    #: condition applies.
     side: int
+    """Integer ``+1`` or ``-1`` indicating the side on which this boundary
+    condition applies.
+    """
 
 
 @dataclass(frozen=True)
@@ -345,10 +346,10 @@ class TwoSidedBoundary(Boundary):
     .. automethod:: __init__
     """
 
-    #: Boundary condition on the left-hand side of the domain.
     left: OneSidedBoundary
-    #: Boundary condition on the right-hand side of the domain.
+    """Boundary condition on the left-hand side of the domain."""
     right: OneSidedBoundary
+    """Boundary condition on the right-hand side of the domain."""
 
     def __post_init__(self) -> None:
         assert isinstance(self.left, OneSidedBoundary)
@@ -402,9 +403,10 @@ class DirichletBoundary(OneSidedBoundary):
     .. automethod:: __init__
     """
 
-    #: Callable that can be used to evaluate the boundary condition in the
-    #: ghost cells on the given :attr:`~OneSidedBoundary.side`.
     g: VectorFunction
+    """Callable that can be used to evaluate the boundary condition in the
+    ghost cells on the given :attr:`~OneSidedBoundary.side`.
+    """
 
     @property
     def boundary_type(self) -> "BoundaryType":
@@ -455,9 +457,10 @@ class NeumannBoundary(OneSidedBoundary):
     .. automethod:: __init__
     """
 
-    #: Callable that can be used to evaluate the boundary condition in the
-    #: ghost cells on the given :attr:`~OneSidedBoundary.side`.
     g: TemporalFunction
+    """Callable that can be used to evaluate the boundary condition in the
+    ghost cells on the given :attr:`~OneSidedBoundary.side`.
+    """
 
     @property
     def boundary_type(self) -> BoundaryType:
@@ -562,10 +565,10 @@ class OneSidedSATBoundary(OneSidedBoundary):
      where :math:`i` is either the first or last point in the grid.
     """
 
-    #: Callable used to evaluate the boundary condition on the boundary only.
     g: TemporalFunction
-    #: Weight used in the SAT penalty term.
+    """Callable used to evaluate the boundary condition on the boundary only."""
     tau: ScalarLike
+    """Weight used in the SAT penalty term."""
 
     def __post_init__(self) -> None:
         assert self.tau >= 0.5
@@ -590,10 +593,10 @@ def _evaluate_boundary_sat(
 
 @dataclass(frozen=True)
 class SATBoundary(TwoSidedBoundary):
-    #: Boundary condition on the left-hand side of the domain.
     left: OneSidedSATBoundary
-    #: Boundary condition on the right-hand side of the domain.
+    """Boundary condition on the left-hand side of the domain."""
     right: OneSidedSATBoundary
+    """Boundary condition on the right-hand side of the domain."""
 
 
 def make_sat_boundary(
@@ -617,9 +620,10 @@ def make_sat_boundary(
 class OneSidedAdvectionSATBoundary(OneSidedSATBoundary):
     """Implements the SAT boundary condition for the advection equation."""
 
-    #: Velocity at the boundary (not dotted with the normal), which is used
-    #: to determine if the boundary conditions is necessary.
     velocity: ScalarLike
+    """Velocity at the boundary (not dotted with the normal), which is used
+    to determine if the boundary conditions is necessary.
+    """
 
 
 @evaluate_boundary.register(OneSidedAdvectionSATBoundary)
@@ -661,9 +665,10 @@ class OneSidedDiffusionSATBoundary(OneSidedSATBoundary):
     energy stable if the derivative at the boundary vanishes.
     """
 
-    #: The boundary operator used to describe the second-order derivative in
-    #: [Mattsson2004]_. This is used to construct the correct boundary penalty.
     S: ClassVar[Array]
+    """The boundary operator used to describe the second-order derivative in
+    [Mattsson2004]_. This is used to construct the correct boundary penalty.
+    """
 
 
 @evaluate_boundary.register(OneSidedDiffusionSATBoundary)

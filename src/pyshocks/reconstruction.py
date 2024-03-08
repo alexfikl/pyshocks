@@ -191,10 +191,10 @@ class MUSCL(Reconstruction):
     the underlying variable :math:`u`.
     """
 
-    #: A :class:`~pyshocks.limiters.Limiter` used in the MUSCL reconstruction.
     lm: Limiter
-    #: Absolute tolerance in cutting of the slope in constant regions.
+    """A :class:`~pyshocks.limiters.Limiter` used in the MUSCL reconstruction."""
     atol: float = 1.0e-12
+    """Absolute tolerance in cutting of the slope in constant regions."""
 
     @property
     def name(self) -> str:
@@ -306,10 +306,10 @@ def _reconstruct_muscls(
 class WENOJS(Reconstruction):
     """A WENO-JS reconstruction from [JiangShu1996]_."""
 
-    #: Small fudge factor used in smoothness indicators.
     eps: float
-    #: A :class:`~pyshocks.weno.Stencil` for the reconstruction.
+    """Small fudge factor used in smoothness indicators."""
     s: ClassVar[weno.Stencil]
+    """A :class:`~pyshocks.weno.Stencil` for the reconstruction."""
 
     @property
     def stencil_width(self) -> int:

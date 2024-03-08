@@ -87,28 +87,29 @@ class Stencil:
     The general setup is more akin to the description provided in [Shu1998]_.
     """
 
-    #: Coefficients that are part of the smoothness coefficient expressions.
     a: Array | None
-    #: Coefficients that define the smoothness stencils.
+    """Coefficients that are part of the smoothness coefficient expressions."""
     b: Array | None
-    #: Coefficients that define the solution interpolation stencils.
+    """Coefficients that define the smoothness stencils."""
     c: Array
-    #: Ideal weights for the WENO scheme, that define a high-order
-    #: reconstruction using the stencils :attr:`c`.
+    """Coefficients that define the solution interpolation stencils."""
     d: Array
+    """Ideal weights for the WENO scheme, that define a high-order
+    reconstruction using the stencils :attr:`c`.
+    """
 
 
 @dataclass(frozen=True)
 class BoundaryStencil:
-    #: Interior stencil coefficients.
     si: Stencil
+    """Interior stencil coefficients."""
 
-    #: The type of the boundary, as given by :class:`~pyshocks.BoundaryType`.
     bc: BoundaryType
-    #: If not *None*, the stencil for the left boundary.
+    """The type of the boundary, as given by :class:`~pyshocks.BoundaryType`."""
     sl: Stencil | None
-    #: If not *None*, the stencil for the right boundary.
+    """If not *None*, the stencil for the left boundary."""
     sr: Stencil | None
+    """If not *None*, the stencil for the right boundary."""
 
 
 def weno_smoothness(

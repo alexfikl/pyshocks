@@ -39,20 +39,21 @@ class Stencil:
     :attr:`order` with a truncation order coefficient of :attr:`trunc`.
     """
 
-    #: Order of the derivative approximated by the stencil.
     derivative: int
-    #: Order of the approximation.
+    """Order of the derivative approximated by the stencil."""
     order: int
-    #: Coefficients used in the stencil.
+    """Order of the approximation."""
     coeffs: Array
-    #: Indices around the centered :math:`0` used in the stencil.
+    """Coefficients used in the stencil."""
     indices: Array
-    #: Estimated truncation error, which assumes the next derivative in the
-    #: expansion is :math:`\mathcal{O}(1)`.
+    """Indices around the centered :math:`0` used in the stencil."""
     trunc: Scalar
+    r"""Estimated truncation error, which assumes the next derivative in the
+    expansion is :math:`\mathcal{O}(1)`.
+    """
 
-    #: A version of :attr:`coeffs` that is symmetric around 0.
     padded_coeffs: Array
+    """A version of :attr:`coeffs` that is symmetric around 0."""
 
     def __str__(self) -> str:
         return repr(self)

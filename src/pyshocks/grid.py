@@ -45,30 +45,30 @@ from pyshocks.tools import Array, Scalar, ScalarLike, SpatialFunction
 
 @dataclass(frozen=True)
 class Grid:
-    #: Left domain bound for :math:`[a, b]`.
     a: ScalarLike
-    #: Right domain bound for :math:`[a, b]`.
+    """Left domain bound for :math:`[a, b]`."""
     b: ScalarLike
-    #: Number of ghost cells.
+    """Right domain bound for :math:`[a, b]`."""
     nghosts: int
+    """Number of ghost cells."""
 
-    #: Array of solution point coordinates of shape ``(n + 2 g,)``.
     x: Array
-    #: Array of cell sizes (dependent on the representation).
+    """Array of solution point coordinates of shape ``(n + 2 g,)``."""
     dx: Array
+    """Array of cell sizes (dependent on the representation)."""
 
-    #: Midpoint between the solution points.
     f: Array
-    #: Array of cell sizes between the staggered points :attr:`f`.
+    """Midpoint between the solution points."""
     df: Array
+    """Array of cell sizes between the staggered points :attr:`f`."""
 
-    #: Smallest cell size in the domain.
     dx_min: Scalar
-    #: Largest cell size in the domain.
+    """Smallest cell size in the domain."""
     dx_max: Scalar
+    """Largest cell size in the domain."""
 
-    #: If *True*, the grid is assumed to be periodic.
     is_periodic: bool
+    """If *True*, the grid is assumed to be periodic."""
 
     @property
     def dtype(self) -> "jnp.dtype[Any]":
@@ -346,16 +346,17 @@ class Quadrature:
     .. automethod:: __call__
     """
 
-    #: Expected order of convergence of the quadrature
     order: int
-    #: Quadrature points. The array has a shape of ``(nnodes, ncells)``.
+    """Expected order of convergence of the quadrature"""
     x: Array
-    #: Quadrature weights of the same size as :attr:`x`.
+    """Quadrature points. The array has a shape of ``(nnodes, ncells)``."""
     w: Array
+    """Quadrature weights of the same size as :attr:`x`."""
 
-    #: Cell sizes, as given by :attr:`Grid.dx`. These are only used when
-    #: computing cell averages.
     dx: Array
+    """Cell sizes, as given by :attr:`Grid.dx`. These are only used when
+    computing cell averages.
+    """
 
     def __post_init__(self) -> None:
         if self.x.shape != self.w.shape:

@@ -65,25 +65,27 @@ def two_point_entropy_flux_42(qi: Array, u: Array) -> Array:
 class SSWENO242(FiniteDifferenceScheme):
     """Fourth-order Entropy Stable WENO (SS-WENO) scheme by [Fisher2013]_."""
 
-    #: Reconstruction method used by the SS-WENO method.
     rec: reconstruction.SSWENO242
-    #: SBP scheme used to approximate the diffusive terms, if any.
+    """Reconstruction method used by the SS-WENO method."""
     sbp: sbp.SBP42
+    """SBP scheme used to approximate the diffusive terms, if any."""
 
-    #: Constant diffusivity coefficient. If zero, no diffusion is used.
     nu: ScalarLike = 0.0
-    #: Offset used in computing the entropy stable flux in Equation 3.42
-    #: from [Fisher2013]_.
+    """Constant diffusivity coefficient. If zero, no diffusion is used."""
     c: ScalarLike = 1.0e-12
+    """Offset used in computing the entropy stable flux in Equation 3.42
+    from [Fisher2013]_.
+    """
 
-    #: Diagonal norm operator corresponding to :attr:`sbp`.
     P: ClassVar[Array]
-    #: Stencil of the operator used to construct the first-order derivative in
-    #: the SBP scheme. This stencil is used to compute the two-point entropy
-    #: flux for high-order schemes.
+    """Diagonal norm operator corresponding to :attr:`sbp`."""
     q: ClassVar[Stencil]
-    #: Second-order derivative SBP operator.
+    """Stencil of the operator used to construct the first-order derivative in
+    the SBP scheme. This stencil is used to compute the two-point entropy
+    flux for high-order schemes.
+    """
     DD: ClassVar[Array]
+    """Second-order derivative SBP operator."""
 
     def __post_init__(self) -> None:
         if not isinstance(self.rec, reconstruction.SSWENO242):

@@ -176,8 +176,8 @@ class MINMODLimiter(Limiter):
     properties.
     """
 
-    #: Coefficient used in the limiter.
     theta: float
+    """Coefficient used in the limiter."""
 
     def __post_init__(self) -> None:
         if self.theta < 1.0 or self.theta > 2.0:
@@ -294,9 +294,10 @@ class VanAlbadaLimiter(Limiter):
     second variant of the van Albada limiter is not symmetric.
     """
 
-    #: Choses one of the two variants of the van Albada limiter. This is an
-    #: integer that takes values in :math:`\{1, 2\}`.
     variant: int
+    r"""Choses one of the two variants of the van Albada limiter. This is an
+    integer that takes values in :math:`\{1, 2\}`.
+    """
 
     if __debug__:
 

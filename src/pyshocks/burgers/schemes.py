@@ -103,8 +103,8 @@ class Rusanov(FiniteVolumeScheme):
     .. automethod:: __init__
     """
 
-    #: Coefficient controlling the amount of artificial dissipation.
     alpha: float = 1.0
+    """Coefficient controlling the amount of artificial dissipation."""
 
 
 @numerical_flux.register(Rusanov)
@@ -181,8 +181,8 @@ class EngquistOsher(FiniteVolumeScheme):
     .. automethod:: __init__
     """
 
-    #: Point at which the flux attains a global minimum.
     omega: float = field(default=0, init=False, repr=False)
+    """Point at which the flux attains a global minimum."""
 
 
 @numerical_flux.register(EngquistOsher)
@@ -273,11 +273,12 @@ class SSMUSCL(FiniteVolumeScheme):
     scheme.
     """
 
-    #: An integer denoting the version of the schemes described in
-    #: [Hesthaven2018]_. First variant denotes the limiter defined on
-    #: page 193 and the second variant denotes the limiter defined on
-    #: page 194.
     variant: int = 2
+    """An integer denoting the version of the schemes described in
+    [Hesthaven2018]_. First variant denotes the limiter defined on
+    page 193 and the second variant denotes the limiter defined on
+    page 194.
+    """
 
     @property
     def name(self) -> str:
@@ -352,13 +353,13 @@ class FluxSplitRusanov(FiniteDifferenceScheme):
     .. automethod:: __init__
     """
 
-    #: Order of the one sided flux finite difference approximations.
     sorder: int
+    """Order of the one sided flux finite difference approximations."""
 
-    #: Finite difference stencil biased to the right.
     sp: ClassVar[fd.Stencil]
-    #: Finite difference stencil biased to the left.
+    """Finite difference stencil biased to the right."""
     sm: ClassVar[fd.Stencil]
+    """Finite difference stencil biased to the left."""
 
     @property
     def order(self) -> int:

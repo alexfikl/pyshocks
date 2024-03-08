@@ -30,8 +30,8 @@ class Scheme(SchemeBase):
     """
 
     # NOTE: this is Optional just for mypy, but should never be `None` in practice
-    #: Advection velocity
     velocity: Array | None
+    """Advection velocity."""
 
 
 @flux.register(Scheme)

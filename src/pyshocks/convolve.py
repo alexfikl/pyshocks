@@ -29,24 +29,28 @@ from pyshocks.tools import Array
 class ConvolutionType(enum.Enum):
     """Convolution types supported by :func:`scipy.ndimage.convolve1d`."""
 
-    #: Matching :func:`numpy.convolve`.
     Same = enum.auto()
-
-    #: Reflected around the edge of the last pixel, e.g.
-    #: ``(d c b a | a b c d | d c b a)``.
+    """Matching :func:`numpy.convolve`."""
     Reflect = enum.auto()
-    #: Filled with a constant beyond the edge of the last pixel, e.g.
-    #: ``(k k k k | a b c d | k k k k)``.
+    """Reflected around the edge of the last pixel, e.g.
+    ``(d c b a | a b c d | d c b a)``.
+    """
     Constant = enum.auto()
-    #: Filled with the value of the last pixel beyond the boundary, e.g.
-    #: ``(a a a a | a b c d | d d d d)``.
+    """Filled with a constant beyond the edge of the last pixel, e.g.
+    ``(k k k k | a b c d | k k k k)``.
+    """
     Nearest = enum.auto()
-    #: Reflected around the center of the last pixel, i.e.
-    #: ``(d c b | a b c d | c b a)``.
+    """Filled with the value of the last pixel beyond the boundary, e.g.
+    ``(a a a a | a b c d | d d d d)``.
+    """
     Mirror = enum.auto()
-    #: Wrapping around the opposite edge, i.e.
-    #: ``(a b c d | a b c d | a b c d)``.
+    """Reflected around the center of the last pixel, i.e.
+    ``(d c b | a b c d | c b a)``.
+    """
     Wrap = enum.auto()
+    """Wrapping around the opposite edge, i.e.
+    ``(a b c d | a b c d | a b c d)``.
+    """
 
 
 _BOUNDARY_TYPE_TO_CONVOLUTION_TYPE = {
