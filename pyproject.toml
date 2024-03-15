@@ -1,8 +1,7 @@
 [build-system]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
 requires = [
-    "setuptools>=62",
-    "wheel",
+    "hatchling>=1.10.0",
 ]
 
 [project]
@@ -71,9 +70,11 @@ vis = [
 Documentation = "https://pyshocks.readthedocs.io"
 Repository = "https://github.com/alexfikl/pyshocks"
 
-[tool.setuptools]
-package-dir = { "" = "src" }
-packages = { find = { where = ["src"] } }
+[tool.hatch.build.targets.sdist]
+exclude = [".github", ".ci", "docs/_build"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyshocks"]
 
 [tool.ruff]
 preview = true

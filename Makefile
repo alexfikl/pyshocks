@@ -74,14 +74,8 @@ manifest:		## Update MANIFEST.in file
 # {{{ testing
 
 REQUIREMENTS=\
-	requirements-build.txt \
 	requirements-dev.txt \
 	requirements.txt
-
-requirements-build.txt: requirements-build.in
-	uv pip compile --upgrade --resolution highest \
-		-o $@ $<
-.PHONY: requirements-build.txt
 
 requirements-dev.txt: pyproject.toml
 	uv pip compile --upgrade --resolution highest \
@@ -98,8 +92,7 @@ pin: $(REQUIREMENTS)	## Pin dependencies versions to requirements.txt
 .PHONY: pin
 
 pip-install:			## Install pinned depdencies from requirements.txt
-	$(PYTHON) -m pip install --upgrade pip setuptools
-	$(PYTHON) -m pip install -r requirements-build.txt
+	$(PYTHON) -m pip install --upgrade pip hatchling wheel
 	$(PYTHON) -m pip install -r requirements-dev.txt -e .
 .PHONY: pip-install
 
