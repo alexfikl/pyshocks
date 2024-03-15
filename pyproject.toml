@@ -44,7 +44,6 @@ dependencies = [
 ]
 [project.optional-dependencies]
 dev = [
-    "check-manifest",
     "codespell",
     "doc8",
     "mypy",
@@ -134,13 +133,6 @@ multiline-quotes = "double"
 
 [tool.ruff.lint.isort]
 known-first-party = ["pyshocks"]
-
-[tool.check-manifest]
-ignore = [
-    "*.yml",
-    "*.yaml",
-    ".ci/*",
-]
 
 [tool.mypy]
 strict = true

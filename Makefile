@@ -32,7 +32,7 @@ isort:			## Run ruff isort fixes over the source code
 	@echo -e "\e[1;32mruff isort clean!\e[0m"
 .PHONY: isort
 
-lint: ruff mypy doc8 codespell reuse manifest	## Run linting checks
+lint: ruff mypy doc8 codespell reuse 			## Run linting checks
 .PHONY: lint
 
 ruff:			## Run ruff checks over the source code
@@ -63,11 +63,6 @@ reuse:			## Check REUSE license compliance
 	$(PYTHON) -m reuse lint
 	@echo -e "\e[1;32mREUSE compliant!\e[0m"
 .PHONY: reuse
-
-manifest:		## Update MANIFEST.in file
-	$(PYTHON) -m check_manifest
-	@echo -e "\e[1;32mMANIFEST.in is up to date!\e[0m"
-.PHONY: manifest
 
 # }}}
 
