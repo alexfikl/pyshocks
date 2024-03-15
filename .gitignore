@@ -22,6 +22,7 @@ main.pdf
 *.spl
 
 # python
+dist
 *.egg-info
 *.egg
 *.whl
