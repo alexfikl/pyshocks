@@ -73,13 +73,13 @@ REQUIREMENTS=\
 	requirements.txt
 
 requirements-dev.txt: pyproject.toml
-	uv pip compile --upgrade --resolution highest \
+	uv pip compile --upgrade --resolution highest --refresh \
 		--extra dev --extra vis --extra pyweno \
 		-o $@ $<
 .PHONY: requirements-dev.txt
 
 requirements.txt: pyproject.toml
-	uv pip compile --upgrade --resolution highest \
+	uv pip compile --upgrade --resolution highest --refresh \
 		-o $@ $<
 .PHONY: requirements.txt
 
@@ -89,6 +89,8 @@ pin: $(REQUIREMENTS)	## Pin dependencies versions to requirements.txt
 pip-install:			## Install pinned depdencies from requirements.txt
 	$(PYTHON) -m pip install --upgrade pip hatchling wheel
 	$(PYTHON) -m pip install -r requirements-dev.txt -e .
+	$(PYTHON) -m pip install \
+		'git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO'
 .PHONY: pip-install
 
 docs:			## Generate HTML documentation (at docs/_build/html/index.html)
