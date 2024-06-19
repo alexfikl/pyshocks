@@ -90,6 +90,7 @@ pip-install:			## Install pinned depdencies from requirements.txt
 	$(PYTHON) -m pip install --upgrade pip hatchling wheel
 	$(PYTHON) -m pip install -r requirements-dev.txt -e .
 	$(PYTHON) -m pip install \
+		--no-build-isolation \
 		'git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO'
 .PHONY: pip-install
 
