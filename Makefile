@@ -74,7 +74,7 @@ REQUIREMENTS=\
 
 requirements-dev.txt: pyproject.toml
 	uv pip compile --upgrade --resolution highest --refresh \
-		--extra dev --extra vis --extra pyweno \
+		--extra dev --extra vis \
 		-o $@ $<
 .PHONY: requirements-dev.txt
 
