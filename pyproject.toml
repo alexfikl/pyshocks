@@ -62,7 +62,7 @@ optional-dependencies.docs = [
     "sphinx-book-theme",
 ]
 optional-dependencies.pyweno = [
-    "pyweno @ git+https://github.com/alexfikl/PyWENO.git@meson-python#egg=PyWENO",
+    "pyweno @ git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO",
 ]
 optional-dependencies.vis = [
     "matplotlib",
