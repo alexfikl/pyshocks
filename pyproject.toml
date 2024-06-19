@@ -112,15 +112,6 @@ lint.select = [
     "UP",  # pyupgrade
     "W",   # flake8
 ]
-lint.per-file-ignores."pyshocks/__init__.py" = [
-    "FBT003",
-]
-lint.flake8-quotes.docstring-quotes = "double"
-lint.flake8-quotes.inline-quotes = "double"
-lint.flake8-quotes.multiline-quotes = "double"
-lint.isort.known-first-party = [
-    "pyshocks",
-]
 lint.ignore = [
     "E402",    # module-import-not-at-top-of-file
     "ISC001",  # single-line-implicit-string-concatenation
@@ -141,6 +132,16 @@ lint.ignore = [
     "S403",    # suspicious-pickle-import
     "SIM108",  # use-ternary-operator
     "UP037",   # quoted-annotation
+]
+
+lint.per-file-ignores."pyshocks/__init__.py" = [
+    "FBT003",
+]
+lint.flake8-quotes.docstring-quotes = "double"
+lint.flake8-quotes.inline-quotes = "double"
+lint.flake8-quotes.multiline-quotes = "double"
+lint.isort.known-first-party = [
+    "pyshocks",
 ]
 
 [tool.mypy]
