@@ -191,7 +191,7 @@ def test_advection_finite_difference_jacobian(
     if not visualize:
         return
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))  # type: ignore[misc,unused-ignore]
     ax1.imshow(fddjac)
     ax1.set_title("$Finite$")
     ax2.imshow(jaxjac)
