@@ -295,7 +295,7 @@ class VanAlbadaLimiter(Limiter):
     """
 
     variant: int
-    r"""Choses one of the two variants of the van Albada limiter. This is an
+    r"""Chooses one of the two variants of the van Albada limiter. This is an
     integer that takes values in :math:`\{1, 2\}`.
     """
 

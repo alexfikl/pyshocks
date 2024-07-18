@@ -309,14 +309,14 @@ def scalar_flux_engquist_osher(
     ul, ur = reconstruct(scheme.rec, grid, bc, u, u, a)
     fr = flux(scheme, t, grid.f, jnp.maximum(ur, omega))
     fl = flux(scheme, t, grid.f, jnp.minimum(ul, omega))
-    fo = flux(
+    fomega = flux(
         scheme,
         t,
         grid.x,
         jnp.full_like(grid.df, omega),
     )
 
-    fnum = fr[:-1] + fl[1:] - fo
+    fnum = fr[:-1] + fl[1:] - fomega
     return jnp.pad(fnum, 1)
 
 
@@ -431,9 +431,9 @@ def make_dirichlet_boundary(
     if gb is None:
         gb = ga
 
-    ba = DirichletBoundary(side=-1, g=ga)
-    bb = DirichletBoundary(side=+1, g=gb)
-    return TwoSidedBoundary(left=ba, right=bb)
+    b_a = DirichletBoundary(side=-1, g=ga)
+    b_b = DirichletBoundary(side=+1, g=gb)
+    return TwoSidedBoundary(left=b_a, right=b_b)
 
 
 # }}}
@@ -504,9 +504,9 @@ def make_neumann_boundary(
     if gb is None:
         gb = ga
 
-    ba = NeumannBoundary(side=-1, g=ga)
-    bb = NeumannBoundary(side=+1, g=gb)
-    return TwoSidedBoundary(left=ba, right=bb)
+    b_a = NeumannBoundary(side=-1, g=ga)
+    b_b = NeumannBoundary(side=+1, g=gb)
+    return TwoSidedBoundary(left=b_a, right=b_b)
 
 
 # }}}
@@ -605,9 +605,9 @@ def make_sat_boundary(
     if gb is None:
         gb = ga
 
-    ba = OneSidedSATBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedSATBoundary(side=+1, g=gb, tau=1.0)
-    return SATBoundary(left=ba, right=bb)
+    b_a = OneSidedSATBoundary(side=-1, g=ga, tau=1.0)
+    b_b = OneSidedSATBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=b_a, right=b_b)
 
 
 # }}}
@@ -645,9 +645,9 @@ def make_advection_sat_boundary(
     if gb is None:
         gb = ga
 
-    ba = OneSidedAdvectionSATBoundary(side=-1, g=ga, tau=1.0, velocity=1.0)
-    bb = OneSidedAdvectionSATBoundary(side=+1, g=gb, tau=1.0, velocity=1.0)
-    return SATBoundary(left=ba, right=bb)
+    b_a = OneSidedAdvectionSATBoundary(side=-1, g=ga, tau=1.0, velocity=1.0)
+    b_b = OneSidedAdvectionSATBoundary(side=+1, g=gb, tau=1.0, velocity=1.0)
+    return SATBoundary(left=b_a, right=b_b)
 
 
 # }}}
@@ -691,9 +691,9 @@ def make_diffusion_sat_boundary(
     if gb is None:
         gb = ga
 
-    ba = OneSidedDiffusionSATBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedDiffusionSATBoundary(side=+1, g=gb, tau=1.0)
-    return SATBoundary(left=ba, right=bb)
+    b_a = OneSidedDiffusionSATBoundary(side=-1, g=ga, tau=1.0)
+    b_b = OneSidedDiffusionSATBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=b_a, right=b_b)
 
 
 # }}}
@@ -733,9 +733,9 @@ def make_burgers_sat_boundary(
     if gb is None:
         gb = ga
 
-    ba = OneSidedBurgersBoundary(side=-1, g=ga, tau=1.0)
-    bb = OneSidedBurgersBoundary(side=+1, g=gb, tau=1.0)
-    return SATBoundary(left=ba, right=bb)
+    b_a = OneSidedBurgersBoundary(side=-1, g=ga, tau=1.0)
+    b_b = OneSidedBurgersBoundary(side=+1, g=gb, tau=1.0)
+    return SATBoundary(left=b_a, right=b_b)
 
 
 # }}}

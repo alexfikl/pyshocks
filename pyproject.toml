@@ -48,7 +48,6 @@ dependencies = [
     "typing-extensions; python_version<'3.10'",
 ]
 optional-dependencies.dev = [
-    "codespell",
     "doc8",
     "mypy",
     "pyproject-fmt",
@@ -56,6 +55,7 @@ optional-dependencies.dev = [
     "reuse",
     "ruff",
     "types-dataclasses",
+    "typos",
     "uv",
 ]
 optional-dependencies.docs = [

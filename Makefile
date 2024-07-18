@@ -32,7 +32,7 @@ isort:			## Run ruff isort fixes over the source code
 	@echo -e "\e[1;32mruff isort clean!\e[0m"
 .PHONY: isort
 
-lint: ruff mypy doc8 codespell reuse 			## Run linting checks
+lint: typos reuse ruff doc8 mypy	## Run linting checks
 .PHONY: lint
 
 ruff:			## Run ruff checks over the source code
@@ -50,14 +50,10 @@ doc8:			## Run doc8 checks over the source code
 	@echo -e "\e[1;32mdoc8 clean!\e[0m"
 .PHONY: doc8
 
-codespell:		## Run codespell checks over the documentation
-	@codespell --summary \
-		--skip _build --skip src/*.egg-info \
-		--uri-ignore-words-list '*' \
-		--ignore-words .codespell-ignore \
-		src tests examples docs drivers README.rst
-	@echo -e "\e[1;32mcodespell clean!\e[0m"
-.PHONY: codespell
+typos:			## Run typos over the source code and documentation
+	@typos
+	@echo -e "\e[1;32mtypos clean!\e[0m"
+.PHONY: typos
 
 reuse:			## Check REUSE license compliance
 	$(PYTHON) -m reuse lint
@@ -86,7 +82,7 @@ requirements.txt: pyproject.toml
 pin: $(REQUIREMENTS)	## Pin dependencies versions to requirements.txt
 .PHONY: pin
 
-pip-install:			## Install pinned depdencies from requirements.txt
+pip-install:			## Install pinned dependencies from requirements.txt
 	$(PYTHON) -m pip install --upgrade pip hatchling wheel setuptools
 	$(PYTHON) -m pip install -r requirements-dev.txt -e .
 	$(PYTHON) -m pip install \
@@ -132,3 +128,12 @@ ctags:			## Regenerate ctags
 		--python-kinds=-i \
 		--language-force=python
 .PHONY: ctags
+
+clean:			## Remove various build artifacts
+	rm -rf build dist
+	rm -rf docs/_build
+.PHONY: clean
+
+purge: clean	## Remove various temporary files
+	rm -rf .ruff_cache .pytest_cache .mypy_cache
+.PHONY: purge
