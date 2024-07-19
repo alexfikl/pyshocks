@@ -197,7 +197,7 @@ def make_sbp_circulant_matrix(n: int, s: Stencil, *, weight: ScalarLike = 1.0) -
     m = s.int.size
     w = weight * jnp.eye(n, n, dtype=s.dtype)
     return sum(
-        [jnp.roll(s.int[i] * w, i - m // 2, axis=1) for i in range(m)], jnp.array(0.0)
+        (jnp.roll(s.int[i] * w, i - m // 2, axis=1) for i in range(m)), jnp.array(0.0)
     )
 
 
@@ -209,10 +209,10 @@ def make_sbp_banded_matrix(n: int, s: Stencil, *, weight: ScalarLike = 1.0) -> A
     """
     o = s.int.size // 2
     mat: Array = sum(
-        [
+        (
             weight * s.int[k] * jnp.eye(n, n, k=k - o, dtype=s.dtype)
             for k in range(s.int.size)
-        ],
+        ),
         jnp.array(0.0),
     )
 

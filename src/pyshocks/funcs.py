@@ -262,12 +262,12 @@ def diffusion_expansion(
 
     L = grid.b - grid.a
     return sum(
-        [
+        (
             a
             * jnp.sin(jnp.pi * n * x / L)
             * jnp.exp(-diffusivity * (n * jnp.pi / L) ** 2 * t)
             for a, n in zip(amplitudes, modes)
-        ],
+        ),
         jnp.zeros_like(x),
     )
 
