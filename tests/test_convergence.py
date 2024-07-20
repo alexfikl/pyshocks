@@ -347,8 +347,8 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
         from pyshocks.scalar import make_advection_sat_boundary
 
         return make_advection_sat_boundary(
-            ga=partial(self.evaluate, grid, x=grid.a),
-            gb=partial(self.evaluate, grid, x=grid.b),
+            ga=partial(self.evaluate, grid, x=jnp.array(grid.a)),
+            gb=partial(self.evaluate, grid, x=jnp.array(grid.b)),
         )
 
     def make_scheme(self, grid: Grid, bc: Boundary) -> SchemeBase:

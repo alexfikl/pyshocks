@@ -67,7 +67,7 @@ def test_flux_limiters(
     if smooth:
         u = cell_average(quad, func_sine)
     else:
-        u = cell_average(quad, partial(func_step, a=grid.a, b=grid.b))
+        u = cell_average(quad, partial(func_step, a=float(grid.a), b=float(grid.b)))
 
     from pyshocks.limiters import evaluate, flux_limit
 

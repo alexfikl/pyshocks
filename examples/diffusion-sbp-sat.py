@@ -75,7 +75,8 @@ def main(
         boundary: Boundary = PeriodicBoundary()
     else:
         boundary = make_diffusion_sat_boundary(
-            ga=lambda t: func(t, grid.a), gb=lambda t: func(t, grid.b)
+            ga=lambda t: func(t, jnp.array(grid.a)),
+            gb=lambda t: func(t, jnp.array(grid.b))
         )
 
     # set up scheme
