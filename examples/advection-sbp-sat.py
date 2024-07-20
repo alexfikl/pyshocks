@@ -72,7 +72,7 @@ def main(
     else:
         boundary = make_advection_sat_boundary(
             ga=lambda t: func(t, jnp.array(grid.a)),
-            gb=lambda t: func(t, jnp.array(grid.b))
+            gb=lambda t: func(t, jnp.array(grid.b)),
         )
 
     # set up scheme
