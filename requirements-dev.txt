@@ -28,7 +28,7 @@ exceptiongroup==1.2.2 ; python_version < '3.11'
     # via pytest
 fonttools==4.53.1
     # via matplotlib
-importlib-metadata==8.0.0 ; python_version < '3.10'
+importlib-metadata==8.2.0 ; python_version < '3.10'
     # via jax
 importlib-resources==6.4.0 ; python_version < '3.10'
     # via matplotlib
@@ -64,7 +64,7 @@ mypy==1.11.0
     # via pyshocks (pyproject.toml)
 mypy-extensions==1.0.0
     # via mypy
-numpy==2.0.0
+numpy==2.0.1
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -96,7 +96,7 @@ pyproject-fmt==2.1.4
     # via pyshocks (pyproject.toml)
 pyproject-fmt-rust==1.1.5
     # via pyproject-fmt
-pytest==8.2.2
+pytest==8.3.2
     # via pyshocks (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via matplotlib
@@ -108,7 +108,7 @@ reuse==4.0.3
     # via pyshocks (pyproject.toml)
 rich==13.7.1
     # via pyshocks (pyproject.toml)
-ruff==0.5.3
+ruff==0.5.5
     # via pyshocks (pyproject.toml)
 scienceplots==2.1.1
     # via pyshocks (pyproject.toml)
@@ -134,9 +134,9 @@ typing-extensions==4.12.2
     # via
     #   pyshocks (pyproject.toml)
     #   mypy
-typos==1.23.2
+typos==1.23.5
     # via pyshocks (pyproject.toml)
-uv==0.2.27
+uv==0.2.31
     # via pyshocks (pyproject.toml)
 zipp==3.19.2 ; python_version < '3.10'
     # via
