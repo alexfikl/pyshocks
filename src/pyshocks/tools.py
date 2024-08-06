@@ -62,30 +62,25 @@ Timing and Profiling
 from __future__ import annotations
 
 import os
+import pathlib
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import wraps
+from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     Iterable,
     Iterator,
+    ParamSpec,
     Protocol,
     Sequence,
+    TypeAlias,
     TypeVar,
     Union,
     cast,
 )
-
-try:
-    # NOTE: needs python 3.10
-    from typing import ParamSpec, TypeAlias
-except ImportError:
-    from typing_extensions import ParamSpec, TypeAlias  # type: ignore[assignment]
-
-import pathlib
-from types import TracebackType
 
 import jax
 import jax.numpy as jnp
