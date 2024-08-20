@@ -810,7 +810,7 @@ def cell_averaged(x: Array, f: Callable[[Array], Array], *, order: int) -> Array
 
     from numpy.polynomial.legendre import leggauss
 
-    xi, wi = leggauss(order)  # type: ignore[no-untyped-call]
+    xi, wi = leggauss(order)
 
     dm = 0.5 * (x[1:] - x[:-1]).reshape(1, -1)
     xm = 0.5 * (x[1:] + x[:-1]).reshape(1, -1)

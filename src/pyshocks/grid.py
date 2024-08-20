@@ -406,7 +406,7 @@ def make_leggauss_quadrature_from_points(x: Array, order: int) -> Quadrature:
     # get Gauss-Legendre quadrature nodes and weights
     from numpy.polynomial.legendre import leggauss
 
-    xi, wi = leggauss(order)  # type: ignore[no-untyped-call]
+    xi, wi = leggauss(order)
     xi = jax.device_put(xi).reshape(-1, 1)
     wi = jax.device_put(wi).reshape(-1, 1)
 
@@ -416,10 +416,10 @@ def make_leggauss_quadrature_from_points(x: Array, order: int) -> Quadrature:
     xm = 0.5 * (x[1:] + x[:-1]).reshape(1, -1)
 
     # translate
-    xi = xm + dxm * xi
-    wi = dxm * wi
+    xim = xm + dxm * xi
+    wim = dxm * wi
 
-    return Quadrature(order=order, x=xi, w=wi, dx=dx)
+    return Quadrature(order=order, x=xim, w=wim, dx=dx)
 
 
 def cell_average(quad: Quadrature, fn: SpatialFunction) -> Array:
