@@ -24,7 +24,7 @@ docutils==0.20.1
     # via
     #   doc8
     #   restructuredtext-lint
-exceptiongroup==1.2.2 ; python_version < '3.11'
+exceptiongroup==1.2.2 ; python_full_version < '3.11'
     # via pytest
 fonttools==4.53.1
     # via matplotlib
@@ -40,13 +40,13 @@ jinja2==3.1.4
     # via reuse
 kiwisolver==1.4.5
     # via matplotlib
-license-expression==30.3.0
+license-expression==30.3.1
     # via reuse
 markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.5
     # via jinja2
-matplotlib==3.9.0
+matplotlib==3.9.2
     # via
     #   pyshocks (pyproject.toml)
     #   scienceplots
@@ -60,7 +60,7 @@ mypy==1.11.1
     # via pyshocks (pyproject.toml)
 mypy-extensions==1.0.0
     # via mypy
-numpy==2.0.1
+numpy==2.1.0
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -104,7 +104,7 @@ reuse==4.0.3
     # via pyshocks (pyproject.toml)
 rich==13.7.1
     # via pyshocks (pyproject.toml)
-ruff==0.5.6
+ruff==0.6.1
     # via pyshocks (pyproject.toml)
 scienceplots==2.1.1
     # via pyshocks (pyproject.toml)
@@ -116,13 +116,13 @@ six==1.16.0
     # via python-dateutil
 stevedore==5.2.0
     # via doc8
-tomli==2.0.1 ; python_version < '3.11'
+tomli==2.0.1 ; python_full_version < '3.11'
     # via
     #   doc8
     #   mypy
     #   pyproject-fmt
     #   pytest
-tomlkit==0.13.0
+tomlkit==0.13.2
     # via reuse
 types-dataclasses==0.6.6
     # via pyshocks (pyproject.toml)
@@ -130,5 +130,5 @@ typing-extensions==4.12.2
     # via mypy
 typos==1.23.6
     # via pyshocks (pyproject.toml)
-uv==0.2.33
+uv==0.2.37
     # via pyshocks (pyproject.toml)

@@ -14,7 +14,7 @@ ml-dtypes==0.4.0
     # via
     #   jax
     #   jaxlib
-numpy==2.0.1
+numpy==2.1.0
     # via
     #   pyshocks (pyproject.toml)
     #   jax
