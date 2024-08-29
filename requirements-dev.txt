@@ -14,7 +14,7 @@ chardet==5.2.0
     #   python-debian
 colorama==0.4.6 ; sys_platform == 'win32'
     # via pytest
-contourpy==1.2.1
+contourpy==1.3.0
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
@@ -56,7 +56,7 @@ ml-dtypes==0.4.0
     # via
     #   jax
     #   jaxlib
-mypy==1.11.1
+mypy==1.11.2
     # via pyshocks (pyproject.toml)
 mypy-extensions==1.0.0
     # via mypy
@@ -76,7 +76,7 @@ packaging==24.1
     # via
     #   matplotlib
     #   pytest
-pbr==6.0.0
+pbr==6.1.0
     # via stevedore
 pillow==10.4.0
     # via matplotlib
@@ -86,7 +86,7 @@ pygments==2.18.0
     # via
     #   doc8
     #   rich
-pyparsing==3.1.2
+pyparsing==3.1.4
     # via matplotlib
 pyproject-fmt==2.2.1
     # via pyshocks (pyproject.toml)
@@ -102,19 +102,19 @@ restructuredtext-lint==1.4.0
     # via doc8
 reuse==4.0.3
     # via pyshocks (pyproject.toml)
-rich==13.7.1
+rich==13.8.0
     # via pyshocks (pyproject.toml)
-ruff==0.6.1
+ruff==0.6.3
     # via pyshocks (pyproject.toml)
 scienceplots==2.1.1
     # via pyshocks (pyproject.toml)
-scipy==1.14.0
+scipy==1.14.1
     # via
     #   jax
     #   jaxlib
 six==1.16.0
     # via python-dateutil
-stevedore==5.2.0
+stevedore==5.3.0
     # via doc8
 tomli==2.0.1 ; python_full_version < '3.11'
     # via
@@ -128,7 +128,7 @@ types-dataclasses==0.6.6
     # via pyshocks (pyproject.toml)
 typing-extensions==4.12.2
     # via mypy
-typos==1.23.6
+typos==1.24.1
     # via pyshocks (pyproject.toml)
-uv==0.2.37
+uv==0.4.0
     # via pyshocks (pyproject.toml)

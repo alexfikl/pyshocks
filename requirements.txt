@@ -26,9 +26,9 @@ opt-einsum==3.3.0
     # via jax
 pygments==2.18.0
     # via rich
-rich==13.7.1
+rich==13.8.0
     # via pyshocks (pyproject.toml)
-scipy==1.14.0
+scipy==1.14.1
     # via
     #   jax
     #   jaxlib
