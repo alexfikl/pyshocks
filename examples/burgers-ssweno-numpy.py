@@ -81,7 +81,7 @@ def ic_gaussian(x: Array, *, sigma: float = 1.0e-2, xm: float | None = None) -> 
 #   Boundary Closures for Fourth-Order Energy Stable Weighted Essentially
 #   Non-Oscillatory Finite-Difference Schemes,
 #   Journal of Computational Physics, Vol. 230, pp. 3727--3752, 2011,
-#   http://dx.doi.org/10.1016/j.jcp.2011.01.043.
+#   https://dx.doi.org/10.1016/j.jcp.2011.01.043.
 
 
 def weno_242_flux_points(x: Array) -> Array:
@@ -487,7 +487,7 @@ def sbp_42_p_matrix(n: int, dtype: Any) -> Array:
 #   High-Order Entropy Stable Finite Difference Schemes for Nonlinear
 #   Conservation Laws: Finite Domains,
 #   Journal of Computational Physics, Vol. 252, pp. 518--557, 2013,
-#   http://dx.doi.org/10.1016/j.jcp.2013.06.014.
+#   https://dx.doi.org/10.1016/j.jcp.2013.06.014.
 
 
 def two_point_entropy_flux(u: float, v: float) -> float:
