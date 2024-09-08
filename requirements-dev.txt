@@ -18,9 +18,9 @@ contourpy==1.3.0
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-doc8==1.1.1
+doc8==1.1.2
     # via pyshocks (pyproject.toml)
-docutils==0.20.1
+docutils==0.21.2
     # via
     #   doc8
     #   restructuredtext-lint
@@ -38,7 +38,7 @@ jaxlib==0.4.31
     #   jax
 jinja2==3.1.4
     # via reuse
-kiwisolver==1.4.5
+kiwisolver==1.4.7
     # via matplotlib
 license-expression==30.3.1
     # via reuse
@@ -60,7 +60,7 @@ mypy==1.11.2
     # via pyshocks (pyproject.toml)
 mypy-extensions==1.0.0
     # via mypy
-numpy==2.1.0
+numpy==2.1.1
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -88,7 +88,7 @@ pygments==2.18.0
     #   rich
 pyparsing==3.1.4
     # via matplotlib
-pyproject-fmt==2.2.1
+pyproject-fmt==2.2.3
     # via pyshocks (pyproject.toml)
 pyproject-fmt-rust==1.1.6
     # via pyproject-fmt
@@ -104,7 +104,7 @@ reuse==4.0.3
     # via pyshocks (pyproject.toml)
 rich==13.8.0
     # via pyshocks (pyproject.toml)
-ruff==0.6.3
+ruff==0.6.4
     # via pyshocks (pyproject.toml)
 scienceplots==2.1.1
     # via pyshocks (pyproject.toml)
@@ -128,7 +128,7 @@ types-dataclasses==0.6.6
     # via pyshocks (pyproject.toml)
 typing-extensions==4.12.2
     # via mypy
-typos==1.24.1
+typos==1.24.5
     # via pyshocks (pyproject.toml)
-uv==0.4.0
+uv==0.4.7
     # via pyshocks (pyproject.toml)
