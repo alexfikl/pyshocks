@@ -16,6 +16,10 @@ with common WENO schemes.
 
 It is currently quite far from that goal, so this is **very experimental**.
 
+**Caution**: As you might be able to tell, development on this has pretty much
+stopped at this point. The code is still updated for newer versions of things
+(``jax`` and ``numpy``), but no new features are added.
+
 Requirements
 ============
 
