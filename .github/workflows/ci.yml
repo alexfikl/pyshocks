@@ -36,7 +36,7 @@ jobs:
     -
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.13'
         cache: 'pip'
         cache-dependency-path: 'requirements-dev.txt'
     - name: Main Script
@@ -53,7 +53,7 @@ jobs:
     -
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.13'
         cache: 'pip'
         cache-dependency-path: 'requirements-dev.txt'
     - name: Main Script
@@ -70,7 +70,7 @@ jobs:
     -
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.13'
         cache: 'pip'
         cache-dependency-path: 'requirements-dev.txt'
     - name: Main Script
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         jax_default_bits: [32, 64]
       fail-fast: false
     steps:
@@ -111,7 +111,7 @@ jobs:
     -
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.13'
         cache: 'pip'
         cache-dependency-path: 'requirements-dev.txt'
     - name: Main Script

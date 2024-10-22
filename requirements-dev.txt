@@ -26,13 +26,13 @@ docutils==0.21.2
     #   restructuredtext-lint
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
     # via pytest
-fonttools==4.53.1
+fonttools==4.54.1
     # via matplotlib
 iniconfig==2.0.0
     # via pytest
-jax==0.4.31
+jax==0.4.34
     # via pyshocks (pyproject.toml)
-jaxlib==0.4.31
+jaxlib==0.4.34
     # via
     #   pyshocks (pyproject.toml)
     #   jax
@@ -44,7 +44,7 @@ license-expression==30.3.1
     # via reuse
 markdown-it-py==3.0.0
     # via rich
-markupsafe==2.1.5
+markupsafe==3.0.2
     # via jinja2
 matplotlib==3.9.2
     # via
@@ -52,15 +52,15 @@ matplotlib==3.9.2
     #   scienceplots
 mdurl==0.1.2
     # via markdown-it-py
-ml-dtypes==0.4.0
+ml-dtypes==0.5.0
     # via
     #   jax
     #   jaxlib
-mypy==1.11.2
+mypy==1.12.1
     # via pyshocks (pyproject.toml)
 mypy-extensions==1.0.0
     # via mypy
-numpy==2.1.1
+numpy==2.1.2
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -68,9 +68,8 @@ numpy==2.1.1
     #   jaxlib
     #   matplotlib
     #   ml-dtypes
-    #   opt-einsum
     #   scipy
-opt-einsum==3.3.0
+opt-einsum==3.4.0
     # via jax
 packaging==24.1
     # via
@@ -78,7 +77,7 @@ packaging==24.1
     #   pytest
 pbr==6.1.0
     # via stevedore
-pillow==10.4.0
+pillow==11.0.0
     # via matplotlib
 pluggy==1.5.0
     # via pytest
@@ -86,13 +85,11 @@ pygments==2.18.0
     # via
     #   doc8
     #   rich
-pyparsing==3.1.4
+pyparsing==3.2.0
     # via matplotlib
-pyproject-fmt==2.2.3
+pyproject-fmt==2.4.3
     # via pyshocks (pyproject.toml)
-pyproject-fmt-rust==1.1.6
-    # via pyproject-fmt
-pytest==8.3.2
+pytest==8.3.3
     # via pyshocks (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via matplotlib
@@ -102,9 +99,9 @@ restructuredtext-lint==1.4.0
     # via doc8
 reuse==4.0.3
     # via pyshocks (pyproject.toml)
-rich==13.8.0
+rich==13.9.3
     # via pyshocks (pyproject.toml)
-ruff==0.6.4
+ruff==0.7.0
     # via pyshocks (pyproject.toml)
 scienceplots==2.1.1
     # via pyshocks (pyproject.toml)
@@ -116,7 +113,7 @@ six==1.16.0
     # via python-dateutil
 stevedore==5.3.0
     # via doc8
-tomli==2.0.1 ; python_full_version < '3.11'
+tomli==2.0.2 ; python_full_version < '3.11'
     # via
     #   doc8
     #   mypy
@@ -127,8 +124,10 @@ tomlkit==0.13.2
 types-dataclasses==0.6.6
     # via pyshocks (pyproject.toml)
 typing-extensions==4.12.2
-    # via mypy
-typos==1.24.5
+    # via
+    #   mypy
+    #   rich
+typos==1.26.0
     # via pyshocks (pyproject.toml)
-uv==0.4.7
+uv==0.4.25
     # via pyshocks (pyproject.toml)
