@@ -162,7 +162,7 @@ def minmod(a: Array, b: Array) -> Array:
 
 @dataclass(frozen=True)
 class MINMODLimiter(Limiter):
-    r"""The parametrized MINMOD symmetric limiter given by
+    r"""The parameterized MINMOD symmetric limiter given by
 
     .. math::
 
