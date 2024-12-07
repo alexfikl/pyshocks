@@ -30,13 +30,13 @@ docutils==0.21.2
     #   restructuredtext-lint
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
     # via pytest
-fonttools==4.55.0
+fonttools==4.55.2
     # via matplotlib
 iniconfig==2.0.0
     # via pytest
-jax==0.4.35
+jax==0.4.36
     # via pyshocks (pyproject.toml)
-jaxlib==0.4.35
+jaxlib==0.4.36
     # via
     #   pyshocks (pyproject.toml)
     #   jax
@@ -105,7 +105,7 @@ reuse==5.0.2
     # via pyshocks (pyproject.toml)
 rich==13.9.4
     # via pyshocks (pyproject.toml)
-ruff==0.8.1
+ruff==0.8.2
     # via pyshocks (pyproject.toml)
 scienceplots==2.1.1
     # via pyshocks (pyproject.toml)
@@ -113,7 +113,7 @@ scipy==1.14.1
     # via
     #   jax
     #   jaxlib
-six==1.16.0
+six==1.17.0
     # via python-dateutil
 stevedore==5.4.0
     # via doc8
@@ -133,7 +133,7 @@ typing-extensions==4.12.2
     # via
     #   mypy
     #   rich
-typos==1.28.1
+typos==1.28.2
     # via pyshocks (pyproject.toml)
-uv==0.5.5
+uv==0.5.7
     # via pyshocks (pyproject.toml)
