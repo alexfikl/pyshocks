@@ -281,11 +281,11 @@ def main(
 
     from pyshocks import apply_operator, predict_timestep
 
-    def forward_predict_timestep(_t: ScalarLike, _u: Array) -> Array:
-        return theta * predict_timestep(scheme, grid, boundary, _t, _u)
+    def forward_predict_timestep(t_: ScalarLike, u_: Array) -> Array:
+        return theta * predict_timestep(scheme, grid, boundary, t_, u_)
 
-    def forward_operator(_t: ScalarLike, _u: Array) -> Array:
-        return apply_operator(scheme, grid, boundary, _t, _u)
+    def forward_operator(t_: ScalarLike, u_: Array) -> Array:
+        return apply_operator(scheme, grid, boundary, t_, u_)
 
     from pyshocks.timestepping import SSPRK33
 

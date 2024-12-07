@@ -138,8 +138,8 @@ def evolve(
     from pyshocks import apply_operator
 
     @jax.jit
-    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
-        return apply_operator(scheme, grid, bc, _t, _u)
+    def _apply_operator(t_: ScalarLike, u_: Array) -> Array:
+        return apply_operator(scheme, grid, bc, t_, u_)
 
     import pyshocks.timestepping as ts
 

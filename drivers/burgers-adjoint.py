@@ -50,11 +50,11 @@ def make_time_stepper(
 ) -> Stepper:
     from pyshocks import apply_operator, predict_timestep
 
-    def forward_predict_timestep(_t: ScalarLike, _u: Array) -> Array:
-        return theta * predict_timestep(scheme, grid, bc, _t, _u)
+    def forward_predict_timestep(t_: ScalarLike, u_: Array) -> Array:
+        return theta * predict_timestep(scheme, grid, bc, t_, u_)
 
-    def forward_operator(_t: ScalarLike, _u: Array) -> Array:
-        return apply_operator(scheme, grid, bc, _t, _u)
+    def forward_operator(t_: ScalarLike, u_: Array) -> Array:
+        return apply_operator(scheme, grid, bc, t_, u_)
 
     from pyshocks.timestepping import SSPRK33
 

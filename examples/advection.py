@@ -149,11 +149,11 @@ def main(
 
     # {{{ right-hand side
 
-    def _predict_timestep(_t: ScalarLike, _u: Array) -> Array:
-        return theta * predict_timestep(scheme, grid, boundary, _t, _u)
+    def _predict_timestep(t_: ScalarLike, u_: Array) -> Array:
+        return theta * predict_timestep(scheme, grid, boundary, t_, u_)
 
-    def _apply_operator(_t: ScalarLike, _u: Array) -> Array:
-        return apply_operator(scheme, grid, boundary, _t, _u)
+    def _apply_operator(t_: ScalarLike, u_: Array) -> Array:
+        return apply_operator(scheme, grid, boundary, t_, u_)
 
     # }}}
 

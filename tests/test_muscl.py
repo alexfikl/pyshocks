@@ -198,8 +198,8 @@ def test_tvd_slope_limiter_burgers(
 
     from pyshocks import apply_operator, norm
 
-    def _apply_operator(_t: float, _u: Array) -> Array:
-        return apply_operator(scheme, grid, boundary, _t, _u)
+    def _apply_operator(t_: float, u_: Array) -> Array:
+        return apply_operator(scheme, grid, boundary, t_, u_)
 
     from pyshocks.timestepping import SSPRK33, predict_maxit_from_timestep, step
 
