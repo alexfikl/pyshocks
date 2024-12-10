@@ -264,7 +264,7 @@ class EOCRecorder:
 
         _, error = self._history
         if atol is None:
-            atol = 1.0e2 * jnp.finfo(error.dtype).eps  # type: ignore[no-untyped-call]
+            atol = 1.0e2 * float(jnp.finfo(error.dtype).eps)  # type: ignore[no-untyped-call]
 
         return bool(self.estimated_order >= (order - slack) or jnp.max(error) < atol)
 

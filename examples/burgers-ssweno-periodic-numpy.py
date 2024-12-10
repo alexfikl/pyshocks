@@ -435,7 +435,7 @@ def burgers_rhs(
 
     fssw[0] = fssw[-1]
 
-    return -(fssw[1:] - fssw[:-1]) / dx
+    return -(fssw[1:] - fssw[:-1]) / dx  # type: ignore[operator]
 
 
 # }}}
