@@ -13,10 +13,11 @@ from pyshocks import (
     advection,
     continuity,
     get_logger,
-    set_recommended_matplotlib,
 )
 from pyshocks.finitedifference import Stencil
-from pyshocks.tools import Array
+from pyshocks.tools import Array, get_environ_bool, set_recommended_matplotlib
+
+ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_finite_difference")
 set_recommended_matplotlib()
@@ -27,27 +28,17 @@ set_recommended_matplotlib()
 
 @pytest.mark.parametrize("rec_name", ["constant", "wenojs32"])
 @pytest.mark.parametrize("bc_type", ["periodic", "dirichlet"])
-def test_advection_vs_continuity(
-    rec_name: str,
-    bc_type: str,
-    *,
-    a: float = -1.0,
-    b: float = +1.0,
-    n: int = 256,
-    visualize: bool = False,
-) -> None:
-    if visualize:
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            visualize = False
-
+def test_advection_vs_continuity(rec_name: str, bc_type: str) -> None:
     # {{{ setup
 
     from pyshocks import Boundary, make_uniform_cell_grid
     from pyshocks.reconstruction import make_reconstruction_from_name
 
     rec = make_reconstruction_from_name(rec_name)
+
+    a = -1.0
+    b = +1.0
+    n = 256
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=rec.stencil_width)
 
     if bc_type == "periodic":
@@ -93,8 +84,10 @@ def test_advection_vs_continuity(
 
     # }}}
 
-    if not visualize:
+    if not ENABLE_VISUAL:
         return
+
+    import matplotlib.pyplot as plt
 
     fig = plt.figure()
     ax = fig.gca()
@@ -115,27 +108,17 @@ def test_advection_vs_continuity(
 
 @pytest.mark.parametrize("rec_name", ["constant"])
 @pytest.mark.parametrize("bc_type", ["periodic", "dirichlet"])
-def test_advection_finite_difference_jacobian(
-    rec_name: str,
-    bc_type: str,
-    *,
-    a: float = -1.0,
-    b: float = +1.0,
-    n: int = 32,
-    visualize: bool = False,
-) -> None:
-    if visualize:
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            visualize = False
-
+def test_advection_finite_difference_jacobian(rec_name: str, bc_type: str) -> None:
     # {{{ setup
 
     from pyshocks import Boundary, make_uniform_cell_grid
     from pyshocks.reconstruction import make_reconstruction_from_name
 
     rec = make_reconstruction_from_name(rec_name)
+
+    a = -1.0
+    b = +1.0
+    n = 32
     grid = make_uniform_cell_grid(a=a, b=b, n=n, nghosts=rec.stencil_width)
 
     if bc_type == "periodic":
@@ -188,8 +171,10 @@ def test_advection_finite_difference_jacobian(
 
     # }}}
 
-    if not visualize:
+    if not ENABLE_VISUAL:
         return
+
+    import matplotlib.pyplot as plt
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))  # type: ignore[misc,unused-ignore]
     ax1.imshow(fddjac)
@@ -239,13 +224,7 @@ def finite_difference_convergence(d: Stencil) -> EOCRecorder:
     return eoc
 
 
-def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
-    if visualize:
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            visualize = False
-
+def test_finite_difference_taylor_stencil() -> None:
     from pyshocks.finitedifference import (
         make_fornberg_approximation,
         make_taylor_approximation,
@@ -302,7 +281,9 @@ def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
         ),
     ]
 
-    if visualize:
+    if ENABLE_VISUAL:
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
 
     for s, a, order, coefficient in stencils:
@@ -317,7 +298,7 @@ def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
         logger.info("\n%s", eoc)
         assert eoc.estimated_order >= order - 0.25
 
-        if visualize:
+        if ENABLE_VISUAL:
             part = jnp.real if s.derivative % 2 == 0 else jnp.imag
 
             from pyshocks.finitedifference import modified_wavenumber
@@ -338,7 +319,7 @@ def test_finite_difference_taylor_stencil(*, visualize: bool = False) -> None:
             fig.savefig(f"finite_difference_wavenumber_{s.derivative}_{s.order}")
             fig.clf()
 
-    if visualize:
+    if ENABLE_VISUAL:
         plt.close(fig)
 
     from pyshocks.finitedifference import determine_stencil_truncation_error

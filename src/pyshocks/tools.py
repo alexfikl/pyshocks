@@ -651,33 +651,54 @@ def is_single_valued(
 # }}}
 
 
+# {{{ environment
+
+
+# fmt: off
+BOOLEAN_STATES = {
+    1: True, "1": True, "yes": True, "true": True, "on": True, "y": True,
+    0: False, "0": False, "no": False, "false": False, "off": False, "n": False,
+}
+# fmt: on
+
+
+def get_environ_bool(name: str) -> bool:
+    value = os.environ.get(name)
+    return BOOLEAN_STATES.get(value.lower(), False) if value else False
+
+
+# }}}
+
+
 # {{{ matplotlib
 
 
 def check_usetex(*, s: bool) -> bool:
+    # NOTE: this function was deprecated from v3.6.0 and removed in v3.10.0
+
     try:
         import matplotlib
-    except ImportError:
-        return False
 
-    if matplotlib.__version__ < "3.6.0":
         return bool(matplotlib.checkdep_usetex(s))  # type: ignore[attr-defined]
-
-    # NOTE: simplified version from matplotlib
-    # https://github.com/matplotlib/matplotlib/blob/ec85e725b4b117d2729c9c4f720f31cf8739211f/lib/matplotlib/__init__.py#L439=L456
-
-    import shutil
-
-    if not shutil.which("tex"):
+    except ImportError:
+        # NOTE: no matplotlib, just return false
         return False
+    except AttributeError:
+        # NOTE: simplified version from matplotlib
+        # https://github.com/matplotlib/matplotlib/blob/ec85e725b4b117d2729c9c4f720f31cf8739211f/lib/matplotlib/__init__.py#L439=L456
 
-    if not shutil.which("dvipng"):
-        return False
+        import shutil
 
-    if not shutil.which("gs"):  # noqa: SIM103
-        return False
+        if not shutil.which("tex"):
+            return False
 
-    return True
+        if not shutil.which("dvipng"):
+            return False
+
+        if not shutil.which("gs"):  # noqa: SIM103
+            return False
+
+        return True
 
 
 def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:

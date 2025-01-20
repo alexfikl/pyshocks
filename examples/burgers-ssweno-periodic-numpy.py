@@ -435,7 +435,7 @@ def burgers_rhs(
 
     fssw[0] = fssw[-1]
 
-    return -(fssw[1:] - fssw[:-1]) / dx  # type: ignore[operator]
+    return -(fssw[1:] - fssw[:-1]) / dx
 
 
 # }}}
@@ -823,7 +823,7 @@ def cell_averaged(x: Array, f: Callable[[Array], Array], *, order: int) -> Array
     return favg
 
 
-def test_interpolation(*, visualize: bool = True) -> None:
+def check_interpolation(*, visualize: bool = True) -> None:
     r"""Tests the WENO interpolation on a smooth function:
     * for the individual stencils :math:`S_L, S_C` and :math:`S_R`.
     * for the full stencil :math:`S_L \cup S_C \cup S_R`.
@@ -884,7 +884,7 @@ def test_interpolation(*, visualize: bool = True) -> None:
         mp.close(fig)
 
 
-def test_smoothness(*, visualize: bool = True) -> None:
+def check_smoothness(*, visualize: bool = True) -> None:
     from pyshocks import EOCRecorder
 
     stencils = ["L", "C", "R"]
@@ -940,7 +940,7 @@ def test_smoothness(*, visualize: bool = True) -> None:
         mp.close(fig)
 
 
-def test_stencil_pick(*, visualize: bool = False) -> None:
+def check_stencil_pick(*, visualize: bool = False) -> None:
     n = 32
     a, b = -1.0, 1.0
     xm = (b + a) / 2
@@ -1002,10 +1002,10 @@ def test_stencil_pick(*, visualize: bool = False) -> None:
         fig.clf()
 
 
-def run_tests(*, visualize: bool = False) -> None:
-    test_interpolation(visualize=visualize)
-    test_smoothness(visualize=visualize)
-    test_stencil_pick(visualize=visualize)
+def run_checks(*, visualize: bool = False) -> None:
+    check_interpolation(visualize=visualize)
+    check_smoothness(visualize=visualize)
+    check_stencil_pick(visualize=visualize)
 
 
 # }}}
@@ -1017,4 +1017,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:
-        run_tests()
+        run_checks()

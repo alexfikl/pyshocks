@@ -20,12 +20,18 @@ from pyshocks import (
     diffusion,
     funcs,
     get_logger,
-    set_recommended_matplotlib,
     timeit,
 )
 from pyshocks.limiters import make_limiter_from_name
 from pyshocks.reconstruction import make_reconstruction_from_name
-from pyshocks.tools import Array, ScalarLike
+from pyshocks.tools import (
+    Array,
+    ScalarLike,
+    get_environ_bool,
+    set_recommended_matplotlib,
+)
+
+ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_convergence")
 set_recommended_matplotlib()
@@ -246,22 +252,19 @@ class BurgersTestCase(FiniteVolumeTestCase):
     ],
 )
 def test_burgers_convergence(
-    case: BurgersTestCase,
-    order: int,
-    resolutions: list[int],
-    *,
-    a: float = -1.0,
-    b: float = 1.0,
-    tfinal: float = 1.0,
-    visualize: bool = False,
+    case: BurgersTestCase, order: int, resolutions: list[int]
 ) -> None:
     from pyshocks import EOCRecorder
     from pyshocks.timestepping import predict_timestep_from_resolutions
 
     eoc = EOCRecorder(name=str(case))
+
+    a = -1.0
+    b = 1.0
+    tfinal = 1.0
     dt = predict_timestep_from_resolutions(a, b, resolutions, umax=10.0)
 
-    if visualize:
+    if ENABLE_VISUAL:
         import matplotlib.pyplot as mp
 
         fig0, fig1 = mp.figure(), mp.figure()
@@ -275,17 +278,24 @@ def test_burgers_convergence(
 
     for n in resolutions:
         r = evolve(
-            case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal, visualize=visualize
+            case,
+            n,
+            order=order,
+            dt=dt,
+            a=a,
+            b=b,
+            tfinal=tfinal,
+            visualize=ENABLE_VISUAL,
         )
 
         eoc.add_data_point(r.h_max, r.error)
         logger.info("n %3d h_max %.3e error %.6e", n, r.h_max, r.error)
 
-        if visualize:
+        if ENABLE_VISUAL:
             ax0.plot(r.t, r.energy)
             ax1.plot(r.t, r.tvd)
 
-    if visualize:
+    if ENABLE_VISUAL:
         fig0.savefig(f"convergence_{case}_energy")
         fig1.savefig(f"convergence_{case}_tvd")
         mp.close(fig0)
@@ -398,20 +408,17 @@ class SATAdvectionTestCase(FiniteDifferenceTestCase):
     ],
 )
 def test_advection_convergence(
-    case: AdvectionTestCase,
-    order: int,
-    resolutions: list[int],
-    *,
-    a: float = -1.0,
-    b: float = +1.0,
-    tfinal: float = 1.0,
-    visualize: bool = False,
+    case: AdvectionTestCase, order: int, resolutions: list[int]
 ) -> None:
     from pyshocks import EOCRecorder
 
     eoc = EOCRecorder(name=str(case))
 
-    if visualize:
+    a = -1.0
+    b = +1.0
+    tfinal = 1.0
+
+    if ENABLE_VISUAL:
         import matplotlib.pyplot as mp
 
         fig0, fig1 = mp.figure(), mp.figure()
@@ -428,17 +435,24 @@ def test_advection_convergence(
         dt = (8.0 / case.a) * ((b - a) / n) ** (5.0 / 3.0)
 
         r = evolve(
-            case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal, visualize=visualize
+            case,
+            n,
+            order=order,
+            dt=dt,
+            a=a,
+            b=b,
+            tfinal=tfinal,
+            visualize=ENABLE_VISUAL,
         )
 
         eoc.add_data_point(r.h_max, r.error)
         logger.info("n %3d h_max %.3e error %.6e", n, r.h_max, r.error)
 
-        if visualize:
+        if ENABLE_VISUAL:
             ax0.plot(r.t, r.energy)
             ax1.plot(r.t, r.tvd)
 
-    if visualize:
+    if ENABLE_VISUAL:
         fig0.savefig(f"convergence_{case}_energy")
         fig1.savefig(f"convergence_{case}_tvd")
         mp.close(fig0)
@@ -545,22 +559,19 @@ class SATDiffusionTestCase(FiniteDifferenceTestCase):
     ],
 )
 def test_diffusion_convergence(
-    case: DiffusionTestCase,
-    order: int,
-    resolutions: list[int],
-    *,
-    a: float = -1.0,
-    b: float = 1.0,
-    tfinal: float = 0.5,
-    visualize: bool = False,
+    case: DiffusionTestCase, order: int, resolutions: list[int]
 ) -> None:
     from pyshocks import EOCRecorder
     from pyshocks.timestepping import predict_timestep_from_resolutions
 
     eoc = EOCRecorder(name=str(case))
+
+    a = -1.0
+    b = 1.0
+    tfinal = 0.5
     dt = 0.25 * predict_timestep_from_resolutions(a, b, resolutions, umax=case.d, p=2)
 
-    if visualize:
+    if ENABLE_VISUAL:
         import matplotlib.pyplot as mp
 
         fig0, fig1 = mp.figure(), mp.figure()
@@ -574,24 +585,31 @@ def test_diffusion_convergence(
 
     for n in resolutions:
         r = evolve(
-            case, n, order=order, dt=dt, a=a, b=b, tfinal=tfinal, visualize=visualize
+            case,
+            n,
+            order=order,
+            dt=dt,
+            a=a,
+            b=b,
+            tfinal=tfinal,
+            visualize=ENABLE_VISUAL,
         )
 
         eoc.add_data_point(r.h_max, r.error)
         logger.info("n %3d h_max %.3e error %.6e", n, r.h_max, r.error)
 
-        if visualize:
+        if ENABLE_VISUAL:
             ax0.plot(r.t, r.energy)
             ax1.plot(r.t, r.tvd)
 
-    if visualize:
+    if ENABLE_VISUAL:
         fig0.savefig(f"convergence_{case}_energy")
         fig1.savefig(f"convergence_{case}_tvd")
         mp.close(fig0)
         mp.close(fig1)
 
     logger.info("\n%s", eoc)
-    if visualize:
+    if ENABLE_VISUAL:
         from pyshocks.tools import visualize_eoc
 
         visualize_eoc(

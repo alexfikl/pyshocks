@@ -5,12 +5,14 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from pyshocks import get_logger, set_recommended_matplotlib
+from pyshocks import get_logger
 from pyshocks.convolve import ConvolutionType
+from pyshocks.tools import get_environ_bool, set_recommended_matplotlib
+
+ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_utils")
 set_recommended_matplotlib()
-
 
 # {{{ test_convolve_vs_scipy
 
@@ -25,7 +27,7 @@ set_recommended_matplotlib()
         ConvolutionType.Wrap,
     ],
 )
-def test_convolve_vs_scipy(cv: ConvolutionType, *, visualize: bool = False) -> None:
+def test_convolve_vs_scipy(cv: ConvolutionType) -> None:
     import numpy as np
 
     from pyshocks.tools import BlockTimer
@@ -69,7 +71,7 @@ def test_convolve_vs_scipy(cv: ConvolutionType, *, visualize: bool = False) -> N
 
         # }}}
 
-        if visualize:
+        if ENABLE_VISUAL:
             from pyshocks.tools import figure
 
             filename = f"convolve_vs_scipy_{cv.name.lower()}_{n}_{m}"

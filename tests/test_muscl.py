@@ -10,9 +10,11 @@ import jax
 import jax.numpy as jnp
 import pytest
 
-from pyshocks import get_logger, make_uniform_cell_grid, set_recommended_matplotlib
+from pyshocks import get_logger, make_uniform_cell_grid
 from pyshocks.limiters import make_limiter_from_name
-from pyshocks.tools import Array
+from pyshocks.tools import Array, get_environ_bool, set_recommended_matplotlib
+
+ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_muscl")
 set_recommended_matplotlib()
@@ -55,7 +57,9 @@ def func_step(x: Array, w: float = 0.25, a: float = -1.0, b: float = 1.0) -> Arr
     ],
 )
 def test_flux_limiters(
-    lm_name: str, lm_kwargs: dict[str, Any], *, smooth: bool, visualize: bool = False
+    lm_name: str,
+    lm_kwargs: dict[str, Any],
+    smooth: bool,  # noqa: FBT001
 ) -> None:
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_cell_grid(-1.0, 1.0, n=128, nghosts=1)
@@ -84,7 +88,7 @@ def test_flux_limiters(
         # limiter to always decay to the first-order scheme.
         assert jnp.max(phi[i]) < 1.0e-12
 
-    if not visualize:
+    if not ENABLE_VISUAL:
         return
 
     sm_name = "sine" if smooth else "step"
@@ -168,7 +172,9 @@ def test_flux_limiters(
     ],
 )
 def test_tvd_slope_limiter_burgers(
-    lm_name: str, lm_kwargs: dict[str, Any], *, smooth: bool, visualize: bool = False
+    lm_name: str,
+    lm_kwargs: dict[str, Any],
+    smooth: bool,  # noqa: FBT001
 ) -> None:
     from pyshocks import burgers
     from pyshocks.reconstruction import MUSCL
@@ -248,7 +254,7 @@ def test_tvd_slope_limiter_burgers(
 
     # }}}
 
-    if visualize:
+    if ENABLE_VISUAL:
         sm_name = "sine" if smooth else "step"
         lm_args = "_".join(f"{k}_{v}" for k, v in lm_kwargs.items())
         suffix = f"{sm_name}_{lm_name}_{lm_args}".replace(".", "_")

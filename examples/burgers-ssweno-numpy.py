@@ -1186,13 +1186,13 @@ def cell_averaged(x: Array, f: Callable[[Array], Array], *, order: int) -> Array
     return favg
 
 
-def run_tests(*, visualize: bool = False) -> None:
-    test_weno_242_smoothness(visualize=visualize)
-    test_weno_242_interp(visualize=visualize)
-    test_weno_242_entropy_flux(visualize=visualize)
+def run_checks(*, visualize: bool = False) -> None:
+    check_weno_242_smoothness(visualize=visualize)
+    check_weno_242_interp(visualize=visualize)
+    check_weno_242_entropy_flux(visualize=visualize)
 
 
-def test_weno_242_smoothness(
+def check_weno_242_smoothness(
     a: float = -3.0, b: float = 3.0, *, visualize: bool = False
 ) -> None:
     from pyshocks import EOCRecorder
@@ -1265,7 +1265,7 @@ def test_weno_242_smoothness(
         # assert eoc.satisfied(2.0, slack=0.25)
 
 
-def test_weno_242_interp(
+def check_weno_242_interp(
     a: float = -3.0, b: float = 3.0, *, visualize: bool = False
 ) -> None:
     from pyshocks import EOCRecorder
@@ -1335,7 +1335,7 @@ def test_weno_242_interp(
         # assert eoc.satisfied(2.0, slack=0.25)
 
 
-def test_weno_242_entropy_flux(
+def check_weno_242_entropy_flux(
     a: float = -3.0, b: float = 3.0, *, visualize: bool = False
 ) -> None:
     if visualize:
@@ -1387,4 +1387,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         exec(sys.argv[1])
     else:
-        run_tests()
+        run_checks()

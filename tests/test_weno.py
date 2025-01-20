@@ -17,10 +17,11 @@ from pyshocks import (
     get_logger,
     make_uniform_cell_grid,
     make_uniform_ssweno_grid,
-    set_recommended_matplotlib,
 )
 from pyshocks.reconstruction import WENOJS, make_reconstruction_from_name, reconstruct
-from pyshocks.tools import Array, Scalar
+from pyshocks.tools import Array, Scalar, get_environ_bool, set_recommended_matplotlib
+
+ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_weno")
 set_recommended_matplotlib()
@@ -30,12 +31,13 @@ set_recommended_matplotlib()
 
 
 @pytest.mark.parametrize("rec_name", ["wenojs32", "wenojs53"])
-def test_weno_smoothness_indicator_vectorization(
-    rec_name: str, *, rtol: float = 2.0e-15, n: int = 64
-) -> None:
+def test_weno_smoothness_indicator_vectorization(rec_name: str) -> None:
     """Tests that the vectorized version of the smoothness indicator matches
     the explicitly looped version.
     """
+
+    rtol = 2.0e-15
+    n = 64
 
     # {{{ setup
 
@@ -187,13 +189,11 @@ def _pyweno_reconstruct(u: Array, order: int, side: str) -> tuple[Array, Array]:
         ("wenojs53", 5, 512),
     ],
 )
-def test_weno_vs_pyweno(
-    rec_name: str, order: int, n: int, *, visualize: bool = False
-) -> None:
+def test_weno_vs_pyweno(rec_name: str, order: int, n: int) -> None:
     """Compares our weno reconstruction to PyWENO"""
     pytest.importorskip("pyweno")
 
-    if visualize:
+    if ENABLE_VISUAL:
         try:
             import matplotlib.pyplot as plt
         except ImportError:
@@ -307,12 +307,7 @@ def get_function(name: str) -> SpatialFunction:
     ],
 )
 def test_weno_smooth_reconstruction_order_cell_values(
-    name: str,
-    order: int,
-    resolutions: list[int],
-    func_name: str,
-    *,
-    visualize: bool = False,
+    name: str, order: int, resolutions: list[int], func_name: str
 ) -> None:
     from pyshocks import EOCRecorder, cell_average, make_leggauss_quadrature, rnorm
 
@@ -351,10 +346,8 @@ def test_weno_smooth_reconstruction_order_cell_values(
 # {{{ test_ss_weno_interpolation
 
 
-@pytest.mark.parametrize("bc", [BoundaryType.Dirichlet])
-def test_ss_weno_242_interpolation(
-    bc: BoundaryType, *, order: int = 2, visualize: bool = False
-) -> None:
+@pytest.mark.parametrize(("bc", "order"), [(BoundaryType.Dirichlet, 2)])
+def test_ss_weno_242_interpolation(bc: BoundaryType, order: int) -> None:
     from pyshocks import EOCRecorder, rnorm
 
     is_periodic = bc == BoundaryType.Periodic
@@ -426,7 +419,8 @@ def two_point_entropy_flux_21(qi: Array, u: Array) -> Array:
     return cast(Array, jax.lax.fori_loop(2, u.size - 1, body, fss))
 
 
-def test_ss_weno_burgers_two_point_flux_first_order(n: int = 64) -> None:
+@pytest.mark.parametrize("n", [64])
+def test_ss_weno_burgers_two_point_flux_first_order(n: int) -> None:
     grid = make_uniform_ssweno_grid(a=-1.0, b=1.0, n=n)
 
     from pyshocks import sbp

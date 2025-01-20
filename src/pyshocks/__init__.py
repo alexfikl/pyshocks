@@ -50,7 +50,6 @@ from pyshocks.tools import (
     estimate_order_of_convergence,
     profileit,
     repeatit,
-    set_recommended_matplotlib,
     timeit,
 )
 
@@ -124,6 +123,5 @@ __all__ = (
     "profileit",
     "repeatit",
     "rnorm",
-    "set_recommended_matplotlib",
     "timeit",
 )

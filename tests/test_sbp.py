@@ -6,13 +6,10 @@ from __future__ import annotations
 import jax.numpy as jnp
 import pytest
 
-from pyshocks import (
-    BoundaryType,
-    get_logger,
-    make_uniform_point_grid,
-    set_recommended_matplotlib,
-)
-from pyshocks.tools import Array, Scalar
+from pyshocks import BoundaryType, get_logger, make_uniform_point_grid
+from pyshocks.tools import Array, Scalar, get_environ_bool, set_recommended_matplotlib
+
+ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_sbp")
 set_recommended_matplotlib()
@@ -23,7 +20,7 @@ set_recommended_matplotlib()
 
 @pytest.mark.parametrize("name", ["21", "42"])
 @pytest.mark.parametrize("bc", [BoundaryType.Dirichlet, BoundaryType.Periodic])
-def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -> None:
+def test_sbp_matrices(name: str, bc: BoundaryType) -> None:
     from pyshocks import sbp
 
     is_periodic = bc == BoundaryType.Periodic
@@ -71,7 +68,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
     assert error < 1.0e-6
 
     s, _ = jnp.linalg.eig(R)
-    if visualize:
+    if ENABLE_VISUAL:
         import matplotlib.pyplot as mp
 
         fig = mp.figure()
@@ -151,7 +148,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
 
     # check eigenvalues: should all be imaginary
     s, _ = jnp.linalg.eig(D1)
-    if visualize:
+    if ENABLE_VISUAL:
         ax = fig.gca()
 
         ax.plot(jnp.real(s), jnp.imag(s), "o")
@@ -202,7 +199,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
 
     # check eigenvalues: should all be negative
     s, _ = jnp.linalg.eig(D2)
-    if visualize:
+    if ENABLE_VISUAL:
         ax = fig.gca()
         ax.plot(jnp.real(s), jnp.imag(s), "o")
         ax.set_xlabel(r"$\lambda_r$")
@@ -216,7 +213,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType, *, visualize: bool = False) -
 
     # }}}
 
-    if visualize:
+    if ENABLE_VISUAL:
         mp.close(fig)
 
 
@@ -236,9 +233,7 @@ def _sbp_rnorm(P: Array, x: float | Array, y: float | Array) -> Scalar:
 @pytest.mark.parametrize("name", ["21", "42"])
 @pytest.mark.parametrize("bc", [BoundaryType.Dirichlet, BoundaryType.Periodic])
 @pytest.mark.parametrize("sd_type", ["Compatible", "FullyCompatible", "Narrow"])
-def test_sbp_matrices_convergence(
-    name: str, bc: BoundaryType, sd_type: str, *, visualize: bool = True
-) -> None:
+def test_sbp_matrices_convergence(name: str, bc: BoundaryType, sd_type: str) -> None:
     from pyshocks import sbp
 
     is_periodic = bc == BoundaryType.Periodic

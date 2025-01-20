@@ -9,24 +9,24 @@ import pytest
 
 from pyshocks import get_logger
 from pyshocks import timestepping as ts
-from pyshocks.tools import Array, ScalarLike
+from pyshocks.tools import (
+    Array,
+    ScalarLike,
+    get_environ_bool,
+    set_recommended_matplotlib,
+)
+
+ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_timestepping")
+set_recommended_matplotlib()
 
 
 @pytest.mark.parametrize(
     ("cls", "order"),
     [(ts.ForwardEuler, 1), (ts.SSPRK33, 3), (ts.RK44, 4), (ts.CKRK45, 4)],
 )
-def test_time_convergence(
-    cls: Type[ts.Stepper], order: int, *, visualize: bool = False
-) -> None:
-    if visualize:
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            visualize = False
-
+def test_time_convergence(cls: Type[ts.Stepper], order: int) -> None:
     # {{{ ode
 
     @jax.jit
@@ -40,7 +40,9 @@ def test_time_convergence(
     u0 = solution(0.0)
     u_ex = solution(tfinal)
 
-    if visualize:
+    if ENABLE_VISUAL:
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         ax = fig.gca()
 
@@ -71,7 +73,7 @@ def test_time_convergence(
         u = jnp.array(u_acc)
         t = jnp.array(t_acc)
 
-        if visualize:
+        if ENABLE_VISUAL:
             ax.plot(t, u)
 
         u_ap = u[-1]
@@ -84,7 +86,7 @@ def test_time_convergence(
 
     # {{{ visualize
 
-    if visualize:
+    if ENABLE_VISUAL:
         ax.set_xlabel("$t$")
         ax.set_ylabel("$u$")
         fig.savefig(f"timestepping_{eoc.name.lower()}")
