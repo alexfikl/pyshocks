@@ -120,10 +120,7 @@ def evolve(
     visualize: bool = False,
 ) -> Result:
     if visualize:
-        try:
-            import matplotlib.pyplot as mp
-        except ImportError:
-            visualize = False
+        import matplotlib.pyplot as mp
 
     # {{{ setup
 

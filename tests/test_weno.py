@@ -194,10 +194,7 @@ def test_weno_vs_pyweno(rec_name: str, order: int, n: int) -> None:
     pytest.importorskip("pyweno")
 
     if ENABLE_VISUAL:
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            visualize = False
+        import matplotlib.pyplot as plt
 
     # {{{ reference values
 
@@ -241,7 +238,7 @@ def test_weno_vs_pyweno(rec_name: str, order: int, n: int) -> None:
 
     # }}}
 
-    if not visualize:
+    if not ENABLE_VISUAL:
         return
 
     s = grid.i_
