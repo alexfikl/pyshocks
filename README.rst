@@ -23,7 +23,7 @@ stopped at this point. The code is still updated for newer versions of things
 Requirements
 ============
 
-The project currently supports Python 3.8 and later. The (full) requirements are
+The project currently supports Python 3.10 and later. The (full) requirements are
 listed in ``pyproject.toml``.
 
 * ``jax`` and ``jaxlib``: base numeric and automatic differentiation package
