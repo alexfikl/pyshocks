@@ -70,6 +70,7 @@ mypy:
 [private]
 requirements_dev_txt:
     uv pip compile --upgrade --universal --python-version '3.10' \
+        --no-build-isolation \
         --extra dev --extra vis \
         -o requirements-dev.txt pyproject.toml requirements-git.txt
 
