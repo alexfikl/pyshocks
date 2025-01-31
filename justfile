@@ -70,9 +70,8 @@ mypy:
 [private]
 requirements_dev_txt:
     uv pip compile --upgrade --universal --python-version '3.10' \
-        --no-build-isolation \
         --extra dev --extra vis \
-        -o requirements-dev.txt pyproject.toml requirements-git.txt
+        -o requirements-dev.txt pyproject.toml
 
 [private]
 requirements_txt:
@@ -96,13 +95,14 @@ develop:
 
 [doc("Editable install using pinned dependencies from requirements-dev.txt")]
 pip-install:
-    {{ PYTHON }} -m pip install --upgrade \
-        pip wheel hatchling setuptools editables numpy
+    {{ PYTHON }} -m pip install --upgrade pip wheel hatchling setuptools editables
     {{ PYTHON }} -m pip install \
         --verbose \
         --requirement requirements-dev.txt \
         --no-build-isolation \
         --editable .
+    {{ PYTHON }} -m pip install --verbose --no-build-isolation \
+        'git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO'
 
 [doc("Remove various build artifacts")]
 clean:
