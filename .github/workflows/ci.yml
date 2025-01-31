@@ -117,7 +117,7 @@ jobs:
     - name: Main Script
       run: |
         just pip-install
-        just run-examples
-        just run-drivers
+        just examples
+        just drivers
 
 # vim: set ts=2 sw=2 et:
