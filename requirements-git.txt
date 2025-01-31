@@ -1,3 +1,4 @@
 # NOTE: Put git dependencies here that cannot be in `pyproject.toml` (PyPI does
 # not allow including direct dependencies like this)
 git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO
+editables

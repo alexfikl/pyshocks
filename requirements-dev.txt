@@ -28,6 +28,8 @@ docutils==0.21.2
     # via
     #   doc8
     #   restructuredtext-lint
+editables==0.5
+    # via -r requirements-git.txt
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
     # via pytest
 fonttools==4.55.8
