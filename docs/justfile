@@ -20,3 +20,8 @@ build target='html':
 rebuild target='html':
     @{{ SPHINXBUILD }} -M {{ target }} "{{ SOURCEDIR }}" "{{ BUILDDIR }}" {{ SPHINXOPTS }}
     @echo 'Built documentation in {{ BUILDDIR }}/{{ target }}'
+
+[doc("Open HTML documentation")]
+view viewer="xdg-open":
+    @echo "Opened in browser '${BROWSER}'"
+    {{ viewer }} {{ BUILDDIR }}/html/index.html

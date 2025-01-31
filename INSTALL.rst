@@ -17,7 +17,7 @@ Finally, just install the package with
 
 .. code:: bash
 
-    python -m pip install -e .[dev]
+    python -m pip install --editable .[dev]
 
 which should download all the dependencies. See the
 `official documentation <https://docs.python.org/3/tutorial/venv.html>`__

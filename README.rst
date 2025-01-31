@@ -57,15 +57,9 @@ For example, to generate a nice HTML-based variant go
 
 .. code:: bash
 
-    cd docs && make html
-    xdg-open _build/html/index.html
-
-Sphinx ca can also generate LaTeX documentation with
-
-.. code:: bash
-
-    make latex && cd _build/latex && make
-    xdg-open pyshocks.pdf
+    cd docs
+    just build
+    just view [BROWSER]
 
 The documentation is also hosted on
 `readthedocs <https://pyshocks.readthedocs.io/en/latest/index.html>`__.
