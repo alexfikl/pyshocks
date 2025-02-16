@@ -103,7 +103,7 @@ pip-install:
     {{ PYTHON }} -m pip install --verbose --requirement .github/requirements-build.txt
     {{ PYTHON }} -m pip install \
         --verbose \
-        --requirement requirements-dev.txt \
+        --requirement .github/requirements-dev.txt \
         --no-build-isolation \
         --editable .
     {{ PYTHON }} -m pip install --verbose --no-build-isolation \
