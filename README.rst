@@ -46,7 +46,7 @@ For a quick install with the versions that are currently being tested on the CI
 
    python -m pip install -r requirements.txt -e .
 
-or use ``requirements-dev.txt`` to also install development packages
+or use ``.github/requirements-dev.txt`` to also install development packages
 (e.g. ``ruff``).
 
 Documentation
