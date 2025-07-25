@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "pyshocks"
-version = "2024.10"
+version = "2025.7"
 description = "Adjoint-based optimization of flows with shocks"
 readme = "README.rst"
 keywords = [
@@ -131,7 +131,6 @@ lint.ignore = [
     "S301",    # suspicious-pickle-usage
     "S403",    # suspicious-pickle-import
     "SIM108",  # use-ternary-operator
-    "UP037",   # quoted-annotation
 ]
 
 lint.per-file-ignores."pyshocks/__init__.py" = [
