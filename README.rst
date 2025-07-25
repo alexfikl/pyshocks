@@ -1,13 +1,19 @@
-.. image:: https://github.com/alexfikl/pyshocks/workflows/CI/badge.svg
+.. |badge-ci| image:: https://github.com/alexfikl/pyshocks/actions/workflows/ci.yml/badge.svg
     :alt: Build Status
-    :target: https://github.com/alexfikl/pyshocks/actions?query=branch%3Amain+workflow%3ACI
+    :target: https://github.com/alexfikl/pyshocks/actions/workflows/ci.yml
 
-.. image:: https://readthedocs.org/projects/pyshocks/badge/?version=latest
+.. |badge-rtd| image:: https://readthedocs.org/projects/pyshocks/badge/?version=latest
     :alt: Documentation
     :target: https://pyshocks.readthedocs.io/en/latest/?badge=latest
 
+.. |badge-license| image:: https://img.shields.io/badge/License-MIT-blue.svg
+    :target: https://spdx.org/licenses/MIT.html
+    :alt: MIT License
+
 About
 =====
+
+|badge-ci| |badge-rtd| |badge-license|
 
 This repository contains some preliminary experiments on performing adjoint-based
 optimization of systems with shocks by using automatic differentiation. The

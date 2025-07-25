@@ -63,7 +63,7 @@ html_theme_options = {
         {
             "name": "CI",
             "url": "https://github.com/alexfikl/pyshocks",
-            "icon": "https://github.com/alexfikl/pyshocks/workflows/CI/badge.svg",
+            "icon": "https://github.com/alexfikl/pyshocks/actions/workflows/ci.yml/badge.svg",
             "type": "url",
         },
         {
