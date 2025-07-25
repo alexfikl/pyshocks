@@ -409,7 +409,7 @@ class DirichletBoundary(OneSidedBoundary):
     """
 
     @property
-    def boundary_type(self) -> "BoundaryType":
+    def boundary_type(self) -> BoundaryType:
         return BoundaryType.Dirichlet
 
 

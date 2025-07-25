@@ -71,7 +71,7 @@ class Grid:
     """If *True*, the grid is assumed to be periodic."""
 
     @property
-    def dtype(self) -> "jnp.dtype[Any]":
+    def dtype(self) -> jnp.dtype[Any]:
         return jnp.dtype(self.x.dtype)
 
     @property

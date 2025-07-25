@@ -80,7 +80,7 @@ class Reconstruction:
 def reconstruct(
     rec: Reconstruction,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
     u: Array,
     wavespeed: Array,
@@ -154,7 +154,7 @@ class ConstantReconstruction(Reconstruction):
 def _reconstruct_first_order(
     rec: ConstantReconstruction,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
     u: Array,
     wavespeed: Array,
@@ -213,7 +213,7 @@ class MUSCL(Reconstruction):
 def _reconstruct_muscl(
     rec: MUSCL,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
     u: Array,
     wavespeed: Array,
@@ -272,7 +272,7 @@ class MUSCLS(MUSCL):
 def _reconstruct_muscls(
     rec: MUSCLS,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
     u: Array,
     wavespeed: Array,
@@ -359,7 +359,7 @@ def _reconstruct_weno_js_side(rec: WENOJS, f: Array) -> Array:
 def _reconstruct_wenojs(
     rec: WENOJS,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
     u: Array,
     wavespeed: Array,
@@ -421,7 +421,7 @@ def _reconstruct_es_weno_side(rec: ESWENO32, f: Array) -> Array:
 def _reconstruct_esweno32(
     rec: ESWENO32,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
     u: Array,
     wavespeed: Array,
@@ -478,7 +478,7 @@ class SSWENO242(Reconstruction):
 def _reconstruct_ss_weno_side(
     rec: SSWENO242,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
 ) -> Array:
     if grid.nghosts >= rec.stencil_width:
@@ -504,7 +504,7 @@ def _reconstruct_ss_weno_side(
 def _reconstruct_ssweno242(
     rec: SSWENO242,
     grid: Grid,
-    bc: "BoundaryType",
+    bc: BoundaryType,
     f: Array,
     u: Array,
     wavespeed: Array,

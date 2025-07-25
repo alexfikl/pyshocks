@@ -148,7 +148,7 @@ class Stencil:
             assert self.int.shape == ()
 
     @property
-    def dtype(self) -> "jnp.dtype[Any]":
+    def dtype(self) -> jnp.dtype[Any]:
         """The :class:`~numpy.dtype` of the stencils."""
         return jnp.dtype(self.int.dtype)
 

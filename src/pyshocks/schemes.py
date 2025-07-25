@@ -121,7 +121,7 @@ SchemeT = TypeVar("SchemeT", bound=SchemeBase)
 
 
 @singledispatch
-def bind(scheme: SchemeT, grid: Grid, bc: "Boundary") -> SchemeT:
+def bind(scheme: SchemeT, grid: Grid, bc: Boundary) -> SchemeT:
     """Binds the scheme to the given grid and boundary conditions.
 
     This method is mean to allow initialization of a numerical scheme based on
@@ -140,7 +140,7 @@ def bind(scheme: SchemeT, grid: Grid, bc: "Boundary") -> SchemeT:
 
 @singledispatch
 def apply_operator(
-    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+    scheme: SchemeBase, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Array:
     r"""Applies right-hand side operator for a "Method of Lines" approach.
     For any PDE, we have that
@@ -167,7 +167,7 @@ def apply_operator(
 
 @singledispatch
 def predict_timestep(
-    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+    scheme: SchemeBase, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Scalar:
     r"""Estimate the time step based on the current solution. This time step
     prediction can then be used together with a Courant number to give
@@ -251,7 +251,7 @@ class CombineScheme(SchemeBase):
 
 @predict_timestep.register(CombineScheme)
 def _predict_timestep_combine(
-    scheme: CombineScheme, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+    scheme: CombineScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Scalar:
     from functools import reduce
 
@@ -266,7 +266,7 @@ def _predict_timestep_combine(
 def _apply_operator_combine(
     scheme: CombineScheme,
     grid: Grid,
-    bc: "Boundary",
+    bc: Boundary,
     t: ScalarLike,
     u: Array,
 ) -> Array:
@@ -319,7 +319,7 @@ def flux(scheme: SchemeBase, t: ScalarLike, x: Array, u: Array) -> Array:
 
 @singledispatch
 def numerical_flux(
-    scheme: SchemeBase, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+    scheme: SchemeBase, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Array:
     """Approximate the flux at each cell-cell interface.
 
@@ -337,7 +337,7 @@ def numerical_flux(
 
 @apply_operator.register(ConservationLawScheme)
 def _apply_operator_conservation_law(
-    scheme: ConservationLawScheme, grid: Grid, bc: "Boundary", t: ScalarLike, u: Array
+    scheme: ConservationLawScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Array:
     u = apply_boundary(bc, grid, t, u)
     f = numerical_flux(scheme, grid, bc, t, u)
@@ -358,7 +358,7 @@ class CombineConservationLawScheme(CombineScheme, ConservationLawScheme):
 def _numerical_flux_combine_conversation_law(
     scheme: CombineConservationLawScheme,
     grid: Grid,
-    bc: "Boundary",
+    bc: Boundary,
     t: ScalarLike,
     u: Array,
 ) -> Array:
@@ -373,7 +373,7 @@ def _numerical_flux_combine_conversation_law(
 def _apply_operator_combine_conservation_law(
     scheme: CombineConservationLawScheme,
     grid: Grid,
-    bc: "Boundary",
+    bc: Boundary,
     t: ScalarLike,
     u: Array,
 ) -> Array:

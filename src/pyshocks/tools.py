@@ -196,7 +196,7 @@ class EOCRecorder:
 
     name: str
     """An identifier used for the data being estimated."""
-    dtype: "jnp.dtype[Any]"
+    dtype: jnp.dtype[Any]
     """:class:`numpy.dtype` of the error values."""
     history: list[tuple[Scalar, Scalar]]
     """History of ``(h, error)``."""
@@ -411,7 +411,7 @@ class BlockTimer:
         """Total CPU time, obtained from ``t_proc / t_wall``."""
         return cast(Scalar, self.t_proc / self.t_wall)
 
-    def __enter__(self) -> "BlockTimer":
+    def __enter__(self) -> BlockTimer:
         import time
 
         self.t_wall_start = jnp.array(time.perf_counter(), dtype=jnp.float64)
@@ -458,7 +458,7 @@ class TimeResult:
         return f"wall {self.walltime:.3e}s mean {self.mean:.3e}s ± {self.std:.3e}"
 
     @classmethod
-    def from_measurements(cls, deltas: Array, *, skip: int = 5) -> "TimeResult":
+    def from_measurements(cls, deltas: Array, *, skip: int = 5) -> TimeResult:
         """
         :arg deltas: an array of run timings.
         :arg skip: number of initial entries to skip. The first few runs are
