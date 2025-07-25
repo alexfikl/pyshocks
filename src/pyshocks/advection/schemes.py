@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 
 from dataclasses import dataclass
-from typing import ClassVar, cast
+from typing import ClassVar
 
 import jax.numpy as jnp
 
@@ -184,7 +184,7 @@ def _numerical_flux_advection_esweno32(
     else:
         gnum = jnp.array(0.0)
 
-    return cast(Array, esweno_lf_flux(scheme, grid, bc, u) + gnum)
+    return esweno_lf_flux(scheme, grid, bc, u) + gnum
 
 
 # }}}

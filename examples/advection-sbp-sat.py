@@ -120,7 +120,6 @@ def main(
         checkpoint=None,
     )
 
-    event = None
     for event in timestepping.step(method, u0, tfinal=tfinal):
         if verbose:
             umax = jnp.max(jnp.abs(event.u[s]))

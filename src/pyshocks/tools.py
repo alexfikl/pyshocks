@@ -98,7 +98,7 @@ PathLike = Union[pathlib.Path, str]
 
 Array: TypeAlias = jax.Array
 Scalar: TypeAlias = jax.Array
-ScalarLike = Union[float, Scalar]
+ScalarLike = Union[float, np.floating[Any], Scalar]
 
 if TYPE_CHECKING:
     ArrayOrNumpy = Union[Array, np.ndarray[Any, Any]]

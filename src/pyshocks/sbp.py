@@ -387,7 +387,7 @@ def sbp_first_derivative_matrix(
 
 @singledispatch
 def sbp_second_derivative_matrix(
-    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: float | Array
+    op: SBPOperator, grid: UniformGrid, bc: BoundaryType, b: ScalarLike | Array
 ) -> Array:
     """Construct a wide-stencil second derivative :math:`D_2` operator
     that is compatible with :func:`sbp_first_derivative_matrix`.
@@ -409,7 +409,7 @@ def apply_sbp_second_derivative(
     op: SBPOperator,
     grid: UniformGrid,
     bc: BoundaryType,
-    b: float | Array,
+    b: ScalarLike | Array,
     u: Array,
 ) -> Array:
     """A (potentially) matrix-free version of :func:`sbp_second_derivative_matrix`."""
@@ -483,7 +483,7 @@ def _sbp_21_first_derivative_matrix(
 
 @sbp_second_derivative_matrix.register(SBP21)
 def _sbp_21_second_derivative_matrix(
-    op: SBP21, grid: UniformGrid, bc: BoundaryType, b: float | Array
+    op: SBP21, grid: UniformGrid, bc: BoundaryType, b: ScalarLike | Array
 ) -> Array:
     from numbers import Number
 

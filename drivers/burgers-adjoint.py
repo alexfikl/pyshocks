@@ -159,7 +159,6 @@ def evolve_forward(
 
     from pyshocks import norm
 
-    event = None
     for event in step(stepper, u0, tfinal=sim.tfinal):
         umax = norm(grid, event.u, p=jnp.inf)
         logger.info(
@@ -242,7 +241,6 @@ def evolve_adjoint(
 
     from pyshocks import norm
 
-    event = None
     for event in adjoint_step(stepper, p0, maxit=maxit, apply_boundary=_apply_boundary):
         pmax = norm(grid, event.p, p=jnp.inf)
         logger.info(

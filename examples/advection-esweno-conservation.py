@@ -121,7 +121,6 @@ def main(
 
     l2_norm_tmp = []
     tv_norm_tmp = []
-    event = None
 
     for event in timestepping.step(method, u0, tfinal=tfinal):
         l2_norm_tmp.append(norm(grid, event.u, p=2))
