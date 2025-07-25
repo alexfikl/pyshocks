@@ -60,13 +60,13 @@ optional-dependencies.docs = [
     "sphinx>=6",
     "sphinx-book-theme",
 ]
-# optional-dependencies.pyweno = [
-#     "pyweno @ git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO",
-# ]
 optional-dependencies.vis = [
     "matplotlib",
     "scienceplots",
 ]
+# optional-dependencies.pyweno = [
+#     "pyweno @ git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO",
+# ]
 urls.Documentation = "https://pyshocks.readthedocs.io"
 urls.Repository = "https://github.com/alexfikl/pyshocks"
 
