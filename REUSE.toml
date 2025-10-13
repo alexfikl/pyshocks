@@ -19,14 +19,14 @@ path = [
     "README.rst",
     "INSTALL.rst",
     "pyproject.toml",
-    "requirements*.txt",
+    "requirements.txt",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2022 Alexandru Fikl <alexfikl@gmail.com>"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
-path = [".gitignore", ".github/**"]
+path = [".gitignore", ".github/*.yml", ".github/workflows/*.yml", ".ci/requirements*"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2022 Alexandru Fikl <alexfikl@gmail.com>"
 SPDX-License-Identifier = "CC0-1.0"
