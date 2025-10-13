@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Callable
+from typing import Any
 
 import numpy as np
 import numpy.linalg as la

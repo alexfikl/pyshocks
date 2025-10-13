@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2021 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
-from typing import Type, cast
+from typing import cast
 
 import jax
 import jax.numpy as jnp
@@ -26,7 +26,7 @@ set_recommended_matplotlib()
     ("cls", "order"),
     [(ts.ForwardEuler, 1), (ts.SSPRK33, 3), (ts.RK44, 4), (ts.CKRK45, 4)],
 )
-def test_time_convergence(cls: Type[ts.Stepper], order: int) -> None:
+def test_time_convergence(cls: type[ts.Stepper], order: int) -> None:
     # {{{ ode
 
     @jax.jit

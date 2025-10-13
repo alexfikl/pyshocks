@@ -63,24 +63,12 @@ from __future__ import annotations
 
 import os
 import pathlib
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import wraps
 from types import TracebackType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    Iterator,
-    ParamSpec,
-    Protocol,
-    Sequence,
-    TypeAlias,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, ParamSpec, Protocol, TypeAlias, TypeVar, cast
 
 import jax
 import jax.numpy as jnp
@@ -94,16 +82,12 @@ T = TypeVar("T")
 R = TypeVar("R")
 P = ParamSpec("P")
 
-PathLike = Union[pathlib.Path, str]
+PathLike = pathlib.Path | str
 
 Array: TypeAlias = jax.Array
 Scalar: TypeAlias = jax.Array
-ScalarLike = Union[float, np.floating[Any], Scalar]
-
-if TYPE_CHECKING:
-    ArrayOrNumpy = Union[Array, np.ndarray[Any, Any]]
-else:
-    ArrayOrNumpy = Union[Array, np.ndarray]
+ScalarLike = float | np.floating[Any] | Scalar
+ArrayOrNumpy = Array | np.ndarray[Any, Any]
 
 # {{{ callable protocols
 
@@ -303,7 +287,7 @@ def stringify_eoc(*eocs: EOCRecorder) -> str:
     for i in range(nrows):
         values = flatten([
             (f"{error[i]:.6e}", "---" if i == 0 else f"{order[i - 1, i]:.3f}")
-            for (_, error), order in zip(histories, orders)
+            for (_, error), order in zip(histories, orders, strict=True)
         ])
         lines.append((f"{h[i]:.3e}", *values))
 
@@ -316,7 +300,7 @@ def stringify_eoc(*eocs: EOCRecorder) -> str:
     formats = ["{:%s}" % w for w in widths]  # noqa: UP031
 
     return "\n".join([
-        " | ".join(fmt.format(value) for fmt, value in zip(formats, line))
+        " | ".join(fmt.format(value) for fmt, value in zip(formats, line, strict=True))
         for line in lines
     ])
 
@@ -867,7 +851,7 @@ def save_animation(
         return lines
 
     def _anim_func(n: int) -> tuple[Any, ...]:
-        for line, y in zip(lines, ys):
+        for line, y in zip(lines, ys, strict=True):
             line.set_ydata(y[:, n])
 
         return lines

@@ -266,7 +266,7 @@ def diffusion_expansion(
             a
             * jnp.sin(jnp.pi * n * x / L)
             * jnp.exp(-diffusivity * (n * jnp.pi / L) ** 2 * t)
-            for a, n in zip(amplitudes, modes)
+            for a, n in zip(amplitudes, modes, strict=True)
         ),
         jnp.zeros_like(x),
     )

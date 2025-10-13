@@ -26,9 +26,10 @@ Integrators
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from functools import partial, singledispatch
-from typing import Callable, ClassVar, Iterator
+from typing import ClassVar
 
 import jax
 import jax.numpy as jnp

@@ -22,9 +22,10 @@ from __future__ import annotations
 
 import pathlib
 from abc import ABC, abstractmethod
+from collections.abc import Hashable
 from dataclasses import dataclass, field
 from functools import singledispatch
-from typing import Any, Hashable
+from typing import Any
 
 import jax.numpy as jnp
 
