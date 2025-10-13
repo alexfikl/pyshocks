@@ -30,12 +30,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import jax.numpy as jnp
 
-from pyshocks.grid import Grid
-from pyshocks.tools import Array
+if TYPE_CHECKING:
+    from pyshocks.grid import Grid
+    from pyshocks.tools import Array
 
 # {{{ limiter interface
 

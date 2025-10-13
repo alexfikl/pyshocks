@@ -42,12 +42,11 @@ from typing import TYPE_CHECKING, Any
 
 import jax.numpy as jnp
 
-from pyshocks.grid import Grid
-from pyshocks.tools import Array, Scalar, ScalarLike
-
 if TYPE_CHECKING:
     from pyshocks.convolve import ConvolutionType
+    from pyshocks.grid import Grid
     from pyshocks.schemes import BoundaryType
+    from pyshocks.tools import Array, Scalar, ScalarLike
 
 # {{{ weno
 

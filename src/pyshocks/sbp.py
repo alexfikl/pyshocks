@@ -105,14 +105,16 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, replace
 from functools import singledispatch
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import jax
 import jax.numpy as jnp
 
 from pyshocks.grid import UniformGrid
 from pyshocks.schemes import BoundaryType
-from pyshocks.tools import Array, ScalarLike
+
+if TYPE_CHECKING:
+    from pyshocks.tools import Array, ScalarLike
 
 # {{{ SBP helpers
 

@@ -34,12 +34,12 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import jax.numpy as jnp
 
 from pyshocks import weno
-from pyshocks.grid import Grid
-from pyshocks.limiters import Limiter
-from pyshocks.tools import Array, ScalarLike
 
 if TYPE_CHECKING:
+    from pyshocks.grid import Grid
+    from pyshocks.limiters import Limiter
     from pyshocks.schemes import BoundaryType
+    from pyshocks.tools import Array, ScalarLike
 
 
 # {{{ interface

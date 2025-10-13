@@ -63,13 +63,14 @@ import enum
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import singledispatch
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 import jax.numpy as jnp
 
-from pyshocks.grid import Grid
-from pyshocks.reconstruction import Reconstruction
-from pyshocks.tools import Array, Scalar, ScalarLike
+if TYPE_CHECKING:
+    from pyshocks.grid import Grid
+    from pyshocks.reconstruction import Reconstruction
+    from pyshocks.tools import Array, Scalar, ScalarLike
 
 # {{{ schemes
 

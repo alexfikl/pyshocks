@@ -59,12 +59,11 @@ Simultaneous-Approximation-Term (SAT) Boundary Conditions
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import jax
 import jax.numpy as jnp
 
-from pyshocks.grid import Grid, UniformGrid
 from pyshocks.schemes import (
     Boundary,
     BoundaryType,
@@ -73,13 +72,16 @@ from pyshocks.schemes import (
     evaluate_boundary,
     flux,
 )
-from pyshocks.tools import (
-    Array,
-    ScalarLike,
-    SpatialFunction,
-    TemporalFunction,
-    VectorFunction,
-)
+
+if TYPE_CHECKING:
+    from pyshocks.grid import Grid, UniformGrid
+    from pyshocks.tools import (
+        Array,
+        ScalarLike,
+        SpatialFunction,
+        TemporalFunction,
+        VectorFunction,
+    )
 
 # {{{ fluxes
 

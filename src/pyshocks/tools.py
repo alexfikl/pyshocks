@@ -63,18 +63,19 @@ from __future__ import annotations
 
 import os
 import pathlib
-from collections.abc import Callable, Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from functools import wraps
-from types import TracebackType
-from typing import Any, ParamSpec, Protocol, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, ParamSpec, Protocol, TypeAlias, TypeVar, cast
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 
 from pyshocks.logging import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from types import TracebackType
 
 logger = get_logger(__name__)
 
@@ -393,7 +394,7 @@ class BlockTimer:
     @property
     def t_cpu(self) -> Scalar:
         """Total CPU time, obtained from ``t_proc / t_wall``."""
-        return cast(Scalar, self.t_proc / self.t_wall)
+        return cast("Scalar", self.t_proc / self.t_wall)
 
     def __enter__(self) -> BlockTimer:
         import time
@@ -509,6 +510,8 @@ class IterationTimer:
 
 def timeit(func: Callable[P, T]) -> Callable[P, T]:
     """Decorator that applies :class:`BlockTimer`."""
+
+    from functools import wraps
 
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:

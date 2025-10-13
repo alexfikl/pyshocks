@@ -33,12 +33,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import jax
 import jax.numpy as jnp
 
-from pyshocks.tools import Array, Scalar, ScalarLike, SpatialFunction
+if TYPE_CHECKING:
+    from pyshocks.tools import Array, Scalar, ScalarLike, SpatialFunction
 
 # {{{ grids
 

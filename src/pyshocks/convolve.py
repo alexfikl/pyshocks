@@ -18,11 +18,14 @@ Convolutions
 from __future__ import annotations
 
 import enum
+from typing import TYPE_CHECKING
 
 import jax.numpy as jnp
 
 from pyshocks.schemes import BoundaryType
-from pyshocks.tools import Array
+
+if TYPE_CHECKING:
+    from pyshocks.tools import Array
 
 
 @enum.unique

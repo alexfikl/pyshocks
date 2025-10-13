@@ -30,7 +30,7 @@ Schemes
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import jax.numpy as jnp
 
@@ -40,8 +40,10 @@ from pyshocks.continuity.schemes import (
     Godunov,
     Scheme,
 )
-from pyshocks.grid import Grid
-from pyshocks.tools import Scalar, SpatialFunction
+
+if TYPE_CHECKING:
+    from pyshocks.grid import Grid
+    from pyshocks.tools import Scalar, SpatialFunction
 
 # NOTE: just providing an alias for common usage
 Upwind = Godunov

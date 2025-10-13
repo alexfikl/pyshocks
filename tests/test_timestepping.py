@@ -34,7 +34,7 @@ def test_time_convergence(cls: type[ts.Stepper], order: int) -> None:
         return jnp.array([jnp.exp(-t)])
 
     def solution(t: ScalarLike) -> Array:
-        return cast(Array, -source(t, jnp.array([0.0])))
+        return cast("Array", -source(t, jnp.array([0.0])))
 
     tfinal = 4.0
     u0 = solution(0.0)

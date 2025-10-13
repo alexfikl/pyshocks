@@ -413,7 +413,7 @@ def two_point_entropy_flux_21(qi: Array, u: Array) -> Array:
     def body(i: int, fss: Array) -> Array:
         return fss.at[i].set(2 * qr[0] * fs(u[i - 1], u[i]))
 
-    return cast(Array, jax.lax.fori_loop(2, u.size - 1, body, fss))
+    return cast("Array", jax.lax.fori_loop(2, u.size - 1, body, fss))
 
 
 @pytest.mark.parametrize("n", [64])
@@ -473,7 +473,7 @@ def test_ss_weno_burgers_two_point_flux(bc: BoundaryType) -> None:
                 for k in range(i, u.size):
                     fss[i] += 2 * q[j, k] * fs(w[j], w[k])
 
-        return cast(Array, jax.device_put(fss))
+        return cast("Array", jax.device_put(fss))
 
     from pyshocks import BlockTimer
 

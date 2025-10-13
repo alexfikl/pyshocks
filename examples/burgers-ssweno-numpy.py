@@ -3,16 +3,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import numpy.linalg as la
 
 from pyshocks.logging import get_logger
 from pyshocks.tools import set_recommended_matplotlib
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
 logger = get_logger("burgers_ssweno_numpy")
 set_recommended_matplotlib()
@@ -943,8 +948,6 @@ def main(
     # https://matplotlib.org/examples/animation/simple_anim.html
 
     import matplotlib.pyplot as plt
-    from matplotlib.axes import Axes
-    from matplotlib.figure import Figure
 
     def gca(f: Figure) -> Axes:
         ax = f.gca()

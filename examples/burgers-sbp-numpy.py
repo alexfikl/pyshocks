@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from matplotlib.lines import Line2D
 
 # FIXME: should probably use np.ndarray[Any, np.float64] or something
 Array = Any
@@ -307,8 +310,6 @@ def main(
         import matplotlib.pyplot as plt
     except ImportError:
         return
-
-    from matplotlib.lines import Line2D
 
     fig = plt.figure()
     ax = plt.axes()

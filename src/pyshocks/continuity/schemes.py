@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import jax.numpy as jnp
 
@@ -17,7 +18,9 @@ from pyshocks import (
     numerical_flux,
     predict_timestep,
 )
-from pyshocks.tools import Array, ScalarLike
+
+if TYPE_CHECKING:
+    from pyshocks.tools import Array, ScalarLike
 
 # {{{ base
 

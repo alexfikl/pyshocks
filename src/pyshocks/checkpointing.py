@@ -20,14 +20,16 @@ Checkpointing
 
 from __future__ import annotations
 
-import pathlib
 from abc import ABC, abstractmethod
-from collections.abc import Hashable
 from dataclasses import dataclass, field
 from functools import singledispatch
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import jax.numpy as jnp
+
+if TYPE_CHECKING:
+    import pathlib
+    from collections.abc import Hashable
 
 
 @dataclass(frozen=True)

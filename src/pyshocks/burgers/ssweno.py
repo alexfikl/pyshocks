@@ -52,7 +52,7 @@ def two_point_entropy_flux_42(qi: Array, u: Array) -> Array:
             + 2 * qr[1] * fs(u[i - 1], u[i + 1])
         )
 
-    return cast(Array, jax.lax.fori_loop(2, u.size - 1, body, fss))
+    return cast("Array", jax.lax.fori_loop(2, u.size - 1, body, fss))
 
 
 # }}}
@@ -179,7 +179,7 @@ def _apply_operator_burgers_ssweno242(
     fw = jnp.pad(fp[1:] + fm[:-1], 1)
 
     # two-point entropy conservative flux ([Fisher2013] Equation 4.7)
-    fs = cast(Array, two_point_entropy_flux_42(scheme.q.int, u))
+    fs = cast("Array", two_point_entropy_flux_42(scheme.q.int, u))
     assert fs.shape == grid.f.shape
 
     # entropy stable flux ([Fisher2013] Equation 3.42)

@@ -45,10 +45,13 @@ Misc Functions
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import jax.numpy as jnp
 
-from pyshocks.grid import Grid
-from pyshocks.tools import Array, ScalarLike
+if TYPE_CHECKING:
+    from pyshocks.grid import Grid
+    from pyshocks.tools import Array, ScalarLike
 
 # {{{ misc
 

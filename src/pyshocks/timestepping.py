@@ -26,16 +26,19 @@ Integrators
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from functools import partial, singledispatch
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import jax
 import jax.numpy as jnp
 
 from pyshocks.checkpointing import Checkpoint, load, save
-from pyshocks.tools import Array, Scalar, ScalarFunction, ScalarLike, VectorFunction
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from pyshocks.tools import Array, Scalar, ScalarFunction, ScalarLike, VectorFunction
 
 # {{{ interface
 
