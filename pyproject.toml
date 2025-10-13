@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "pyshocks"
-version = "2025.7"
+version = "2025.10"
 description = "Adjoint-based optimization of flows with shocks"
 readme = "README.rst"
 keywords = [
