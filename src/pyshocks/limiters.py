@@ -111,14 +111,16 @@ def local_slope_ratio(u: Array, *, atol: float = 1.0e-12) -> Array:
     #       i - 1          i         i + 1
     #   ------------|------------|------------
     #           --------      --------
+    #              sl           sr
 
     sl = u[1:-1] - u[:-2]
     sr = u[2:] - u[1:-1]
 
-    # NOTE: adding 'mas' to 'sr' only has an effect in invalid regions and removes
-    # some NANs that appear when jitting with `enable_debug_nans` enabled.
-    mask = jnp.logical_or(jnp.abs(sl) < atol, jnp.abs(sr) < atol).astype(dtype=u.dtype)
-    return jnp.array(jnp.where(mask, 0.0, sl / (sr + mask)), dtype=u.dtype)
+    # NOTE: this avoids NANs that would appear when using `enable_debug_nans`.
+    mask = (jnp.abs(sr) < atol).astype(dtype=u.dtype)
+    sl = jnp.where(mask, 0.0, sl)
+    sr = jnp.where(mask, 1.0, sr)
+    return sl / sr
 
 
 # }}}
