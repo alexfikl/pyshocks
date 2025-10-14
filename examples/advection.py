@@ -81,7 +81,7 @@ def make_boundary_conditions(
 
 
 def main(
-    scheme: advection.Scheme,
+    scheme: advection.AdvectionScheme,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,
@@ -228,7 +228,7 @@ def main(
 
 
 def convergence(
-    scheme: advection.Scheme,
+    scheme: advection.AdvectionScheme,
     *,
     outdir: pathlib.Path,
     example_name: str = "sign",

@@ -91,7 +91,7 @@ autodoc_default_options = {
     "show-inheritance": None,
 }
 
-# autodoc_typehints = "description"
+suppress_warnings = ["ref.python"]
 
 # }}}
 

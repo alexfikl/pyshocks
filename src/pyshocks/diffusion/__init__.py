@@ -18,7 +18,7 @@ where :math:`d(x) > 0` is the diffusivity.
 Schemes
 ^^^^^^^
 
-.. autoclass:: Scheme
+.. autoclass:: DiffusionScheme
     :members:
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: FiniteDifferenceScheme
@@ -37,14 +37,14 @@ from typing import Any
 from pyshocks.diffusion.schemes import (
     SBPSAT,
     CenteredScheme,
+    DiffusionScheme,
     FiniteDifferenceScheme,
     FiniteVolumeScheme,
-    Scheme,
 )
 
 # {{{ make_scheme_from_name
 
-_SCHEMES: dict[str, type[Scheme]] = {
+_SCHEMES: dict[str, type[DiffusionScheme]] = {
     "default": CenteredScheme,
     "centered": CenteredScheme,
     "sbp": SBPSAT,
@@ -55,7 +55,7 @@ def scheme_ids() -> tuple[str, ...]:
     return tuple(_SCHEMES.keys())
 
 
-def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
+def make_scheme_from_name(name: str, **kwargs: Any) -> DiffusionScheme:
     """
     :arg name: name of the scheme used to solve the linear diffusion equation.
     :arg kwargs: additional arguments to pass to the scheme. Any arguments
@@ -83,9 +83,9 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 __all__ = (
     "SBPSAT",
     "CenteredScheme",
+    "DiffusionScheme",
     "FiniteDifferenceScheme",
     "FiniteVolumeScheme",
-    "Scheme",
     "make_scheme_from_name",
     "scheme_ids",
 )

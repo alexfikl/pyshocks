@@ -28,7 +28,7 @@ logger = get_logger("advection-adjoint")
 
 @dataclass
 class Simulation:
-    scheme: advection.Scheme
+    scheme: advection.AdvectionScheme
     grid: Grid
     bc: Boundary
     stepper: Stepper
@@ -217,7 +217,7 @@ def evolve_adjoint(
 
 
 def main(
-    scheme: advection.Scheme,
+    scheme: advection.AdvectionScheme,
     *,
     outdir: pathlib.Path,
     a: float = -1.0,

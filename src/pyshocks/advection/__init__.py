@@ -18,7 +18,7 @@ initial conditions.
 Schemes
 ^^^^^^^
 
-.. autoclass:: Scheme
+.. autoclass:: AdvectionScheme
     :members:
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: FiniteDifferenceScheme
@@ -44,11 +44,11 @@ from typing import Any
 from pyshocks.advection.schemes import (
     ESWENO32,
     SBPSAT,
+    AdvectionScheme,
     FiniteDifferenceScheme,
     FiniteVolumeScheme,
     FluxSplitGodunov,
     Godunov,
-    Scheme,
 )
 
 # NOTE: just providing an alias for common usage
@@ -56,7 +56,7 @@ Upwind = Godunov
 
 # {{{ make_scheme_from_name
 
-_SCHEMES: dict[str, type[Scheme]] = {
+_SCHEMES: dict[str, type[AdvectionScheme]] = {
     "default": Godunov,
     "godunov": Godunov,
     "upwind": Godunov,
@@ -73,7 +73,7 @@ def scheme_ids() -> tuple[str, ...]:
     return tuple(_SCHEMES.keys())
 
 
-def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
+def make_scheme_from_name(name: str, **kwargs: Any) -> AdvectionScheme:
     """
     :arg name: name of the scheme used to solve the linear advection equation.
     :arg kwargs: additional arguments to pass to the scheme. Any arguments
@@ -101,11 +101,11 @@ def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
 __all__ = (
     "ESWENO32",
     "SBPSAT",
+    "AdvectionScheme",
     "FiniteDifferenceScheme",
     "FiniteVolumeScheme",
     "FluxSplitGodunov",
     "Godunov",
-    "Scheme",
     "Upwind",
     "make_scheme_from_name",
     "scheme_ids",

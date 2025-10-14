@@ -14,7 +14,7 @@ This module implements schemes for the inviscid Burgers' equation
 Schemes
 ^^^^^^^
 
-.. autoclass:: Scheme
+.. autoclass:: BurgersScheme
 .. autoclass:: FiniteVolumeScheme
 .. autoclass:: FiniteDifferenceScheme
 
@@ -46,6 +46,7 @@ from typing import Any
 from pyshocks.burgers.schemes import (
     ESWENO32,
     SSMUSCL,
+    BurgersScheme,
     EngquistOsher,
     FiniteDifferenceScheme,
     FiniteVolumeScheme,
@@ -53,13 +54,12 @@ from pyshocks.burgers.schemes import (
     Godunov,
     LaxFriedrichs,
     Rusanov,
-    Scheme,
 )
 from pyshocks.burgers.ssweno import SSWENO242
 
 # {{{ make_scheme_from_name
 
-_SCHEMES: dict[str, type[Scheme]] = {
+_SCHEMES: dict[str, type[BurgersScheme]] = {
     "default": LaxFriedrichs,
     "godunov": Godunov,
     "rusanov": Rusanov,
@@ -79,7 +79,7 @@ def scheme_ids() -> tuple[str, ...]:
     return tuple(_SCHEMES.keys())
 
 
-def make_scheme_from_name(name: str, **kwargs: Any) -> Scheme:
+def make_scheme_from_name(name: str, **kwargs: Any) -> BurgersScheme:
     """
     :arg name: name of the scheme used to solve Burgers' equation.
     :arg kwargs: additional arguments to pass to the scheme. Any arguments
@@ -105,6 +105,7 @@ __all__ = (
     "ESWENO32",
     "SSMUSCL",
     "SSWENO242",
+    "BurgersScheme",
     "EngquistOsher",
     "FiniteDifferenceScheme",
     "FiniteVolumeScheme",
@@ -112,7 +113,6 @@ __all__ = (
     "Godunov",
     "LaxFriedrichs",
     "Rusanov",
-    "Scheme",
     "make_scheme_from_name",
     "scheme_ids",
 )

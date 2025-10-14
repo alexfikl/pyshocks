@@ -38,7 +38,7 @@ class SpatialVelocity:
 
 
 @dataclass(frozen=True)
-class Scheme(SchemeBase):
+class AdvectionScheme(SchemeBase):
     """Base class for numerical schemes for the linear advection equation.
 
     .. automethod:: __init__
@@ -48,9 +48,9 @@ class Scheme(SchemeBase):
     """Advection velocity."""
 
 
-@predict_timestep.register(Scheme)
+@predict_timestep.register(AdvectionScheme)
 def _predict_timestep_advection(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+    scheme: AdvectionScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Scalar:
     assert scheme.velocity is not None
 
@@ -59,9 +59,9 @@ def _predict_timestep_advection(
     return grid.dx_min / amax
 
 
-@apply_operator.register(Scheme)
+@apply_operator.register(AdvectionScheme)
 def _apply_operator_advection(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+    scheme: AdvectionScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Array:
     assert scheme.velocity is not None
 
@@ -74,7 +74,7 @@ def _apply_operator_advection(
 
 
 @dataclass(frozen=True)
-class FiniteVolumeScheme(Scheme, FiniteVolumeSchemeBase):
+class FiniteVolumeScheme(AdvectionScheme, FiniteVolumeSchemeBase):
     """Base class for finite volume-based numerical schemes for the linear
     advection equation.
 
@@ -83,7 +83,7 @@ class FiniteVolumeScheme(Scheme, FiniteVolumeSchemeBase):
 
 
 @dataclass(frozen=True)
-class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+class FiniteDifferenceScheme(AdvectionScheme, FiniteDifferenceSchemeBase):
     """Base class for finite difference-based numerical schemes for the linear
     advection equation.
 
@@ -97,7 +97,7 @@ class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
 # {{{ godunov
 
 
-def upwind_flux(scheme: Scheme, grid: Grid, bc: Boundary, u: Array) -> Array:
+def upwind_flux(scheme: AdvectionScheme, grid: Grid, bc: Boundary, u: Array) -> Array:
     assert scheme.velocity is not None
     assert scheme.rec is not None
     assert u.shape[0] == grid.x.size
@@ -135,7 +135,9 @@ def _numerical_flux_advection_godunov(
 # {{{ ESWENO
 
 
-def esweno_lf_flux(scheme: Scheme, grid: Grid, bc: Boundary, u: Array) -> Array:
+def esweno_lf_flux(
+    scheme: AdvectionScheme, grid: Grid, bc: Boundary, u: Array
+) -> Array:
     assert scheme.velocity is not None
     assert scheme.rec is not None
     assert u.shape[0] == grid.x.size

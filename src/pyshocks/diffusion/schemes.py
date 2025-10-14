@@ -26,14 +26,14 @@ from pyshocks.tools import Array, Scalar, ScalarLike
 
 
 @dataclass(frozen=True)
-class Scheme(SchemeBase):
+class DiffusionScheme(SchemeBase):
     diffusivity: Array
     """Diffusivity coefficient."""
 
 
-@predict_timestep.register(Scheme)
+@predict_timestep.register(DiffusionScheme)
 def _predict_timestep_diffusion(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+    scheme: DiffusionScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Scalar:
     assert scheme.diffusivity is not None
 
@@ -42,7 +42,7 @@ def _predict_timestep_diffusion(
 
 
 @dataclass(frozen=True)
-class FiniteVolumeScheme(Scheme, ConservationLawScheme):
+class FiniteVolumeScheme(DiffusionScheme, ConservationLawScheme):
     """Base class for finite volume-based numerical schemes the heat equation.
 
     .. automethod:: __init__
@@ -50,7 +50,7 @@ class FiniteVolumeScheme(Scheme, ConservationLawScheme):
 
 
 @dataclass(frozen=True)
-class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+class FiniteDifferenceScheme(DiffusionScheme, FiniteDifferenceSchemeBase):
     """Base class for finite difference-based numerical schemes for the heat equation.
 
     .. automethod:: __init__

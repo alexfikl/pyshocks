@@ -27,21 +27,21 @@ from pyshocks.tools import Array, Scalar, ScalarLike
 
 
 @dataclass(frozen=True)
-class Scheme(SchemeBase):
+class BurgersScheme(SchemeBase):
     """Base class for numerical schemes for Burgers' equation.
 
     .. automethod:: __init__
     """
 
 
-@flux.register(Scheme)
-def _flux_burgers(scheme: Scheme, t: ScalarLike, x: Array, u: Array) -> Array:
+@flux.register(BurgersScheme)
+def _flux_burgers(scheme: BurgersScheme, t: ScalarLike, x: Array, u: Array) -> Array:
     return u**2 / 2
 
 
-@predict_timestep.register(Scheme)
+@predict_timestep.register(BurgersScheme)
 def _predict_timestep_burgers(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+    scheme: BurgersScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Scalar:
     # largest wave speed i.e. max |f'(u)|
     smax = jnp.max(jnp.abs(u[grid.i_]))
@@ -50,7 +50,7 @@ def _predict_timestep_burgers(
 
 
 @dataclass(frozen=True)
-class FiniteVolumeScheme(Scheme, ConservationLawScheme):
+class FiniteVolumeScheme(BurgersScheme, ConservationLawScheme):
     """Base class for finite volume-based numerical schemes for Burgers' equation.
 
     .. automethod:: __init__
@@ -58,7 +58,7 @@ class FiniteVolumeScheme(Scheme, ConservationLawScheme):
 
 
 @dataclass(frozen=True)
-class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+class FiniteDifferenceScheme(BurgersScheme, FiniteDifferenceSchemeBase):
     """Base class for finite difference-based numerical schemes for Burgers' equation.
 
     .. automethod:: __init__

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
-class Scheme(SchemeBase):
+class ContinuityScheme(SchemeBase):
     """Base class for numerical schemes for the continuity equation.
 
     .. automethod:: __init__
@@ -37,16 +37,18 @@ class Scheme(SchemeBase):
     """Advection velocity."""
 
 
-@flux.register(Scheme)
-def _flux_continuity(scheme: Scheme, t: ScalarLike, x: Array, u: Array) -> Array:
+@flux.register(ContinuityScheme)
+def _flux_continuity(
+    scheme: ContinuityScheme, t: ScalarLike, x: Array, u: Array
+) -> Array:
     assert scheme.velocity is not None
 
     return scheme.velocity * u
 
 
-@predict_timestep.register(Scheme)
+@predict_timestep.register(ContinuityScheme)
 def _predict_timestep_continuity(
-    scheme: Scheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
+    scheme: ContinuityScheme, grid: Grid, bc: Boundary, t: ScalarLike, u: Array
 ) -> Array:
     assert scheme.velocity is not None
 
@@ -55,7 +57,7 @@ def _predict_timestep_continuity(
 
 
 @dataclass(frozen=True)
-class FiniteVolumeScheme(Scheme, ConservationLawScheme):
+class FiniteVolumeScheme(ContinuityScheme, ConservationLawScheme):
     """Base class for finite volume-based numerical schemes for the continuity
     equation.
 
@@ -64,7 +66,7 @@ class FiniteVolumeScheme(Scheme, ConservationLawScheme):
 
 
 @dataclass(frozen=True)
-class FiniteDifferenceScheme(Scheme, FiniteDifferenceSchemeBase):
+class FiniteDifferenceScheme(ContinuityScheme, FiniteDifferenceSchemeBase):
     """Base class for finite difference-based numerical schemes for the continuity
     equation.
 
