@@ -27,6 +27,11 @@ Typing
 
     A :class:`jax.Array` object with an empty shape `()`.
 
+.. class:: ScalarLike
+    :canonical: pyshocks.tools.ScalarLike
+
+    A :class:`Scalar` or  floating point number.
+
 .. autoclass:: ScalarFunction
 .. autoclass:: VectorFunction
 .. autoclass:: SpatialFunction
