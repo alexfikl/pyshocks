@@ -2,13 +2,13 @@
 #    uv pip compile --universal --python-version 3.10 -o requirements.txt pyproject.toml
 jax==0.6.2 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml)
-jax==0.7.2 ; python_full_version >= '3.11'
+jax==0.8.1 ; python_full_version >= '3.11'
     # via pyshocks (pyproject.toml)
 jaxlib==0.6.2 ; python_full_version < '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
-jaxlib==0.7.2 ; python_full_version >= '3.11'
+jaxlib==0.8.1 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
@@ -16,7 +16,7 @@ markdown-it-py==4.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py
-ml-dtypes==0.5.3
+ml-dtypes==0.5.4
     # via
     #   jax
     #   jaxlib
@@ -27,7 +27,7 @@ numpy==2.2.6 ; python_full_version < '3.11'
     #   jaxlib
     #   ml-dtypes
     #   scipy
-numpy==2.3.3 ; python_full_version >= '3.11'
+numpy==2.3.5 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
@@ -44,7 +44,7 @@ scipy==1.15.3 ; python_full_version < '3.11'
     # via
     #   jax
     #   jaxlib
-scipy==1.16.2 ; python_full_version >= '3.11'
+scipy==1.16.3 ; python_full_version >= '3.11'
     # via
     #   jax
     #   jaxlib
