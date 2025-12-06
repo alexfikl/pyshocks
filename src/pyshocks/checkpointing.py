@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2020-2022 Alexandru Fikl <alexfikl@gmail.com>
+# SPDX-FileCopyrightText: 2020 Alexandru Fikl <alexfikl@gmail.com>
 # SPDX-License-Identifier: MIT
 
 """
@@ -26,6 +26,7 @@ from functools import singledispatch
 from typing import TYPE_CHECKING, Any
 
 import jax.numpy as jnp
+from typing_extensions import override
 
 if TYPE_CHECKING:
     import pathlib
@@ -72,7 +73,7 @@ class Checkpoint(ABC):
 
 
 @singledispatch
-def save(chk: Checkpoint, idx: int, values: dict[str, Any]) -> None:
+def save(chk: Checkpoint, idx: int, values: dict[str, Any]) -> None:  # pyright: ignore[reportUnusedParameter]
     """
     :arg idx: an integer index denoting the checkpoint.
     :arg values: a :class:`dict` of values to be checkpointed.
@@ -82,7 +83,10 @@ def save(chk: Checkpoint, idx: int, values: dict[str, Any]) -> None:
 
 @singledispatch
 def load(
-    chk: Checkpoint, idx: int, *, include: tuple[str, ...] | None = None
+    chk: Checkpoint,
+    idx: int,  # pyright: ignore[reportUnusedParameter]
+    *,
+    include: tuple[str, ...] | None = None,  # pyright: ignore[reportUnusedParameter]
 ) -> dict[str, Any]:
     """
     :arg idx: an integer index denoting the checkpot.
@@ -104,15 +108,17 @@ class InMemoryCheckpoint(Checkpoint):
     storage: dict[Hashable, dict[str, Any]] = field(default_factory=dict)
     """Internal data structure used to store the checkpoints."""
 
+    @override
     def index_to_key(self, i: int) -> Hashable:
         return (self.basename, i)
 
+    @override
     def __contains__(self, i: int) -> bool:
         return self.index_to_key(i) in self.storage
 
 
 @save.register(InMemoryCheckpoint)
-def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: dict[str, Any]) -> None:
+def save_in_memory(chk: InMemoryCheckpoint, idx: int, values: dict[str, Any]) -> None:
     key = chk.index_to_key(idx)
     if key in chk.storage:
         raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
@@ -121,7 +127,7 @@ def _save_in_memory(chk: InMemoryCheckpoint, idx: int, values: dict[str, Any]) -
 
 
 @load.register(InMemoryCheckpoint)
-def _load_in_memory(
+def load_in_memory(
     chk: InMemoryCheckpoint, idx: int, *, include: tuple[str, ...] | None = None
 ) -> dict[str, Any]:
     key = chk.index_to_key(idx)
@@ -149,32 +155,30 @@ class PickleCheckpoint(Checkpoint):
     dirname: pathlib.Path
     """The directory in which to store the checkpoints."""
 
+    @override
     def index_to_key(self, i: int) -> pathlib.Path:
         return self.dirname / f"{self.basename}_{i:09d}.npz"
 
+    @override
     def __contains__(self, i: int) -> bool:
         return self.index_to_key(i).exists()
 
 
 @save.register(PickleCheckpoint)
-def _save_pickle(chk: PickleCheckpoint, idx: int, values: dict[str, Any]) -> None:
+def save_pickle(chk: PickleCheckpoint, idx: int, values: dict[str, Any]) -> None:
     filename = chk.index_to_key(idx)
     if not filename.exists():
         raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
 
-    try:
-        import cloudpickle as pickle
-    except ImportError:
-        import pickle
-
     import lzma
+    import pickle
 
     with lzma.open(filename, "wb") as outfile:
         pickle.dump(values, outfile)
 
 
 @load.register(PickleCheckpoint)
-def _load_pickle(
+def load_pickle(
     chk: PickleCheckpoint,
     idx: int,
     *,
@@ -184,15 +188,11 @@ def _load_pickle(
     if not filename.exists():
         raise KeyError(f"Cannot find checkpoint at index {idx!r}.")
 
-    try:
-        import cloudpickle as pickle
-    except ImportError:
-        import pickle
-
     import lzma
+    import pickle
 
     with open(filename, "rb") as infile:
-        values = pickle.load(lzma.decompress(infile.read()))
+        values = pickle.loads(lzma.decompress(infile.read()))
 
     if include is None:
         return dict(values)
@@ -218,15 +218,17 @@ class NumpyCheckpoint(Checkpoint):
     dirname: pathlib.Path
     """The directory in which to store the checkpoints."""
 
+    @override
     def index_to_key(self, i: int) -> pathlib.Path:
         return self.dirname / f"{self.basename}_{i:09d}.npz"
 
+    @override
     def __contains__(self, i: int) -> bool:
         return self.index_to_key(i).exists()
 
 
 @save.register(NumpyCheckpoint)
-def _save_npz(chk: NumpyCheckpoint, idx: int, values: dict[str, Any]) -> None:
+def save_npz(chk: NumpyCheckpoint, idx: int, values: dict[str, Any]) -> None:
     filename = chk.index_to_key(idx)
     if not filename.exists():
         raise KeyError(f"Cannot set existing checkpoint at {idx!r}.")
@@ -235,7 +237,7 @@ def _save_npz(chk: NumpyCheckpoint, idx: int, values: dict[str, Any]) -> None:
 
 
 @load.register(NumpyCheckpoint)
-def _load_npz(
+def load_npz(
     chk: NumpyCheckpoint,
     idx: int,
     *,

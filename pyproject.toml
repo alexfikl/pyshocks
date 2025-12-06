@@ -53,7 +53,7 @@ urls.Repository = "https://github.com/alexfikl/pyshocks"
 
 [dependency-groups]
 dev = [ "pyproject-fmt", "reuse", "typos", "uv" ]
-test = [ "doc8", "jaxtyping", "mypy", "pytest", "ruff" ]
+test = [ "doc8", "mypy", "pytest", "ruff" ]
 vis = [ "matplotlib", "scienceplots" ]
 
 [tool.hatch.metadata]

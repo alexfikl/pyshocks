@@ -32,7 +32,6 @@ class ContinuityScheme(SchemeBase):
     .. automethod:: __init__
     """
 
-    # NOTE: this is Optional just for mypy, but should never be `None` in practice
     velocity: Array | None
     """Advection velocity."""
 

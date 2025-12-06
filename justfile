@@ -64,6 +64,11 @@ mypy:
     {{ PYTHON }} -m mypy src tests examples drivers
     @echo -e "\e[1;32mmypy clean!\e[0m"
 
+[doc('Run pyright checks over the source code')]
+pyright:
+    basedpyright
+    @echo -e "\e[1;32mpyright clean!\e[0m"
+
 # }}}
 # {{{ pin
 

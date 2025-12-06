@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import jax.numpy as jnp
+from typing_extensions import override
 
 if TYPE_CHECKING:
     from pyshocks.tools import Array, Scalar, ScalarLike
@@ -56,9 +57,11 @@ class Stencil:
     padded_coeffs: Array
     """A version of :attr:`coeffs` that is symmetric around 0."""
 
+    @override
     def __str__(self) -> str:
         return repr(self)
 
+    @override
     def __repr__(self) -> str:
         from fractions import Fraction
 
@@ -231,6 +234,7 @@ def make_fornberg_approximation(
         # NOTE: avoids implicit conversion to float
         cj = j.astype(dtype)
         c2, c5, c4 = jnp.array(1, dtype=c.dtype), c4, x[i] - xd
+        c6 = c7 = c2
 
         for k in range(i):
             c3 = x[i] - x[k]
