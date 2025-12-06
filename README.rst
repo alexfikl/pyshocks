@@ -43,7 +43,7 @@ For development, it is recommended to run
 
 .. code:: bash
 
-    python -m pip install -e '.[dev,vis]'
+    python -m pip install -e '.[dev,test,vis]'
 
 A pinned version of all the requirements is kept in ``requirements.txt``.
 For a quick install with the versions that are currently being tested on the CI
@@ -52,8 +52,8 @@ For a quick install with the versions that are currently being tested on the CI
 
    python -m pip install -r requirements.txt -e .
 
-or use ``.github/requirements-dev.txt`` to also install development packages
-(e.g. ``ruff``).
+or use ``.github/requirements-test.txt`` to also install packages required for
+testing (e.g. ``pytest``).
 
 Documentation
 =============
