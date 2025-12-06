@@ -702,8 +702,27 @@ def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
     if use_tex is None:
         use_tex = "GITHUB_REPOSITORY" not in os.environ and check_usetex(s=True)
 
-    defaults: dict[str, dict[str, Any]] = {
-        "figure": {"figsize": (8, 8), "dpi": 300, "constrained_layout": {"use": True}},
+    from contextlib import suppress
+
+    # NOTE: since v1.1.0 an import is required to import the styles
+    prop_cycle = mp.rcParams["axes.prop_cycle"]
+    with suppress(ImportError):
+        import scienceplots  # noqa: F401
+
+        mp.style.use(["science", "ieee"])
+
+    # NOTE: the 'petroff10' style is available for version >= 3.10.0 and changes
+    # the 'prop_cycle' to the 10 colors that are more accessible
+    if "petroff10" in mp.style.available:
+        mp.style.use("petroff10")
+        prop_cycle = mp.rcParams["axes.prop_cycle"]
+
+    overrides: dict[str, dict[str, Any]] = {
+        "figure": {
+            "figsize": (8, 8),
+            "dpi": 300,
+            "constrained_layout.use": True,
+        },
         "text": {"usetex": use_tex},
         "legend": {"fontsize": 32},
         "lines": {"linewidth": 2, "markersize": 10},
@@ -711,8 +730,10 @@ def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
             "labelsize": 32,
             "titlesize": 32,
             "grid": True,
+            "grid.axis": "both",
+            "grid.which": "both",
             # NOTE: preserve existing colors (the ones in "science" are ugly)
-            "prop_cycle": mp.rcParams["axes.prop_cycle"],
+            "prop_cycle": prop_cycle,
         },
         "xtick": {"labelsize": 24, "direction": "inout"},
         "ytick": {"labelsize": 24, "direction": "inout"},
@@ -723,32 +744,8 @@ def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
         "ytick.minor": {"size": 4.0},
     }
 
-    from contextlib import suppress
-
-    # NOTE: since v1.1.0 an import is required to import the styles
-    with suppress(ImportError):
-        import scienceplots  # noqa: F401
-
-    if "science" in mp.style.library:
-        mp.style.use(["science", "ieee"])
-    else:
-        # NOTE: try to use the upstream seaborn styles and fallback to matplotlib
-
-        try:
-            import seaborn
-
-            mp.style.use(seaborn.axes_style("whitegrid"))
-        except ImportError:
-            if "seaborn-v0_8" in mp.style.library:
-                # NOTE: matplotlib v3.6 deprecated all the seaborn styles
-                mp.style.use("seaborn-v0_8-white")
-            elif "seaborn" in mp.style.library:
-                # NOTE: for older versions of matplotlib
-                mp.style.use("seaborn-white")
-
-    for group, params in defaults.items():
-        with suppress(KeyError):
-            mp.rc(group, **params)
+    for group, params in overrides.items():
+        mp.rc(group, **params)
 
 
 @contextmanager

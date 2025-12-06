@@ -145,10 +145,7 @@ module = [
     "cloudpickle.*",
     "matplotlib.*",
     "pyweno.*",
-    "seaborn.*",
     "scienceplots.*",
-    "scipy.*",
-    "jaxlib.cpu.*",
 ]
 ignore_missing_imports = true
 
