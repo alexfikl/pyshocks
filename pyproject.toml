@@ -1,9 +1,6 @@
 [build-system]
 build-backend = "hatchling.build"
-requires = [
-    "hatchling>=1.10",
-    "numpy",
-]
+requires = [ "hatchling>=1.10" ]
 
 [project]
 name = "pyshocks"
