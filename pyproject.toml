@@ -41,29 +41,15 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    "jax>=0.4.1",
-    "jaxlib>=0.4.1",
-    "numpy>=1.19",
+    "jax>=0.7.0",
+    "jaxlib>=0.7.0",
+    "numpy>=2.1",
     "rich",
 ]
-optional-dependencies.dev = [
-    "doc8",
-    "mypy",
-    "pyproject-fmt",
-    "pytest",
-    "reuse",
-    "ruff",
-    "types-dataclasses",
-    "typos",
-    "uv",
-]
+# NOTE: this is only here for readthedocs (keep in sync with the dependency group)
 optional-dependencies.docs = [
     "sphinx>=6",
     "sphinx-book-theme",
-]
-optional-dependencies.vis = [
-    "matplotlib",
-    "scienceplots",
 ]
 # optional-dependencies.pyweno = [
 #     "pyweno @ git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO",
@@ -71,7 +57,13 @@ optional-dependencies.vis = [
 urls.Documentation = "https://pyshocks.readthedocs.io"
 urls.Repository = "https://github.com/alexfikl/pyshocks"
 
+[dependency-groups]
+dev = [ "pyproject-fmt", "reuse", "typos", "uv" ]
+test = ["doc8", "mypy", "ruff", "pytest", "jaxtyping" ]
+vis = ["matplotlib", "scienceplots"]
+
 [tool.hatch.metadata]
+# NOTE: needed for PyWENO use from git
 allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
