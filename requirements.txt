@@ -48,3 +48,5 @@ scipy==1.16.3 ; python_full_version >= '3.11'
     # via
     #   jax
     #   jaxlib
+typing-extensions==4.15.0
+    # via pyshocks (pyproject.toml)

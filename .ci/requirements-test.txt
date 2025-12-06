@@ -32,11 +32,9 @@ jaxlib==0.8.1 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
-jaxtyping==0.3.3
-    # via pyshocks (pyproject.toml:test)
 kiwisolver==1.4.9
     # via matplotlib
-librt==0.7.0
+librt==0.7.2
     # via mypy
 markdown-it-py==4.0.0
     # via rich
@@ -71,9 +69,17 @@ numpy==2.3.5 ; python_full_version >= '3.11'
     #   jaxlib
     #   matplotlib
     #   ml-dtypes
+    #   numpy-typing-compat
+    #   optype
     #   scipy
+numpy-typing-compat==20250818.2.3 ; python_full_version >= '3.11'
+    # via optype
 opt-einsum==3.4.0
     # via jax
+optype==0.9.3 ; python_full_version < '3.11'
+    # via scipy-stubs
+optype==0.14.0 ; python_full_version >= '3.11'
+    # via scipy-stubs
 packaging==25.0
     # via
     #   matplotlib
@@ -111,6 +117,10 @@ scipy==1.16.3 ; python_full_version >= '3.11'
     # via
     #   jax
     #   jaxlib
+scipy-stubs==1.15.3.0 ; python_full_version < '3.11'
+    # via pyshocks (pyproject.toml:test)
+scipy-stubs==1.16.3.2 ; python_full_version >= '3.11'
+    # via pyshocks (pyproject.toml:test)
 six==1.17.0
     # via python-dateutil
 stevedore==5.6.0
@@ -122,7 +132,7 @@ tomli==2.3.0 ; python_full_version < '3.11'
     #   pytest
 typing-extensions==4.15.0
     # via
+    #   pyshocks (pyproject.toml)
     #   exceptiongroup
     #   mypy
-wadler-lindig==0.1.7
-    # via jaxtyping
+    #   optype

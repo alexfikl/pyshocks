@@ -42,6 +42,7 @@ dependencies = [
     "jaxlib>=0.6",
     "numpy>=2.1",
     "rich",
+    "typing-extensions>=4.10",
 ]
 # NOTE: this is only here for readthedocs (keep in sync with the dependency group)
 optional-dependencies.docs = [
@@ -53,7 +54,7 @@ urls.Repository = "https://github.com/alexfikl/pyshocks"
 
 [dependency-groups]
 dev = [ "pyproject-fmt", "reuse", "typos", "uv" ]
-test = [ "doc8", "mypy", "pytest", "ruff" ]
+test = [ "doc8", "mypy", "pytest", "ruff", "scipy-stubs" ]
 vis = [ "matplotlib", "scienceplots" ]
 
 [tool.hatch.metadata]
