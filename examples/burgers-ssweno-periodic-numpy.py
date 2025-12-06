@@ -144,7 +144,7 @@ def weno_242_smoothness(
 # {{{ weights
 
 
-def weno_242_weights(beta: Array, tau: Array, *, epsilon: float) -> Array:
+def weno_242_weights(beta: Array, tau: Array, *, epsilon: float | Array) -> Array:
     d = np.array([[1 / 6, 2 / 3, 1 / 6]], dtype=beta.dtype).T
     alpha = d * (1 + tau / (epsilon + beta))
     omega = alpha / np.sum(alpha, axis=0, keepdims=True)
@@ -165,7 +165,7 @@ def weno_242_reconstruct(
     k: int | None = None,
     dw: Array | None = None,
     weighted: bool = True,
-    epsilon: float | None = None,
+    epsilon: float | Array | None = None,
     dx: float | None = None,
 ) -> Array:
     """
@@ -568,13 +568,14 @@ def main(
         import scipy.integrate as si
 
         logger.info("Starting 'scipy.integrate.solve_ivp' ...")
-        solution = si.solve_ivp(
+        scipy_result = si.solve_ivp(
             rhs_func,
             [t0, tf],
             u0,
             t_eval=tspan,
             rtol=1.0e-6,
         )
+        solution = Solution(y=scipy_result.y)
     elif ivp == "ssprk33":
         logger.info("Starting 'ssprk33' ...")
         solution = ssprk33(rhs_func, u0, t_eval=tspan, callback=callback)

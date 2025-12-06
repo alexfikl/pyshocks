@@ -919,13 +919,14 @@ def main(
         import scipy.integrate as si
 
         logger.info("Starting 'scipy.integrate.solve_ivp' ...")
-        solution = si.solve_ivp(
+        scipy_result = si.solve_ivp(
             rhs_func,
             [t0, tf],
             u0,
             t_eval=tspan,
             rtol=1.0e-6,
         )
+        solution = Solution(y=scipy_result.y)
     elif ivp == "ssprk33":
         logger.info("Starting 'ssprk33' ...")
         solution = ssprk33(rhs_func, u0, t_eval=tspan, callback=callback)
