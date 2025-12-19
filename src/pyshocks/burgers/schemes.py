@@ -217,9 +217,7 @@ class ESWENO32(FiniteVolumeScheme):
 
 
 @bind.register(ESWENO32)
-def _bind_burgers_esweno32(
-    scheme: ESWENO32, grid: Grid, bc: Boundary
-) -> ESWENO32:
+def _bind_burgers_esweno32(scheme: ESWENO32, grid: Grid, bc: Boundary) -> ESWENO32:
     from pyshocks.weno import es_weno_parameters
 
     # NOTE: prefer the parameters recommended by Carpenter!

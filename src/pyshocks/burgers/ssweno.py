@@ -101,9 +101,7 @@ class SSWENO242(FiniteDifferenceScheme):
 
 
 @bind.register(SSWENO242)
-def _bind_diffusion_sbp(
-    scheme: SSWENO242, grid: Grid, bc: Boundary
-) -> SSWENO242:
+def _bind_diffusion_sbp(scheme: SSWENO242, grid: Grid, bc: Boundary) -> SSWENO242:
     from pyshocks import UniformGrid
     from pyshocks.scalar import OneSidedBurgersBoundary, SATBoundary
 

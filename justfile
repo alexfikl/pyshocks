@@ -37,7 +37,7 @@ justfmt:
 # {{{ linting
 
 [doc('Run all linting checks over the source code')]
-lint: typos reuse ruff doc8 mypy
+lint: typos reuse ruff doc8 ty
 
 [doc('Run typos over the source code and documentation')]
 typos:
@@ -59,10 +59,10 @@ doc8:
     {{ PYTHON }} -m doc8 src docs
     @echo -e "\e[1;32mdoc8 clean!\e[0m"
 
-[doc('Run mypy checks over the source code')]
-mypy:
-    {{ PYTHON }} -m mypy src tests examples drivers
-    @echo -e "\e[1;32mmypy clean!\e[0m"
+[doc('Run ty checks over the source code')]
+ty:
+    ty check src tests examples drivers
+    @echo -e "\e[1;32mty clean!\e[0m"
 
 [doc('Run pyright checks over the source code')]
 pyright:
@@ -104,15 +104,28 @@ develop:
         --editable .
 
 [doc("Editable install using pinned dependencies from requirements-test.txt")]
-pip-install:
+ci-install venv=".venv":
+    #!/usr/bin/env bash
+
+    # build a virtual environment
+    python -m venv {{ venv }}
+    source {{ venv }}/bin/activate
+
+    # install build dependencies (need to be first due to  --no-build-isolation)
     {{ PYTHON }} -m pip install --verbose --requirement .ci/requirements-build.txt
+
+    # install all other pinned dependencies
     {{ PYTHON }} -m pip install \
         --verbose \
         --requirement .ci/requirements-test.txt \
         --no-build-isolation \
         --editable .
+
     {{ PYTHON }} -m pip install --verbose --no-build-isolation \
         'git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO'
+
+    echo -e "\e[1;32mvenv setup completed: '{{ venv }}'!\e[0m"
+
 
 [doc("Remove various build artifacts")]
 clean:
@@ -122,7 +135,7 @@ clean:
 
 [doc("Remove various temporary files and caches")]
 purge: clean
-    rm -rf .ruff_cache .pytest_cache .pytest-cache .mypy_cache tags
+    rm -rf .ruff_cache .pytest_cache .pytest-cache tags
 
 [doc("Regenerate ctags")]
 ctags:
