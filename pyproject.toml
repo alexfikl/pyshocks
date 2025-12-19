@@ -54,7 +54,7 @@ urls.Repository = "https://github.com/alexfikl/pyshocks"
 
 [dependency-groups]
 dev = [ "pyproject-fmt", "reuse", "typos", "uv" ]
-test = [ "doc8", "mypy", "pytest", "ruff", "scipy-stubs" ]
+test = [ "doc8", "ty", "pytest", "ruff", "scipy-stubs" ]
 vis = [ "matplotlib", "scienceplots" ]
 
 [tool.hatch.metadata]
@@ -131,20 +131,6 @@ lint.flake8-quotes.multiline-quotes = "double"
 lint.isort.known-first-party = [
     "pyshocks",
 ]
-
-[tool.mypy]
-strict = true
-python_version = "3.10"
-hide_error_codes = false
-warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-module = [
-    "matplotlib.*",
-    "pyweno.*",
-    "scienceplots.*",
-]
-ignore_missing_imports = true
 
 [tool.doc8]
 max-line-length = 88

@@ -115,7 +115,7 @@ class SBPSAT(FiniteDifferenceScheme):
 
 
 @bind.register(SBPSAT)
-def _bind_diffusion_sbp(  # type: ignore[misc]
+def _bind_diffusion_sbp(
     scheme: SBPSAT, grid: UniformGrid, bc: Boundary
 ) -> SBPSAT:
     # {{{ scheme

@@ -60,24 +60,24 @@ __version__ = metadata.version("pyshocks")
 # NOTE: without setting this flag, jax forcefully makes everything float32, even
 # if the user requested float64, so it needs to stay on until this is fixed
 #       https://github.com/google/jax/issues/8178
-jax.config.update("jax_enable_x64", val=True)  # type: ignore[no-untyped-call]
+jax.config.update("jax_enable_x64", val=True)
 
 # NOTE: forcing to "cpu" until anyone bothers even trying to test on GPUs
-jax.config.update("jax_platform_name", "cpu")  # type: ignore[no-untyped-call]
+jax.config.update("jax_platform_name", "cpu")
 
 # NOTE: enabled on more recent versions of jax
 try:  # noqa: SIM105
     # NOTE: this option is removed in newer version
-    jax.config.update("jax_array", val=True)  # type: ignore[no-untyped-call]
+    jax.config.update("jax_array", val=True)
 except AttributeError:
     pass
 
 # NOTE: useful options while debugging
 if __debug__:
-    jax.config.update("jax_debug_infs", val=True)  # type: ignore[no-untyped-call]
-    jax.config.update("jax_debug_nans", val=True)  # type: ignore[no-untyped-call]
-    jax.config.update("jax_enable_checks", val=True)  # type: ignore[no-untyped-call]
-    jax.config.update("jax_numpy_dtype_promotion", "strict")  # type: ignore
+    jax.config.update("jax_debug_infs", val=True)
+    jax.config.update("jax_debug_nans", val=True)
+    jax.config.update("jax_enable_checks", val=True)
+    jax.config.update("jax_numpy_dtype_promotion", "strict")
 
 
 # }}}

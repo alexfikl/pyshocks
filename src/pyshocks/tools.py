@@ -154,7 +154,7 @@ def estimate_order_of_convergence(x: Array, y: Array) -> tuple[Scalar, Scalar]:
     if x.size <= 1:
         raise RuntimeError("Need at least two values to estimate order.")
 
-    eps = jnp.finfo(x.dtype).eps  # type: ignore[no-untyped-call]
+    eps = jnp.finfo(x.dtype).eps
     c = jnp.polyfit(jnp.log10(x + eps), jnp.log10(y + eps), 1)
     return 10 ** c[-1], c[-2]
 
@@ -254,7 +254,7 @@ class EOCRecorder:
 
         _, error = self._history
         if atol is None:
-            atol = 1.0e2 * float(jnp.finfo(error.dtype).eps)  # type: ignore[no-untyped-call]
+            atol = 1.0e2 * float(jnp.finfo(error.dtype).eps)
 
         return bool(self.estimated_order >= (order - slack) or jnp.max(error) < atol)
 
@@ -671,7 +671,7 @@ def check_usetex(*, s: bool) -> bool:
     try:
         import matplotlib
 
-        return bool(matplotlib.checkdep_usetex(s))  # type: ignore[attr-defined]
+        return bool(matplotlib.checkdep_usetex(s))
     except ImportError:
         # NOTE: no matplotlib, just return false
         return False

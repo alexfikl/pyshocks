@@ -82,7 +82,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType) -> None:
         fig.clf()
 
     # NOTE: allow negative values larger than eps because floating point..
-    mask = jnp.real(s) > -jnp.finfo(dtype).eps  # type: ignore[no-untyped-call]
+    mask = jnp.real(s) > -jnp.finfo(dtype).eps
     assert jnp.all(mask), jnp.real(s[~mask])
 
     # }}}

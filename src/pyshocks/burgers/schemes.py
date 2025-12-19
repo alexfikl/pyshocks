@@ -217,7 +217,7 @@ class ESWENO32(FiniteVolumeScheme):
 
 
 @bind.register(ESWENO32)
-def _bind_burgers_esweno32(  # type: ignore[misc]
+def _bind_burgers_esweno32(
     scheme: ESWENO32, grid: Grid, bc: Boundary
 ) -> ESWENO32:
     from pyshocks.weno import es_weno_parameters
@@ -371,7 +371,7 @@ class FluxSplitRusanov(FiniteDifferenceScheme):
 
 
 @bind.register(FluxSplitRusanov)
-def _bind_advection_flux_split_rusanov(  # type: ignore[misc]
+def _bind_advection_flux_split_rusanov(
     scheme: FluxSplitRusanov, grid: UniformGrid, bc: Boundary
 ) -> FluxSplitRusanov:
     assert isinstance(grid, UniformGrid)

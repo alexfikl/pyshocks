@@ -212,7 +212,7 @@ class FluxSplitGodunov(FiniteDifferenceScheme):
 
 
 @bind.register(FluxSplitGodunov)
-def _bind_advection_flux_split_godunov(  # type: ignore[misc]
+def _bind_advection_flux_split_godunov(
     scheme: FluxSplitGodunov, grid: UniformGrid, bc: Boundary
 ) -> FluxSplitGodunov:
     assert isinstance(grid, UniformGrid)
@@ -278,7 +278,7 @@ class SBPSAT(FiniteDifferenceScheme):
 
 
 @bind.register(SBPSAT)
-def _bind_advection_sbp(  # type: ignore[misc]
+def _bind_advection_sbp(
     scheme: SBPSAT, grid: UniformGrid, bc: Boundary
 ) -> SBPSAT:
     # {{{ scheme

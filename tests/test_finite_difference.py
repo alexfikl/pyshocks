@@ -176,7 +176,7 @@ def test_advection_finite_difference_jacobian(rec_name: str, bc_type: str) -> No
 
     import matplotlib.pyplot as plt
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))  # type: ignore[misc,unused-ignore]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
     ax1.imshow(fddjac)
     ax1.set_title("$Finite$")
     ax2.imshow(jaxjac)

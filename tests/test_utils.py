@@ -47,7 +47,7 @@ def test_convolve_vs_scipy(cv: ConvolutionType) -> None:
         w = rng.random(m, dtype=np.float64)
 
         with BlockTimer() as bt:
-            result_sp = snd.convolve1d(a, w, mode=cv.name.lower())  # type: ignore[arg-type]
+            result_sp = snd.convolve1d(a, w, mode=cv.name.lower())
         logger.info("scipy:     %s", bt)
 
         # }}}
