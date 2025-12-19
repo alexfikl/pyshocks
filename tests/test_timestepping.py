@@ -59,7 +59,7 @@ def test_time_convergence(cls: type[ts.Stepper], order: int) -> None:
         maxit, dt = ts.predict_maxit_from_timestep(tfinal, dt)
 
         stepper = cls(
-            predict_timestep=lambda t, u, dt=dt: dt,
+            predict_timestep=lambda t, u, dt=dt: dt,  # ty: ignore[invalid-argument-type]
             source=source,
             checkpoint=None,
         )

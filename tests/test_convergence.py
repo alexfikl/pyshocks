@@ -149,7 +149,7 @@ def evolve(
     maxit, dt = ts.predict_maxit_from_timestep(tfinal, dt)
 
     stepper = ts.SSPRK33(
-        predict_timestep=lambda _t, _u: dt,
+        predict_timestep=lambda _t, _u: dt,  # ty: ignore[invalid-argument-type]
         source=_apply_operator,
         checkpoint=None,
     )

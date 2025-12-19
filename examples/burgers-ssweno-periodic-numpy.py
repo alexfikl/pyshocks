@@ -391,7 +391,8 @@ def weno_lf_flux_242(
         dw_m: Array = np.where(ubar <= 0, R, L)
         dw_m = np.roll(dw_m, offset_m)
     else:
-        dw_m = dw_p = None
+        # FIXME: this case should also work
+        raise ValueError("k cannot be None")
 
     # weno reconstruction
     fw_m = weno_242_reconstruct(

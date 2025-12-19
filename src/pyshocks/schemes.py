@@ -260,7 +260,7 @@ def _predict_timestep_combine(
         jnp.minimum,
         [predict_timestep(s, grid, bc, t, u) for s in scheme.schemes],
         jnp.array(jnp.inf, dtype=u.dtype),
-    )
+    )  # ty: ignore[invalid-return-type]
 
 
 @apply_operator.register(CombineScheme)

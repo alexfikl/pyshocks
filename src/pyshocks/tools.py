@@ -520,7 +520,7 @@ def timeit(func: Callable[P, T]) -> Callable[P, T]:
 
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        with BlockTimer(func.__qualname__) as t:
+        with BlockTimer(func.__qualname__) as t:  # ty: ignore[unresolved-attribute]
             ret = func(*args, **kwargs)
 
         print(t)
@@ -535,8 +535,8 @@ def profileit(func: Callable[P, T]) -> Callable[P, T]:
     import datetime
 
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        today = datetime.datetime.utcnow()
-        filename = f"{func.__name__}-{today}.cProfile".replace(" ", "-")
+        today = datetime.datetime.now(datetime.timezone.utc)
+        filename = f"{func.__name__}-{today}.cProfile".replace(" ", "-")  # ty: ignore[unresolved-attribute]
 
         prof = cProfile.Profile()
         retval = prof.runcall(func, *args, **kwargs)
@@ -671,7 +671,7 @@ def check_usetex(*, s: bool) -> bool:
     try:
         import matplotlib
 
-        return bool(matplotlib.checkdep_usetex(s))
+        return bool(matplotlib.checkdep_usetex(s))  # ty: ignore[unresolved-attribute]
     except ImportError:
         # NOTE: no matplotlib, just return false
         return False

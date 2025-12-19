@@ -223,7 +223,7 @@ def test_sbp_matrices(name: str, bc: BoundaryType) -> None:
 
 
 def _sbp_rnorm(P: Array, x: float | Array, y: float | Array) -> Scalar:
-    if isinstance(x, float) or x.shape == ():
+    if isinstance(x, (int, float)) or x.shape == ():
         return jnp.array(jnp.abs(x - y) / jnp.abs(y))
 
     z = x - y

@@ -214,7 +214,7 @@ def test_tvd_slope_limiter_burgers(
     maxit, dt = predict_maxit_from_timestep(tfinal, dt)
 
     method = SSPRK33(
-        predict_timestep=lambda t, u: dt,
+        predict_timestep=lambda t, u: dt,  # ty: ignore[invalid-argument-type]
         source=jax.jit(_apply_operator),
         # source=_apply_operator,
         checkpoint=None,

@@ -121,11 +121,11 @@ ci-install venv=".venv":
         --no-build-isolation \
         --editable .
 
+    # FIXME: this needs `numpy` in the build requirements
     {{ PYTHON }} -m pip install --verbose --no-build-isolation \
         'git+https://github.com/alexfikl/PyWENO.git@numpy-2.0#egg=PyWENO'
 
     echo -e "\e[1;32mvenv setup completed: '{{ venv }}'!\e[0m"
-
 
 [doc("Remove various build artifacts")]
 clean:
