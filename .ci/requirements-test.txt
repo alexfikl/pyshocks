@@ -55,7 +55,7 @@ numpy==2.2.6 ; python_full_version < '3.11'
     #   matplotlib
     #   ml-dtypes
     #   scipy
-numpy==2.3.5 ; python_full_version >= '3.11'
+numpy==2.4.0 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -66,7 +66,7 @@ numpy==2.3.5 ; python_full_version >= '3.11'
     #   numpy-typing-compat
     #   optype
     #   scipy
-numpy-typing-compat==20251206.2.3 ; python_full_version >= '3.11'
+numpy-typing-compat==20251206.2.4 ; python_full_version >= '3.11'
     # via optype
 opt-einsum==3.4.0
     # via jax
@@ -87,7 +87,7 @@ pygments==2.19.2
     #   doc8
     #   pytest
     #   rich
-pyparsing==3.2.5
+pyparsing==3.3.1
     # via matplotlib
 pytest==9.0.2
     # via pyshocks (pyproject.toml:test)
@@ -121,7 +121,7 @@ tomli==2.3.0 ; python_full_version < '3.11'
     # via
     #   doc8
     #   pytest
-ty==0.0.4
+ty==0.0.8
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.15.0
     # via
