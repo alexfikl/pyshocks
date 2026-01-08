@@ -78,7 +78,7 @@ packaging==25.0
     # via
     #   matplotlib
     #   pytest
-pillow==12.0.0
+pillow==12.1.0
     # via matplotlib
 pluggy==1.6.0
     # via pytest
@@ -111,7 +111,7 @@ scipy==1.16.3 ; python_full_version >= '3.11'
     #   jaxlib
 scipy-stubs==1.15.3.0 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml:test)
-scipy-stubs==1.16.3.3 ; python_full_version >= '3.11'
+scipy-stubs==1.17.0.0 ; python_full_version >= '3.11'
     # via pyshocks (pyproject.toml:test)
 six==1.17.0
     # via python-dateutil
@@ -121,7 +121,7 @@ tomli==2.3.0 ; python_full_version < '3.11'
     # via
     #   doc8
     #   pytest
-ty==0.0.8
+ty==0.0.10
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.15.0
     # via
