@@ -97,7 +97,7 @@ restructuredtext-lint==2.0.2
     # via doc8
 rich==14.2.0
     # via pyshocks (pyproject.toml)
-ruff==0.14.10
+ruff==0.14.11
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.0
     # via pyshocks (pyproject.toml:vis)
