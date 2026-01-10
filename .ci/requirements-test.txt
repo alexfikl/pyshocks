@@ -55,7 +55,7 @@ numpy==2.2.6 ; python_full_version < '3.11'
     #   matplotlib
     #   ml-dtypes
     #   scipy
-numpy==2.4.0 ; python_full_version >= '3.11'
+numpy==2.4.1 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -121,7 +121,7 @@ tomli==2.3.0 ; python_full_version < '3.11'
     # via
     #   doc8
     #   pytest
-ty==0.0.10
+ty==0.0.11
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.15.0
     # via
