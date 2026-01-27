@@ -95,9 +95,9 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 restructuredtext-lint==2.0.2
     # via doc8
-rich==14.2.0
+rich==14.3.1
     # via pyshocks (pyproject.toml)
-ruff==0.14.13
+ruff==0.14.14
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.0
     # via pyshocks (pyproject.toml:vis)
@@ -111,7 +111,7 @@ scipy==1.17.0 ; python_full_version >= '3.11'
     #   jaxlib
 scipy-stubs==1.15.3.0 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml:test)
-scipy-stubs==1.17.0.1 ; python_full_version >= '3.11'
+scipy-stubs==1.17.0.2 ; python_full_version >= '3.11'
     # via pyshocks (pyproject.toml:test)
 six==1.17.0
     # via python-dateutil
@@ -121,7 +121,7 @@ tomli==2.4.0 ; python_full_version < '3.11'
     # via
     #   doc8
     #   pytest
-ty==0.0.13
+ty==0.0.14
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.15.0
     # via
