@@ -496,10 +496,10 @@ def norm(
 
     if u.shape[:1] == grid.x.shape:
         dx = grid.dx[grid.i_] if weighted else 1.0
-        result = jnp.array(_norm(u[grid.i_], dx, p), dtype=u.dtype)  # ty: ignore[too-many-positional-arguments]
+        result = jnp.array(_norm(u[grid.i_], dx, p), dtype=u.dtype)  # ty: ignore[too-many-positional-arguments,invalid-argument-type]
     elif u.shape[:1] == grid.f.shape:
         df = grid.df[grid.f_] if weighted else 1.0
-        result = jnp.array(_norm(u[grid.f_], df, p), dtype=u.dtype)  # ty: ignore[too-many-positional-arguments]
+        result = jnp.array(_norm(u[grid.f_], df, p), dtype=u.dtype)  # ty: ignore[too-many-positional-arguments,invalid-argument-type]
     else:
         raise ValueError(f"Array has unexpected shape: {u.shape[:1]}")
 
