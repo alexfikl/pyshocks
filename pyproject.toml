@@ -133,6 +133,15 @@ lint.isort.known-first-party = [
     "pyshocks",
 ]
 
+[tool.pytest.ini_options]
+testpaths = "tests"
+addopts = [
+    "-rswx",
+    "--durations=25",
+    "--capture=no",
+    "--verbose",
+]
+
 [tool.doc8]
 max-line-length = 88
 ignore-path = "docs/_build"

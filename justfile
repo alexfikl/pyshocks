@@ -135,7 +135,7 @@ clean:
 
 [doc("Remove various temporary files and caches")]
 purge: clean
-    rm -rf .ruff_cache .pytest_cache .pytest-cache tags
+    rm -rf .ruff_cache .pytest_cache tags
 
 [doc("Regenerate ctags")]
 ctags:
@@ -155,7 +155,7 @@ view opener="xdg-open":
 
 [doc("Run pytest tests")]
 test *PYTEST_ADDOPTS:
-    {{ PYTHON }} -m pytest -rswx --durations=25 -v -s {{ PYTEST_ADDOPTS }}
+    {{ PYTHON }} -m pytest {{ PYTEST_ADDOPTS }}
 
 [doc("Run examples with default options")]
 examples:
