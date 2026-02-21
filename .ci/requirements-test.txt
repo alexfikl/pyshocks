@@ -8,12 +8,6 @@ contourpy==1.3.3 ; python_full_version >= '3.11'
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-doc8==2.0.0
-    # via pyshocks (pyproject.toml:test)
-docutils==0.21.2
-    # via
-    #   doc8
-    #   restructuredtext-lint
 exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via pytest
 fonttools==4.61.1
@@ -22,13 +16,13 @@ iniconfig==2.3.0
     # via pytest
 jax==0.6.2 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml)
-jax==0.9.0 ; python_full_version >= '3.11'
+jax==0.9.0.1 ; python_full_version >= '3.11'
     # via pyshocks (pyproject.toml)
 jaxlib==0.6.2 ; python_full_version < '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
-jaxlib==0.9.0 ; python_full_version >= '3.11'
+jaxlib==0.9.0.1 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
@@ -78,13 +72,12 @@ packaging==26.0
     # via
     #   matplotlib
     #   pytest
-pillow==12.1.0
+pillow==12.1.1
     # via matplotlib
 pluggy==1.6.0
     # via pytest
 pygments==2.19.2
     # via
-    #   doc8
     #   pytest
     #   rich
 pyparsing==3.3.2
@@ -93,11 +86,9 @@ pytest==9.0.2
     # via pyshocks (pyproject.toml:test)
 python-dateutil==2.9.0.post0
     # via matplotlib
-restructuredtext-lint==2.0.2
-    # via doc8
-rich==14.3.1
+rich==14.3.3
     # via pyshocks (pyproject.toml)
-ruff==0.14.14
+ruff==0.15.2
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.0
     # via pyshocks (pyproject.toml:vis)
@@ -115,13 +106,9 @@ scipy-stubs==1.17.0.2 ; python_full_version >= '3.11'
     # via pyshocks (pyproject.toml:test)
 six==1.17.0
     # via python-dateutil
-stevedore==5.6.0
-    # via doc8
 tomli==2.4.0 ; python_full_version < '3.11'
-    # via
-    #   doc8
-    #   pytest
-ty==0.0.14
+    # via pytest
+ty==0.0.18
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.15.0
     # via
