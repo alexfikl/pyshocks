@@ -54,7 +54,7 @@ urls.Repository = "https://github.com/alexfikl/pyshocks"
 
 [dependency-groups]
 dev = [ "pyproject-fmt", "reuse", "typos", "uv" ]
-test = [ "doc8", "pytest", "ruff", "scipy-stubs", "ty" ]
+test = [ "pytest", "ruff", "scipy-stubs", "ty" ]
 vis = [ "matplotlib", "scienceplots" ]
 
 [tool.hatch]
@@ -135,7 +135,3 @@ ini_options.addopts = [
     "--capture=no",
     "--verbose",
 ]
-
-[tool.doc8]
-max-line-length = 88
-ignore-path = "docs/_build"

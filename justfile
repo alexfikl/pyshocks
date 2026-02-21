@@ -37,7 +37,7 @@ justfmt:
 # {{{ linting
 
 [doc('Run all linting checks over the source code')]
-lint: typos reuse ruff doc8 ty
+lint: typos reuse ruff ty
 
 [doc('Run typos over the source code and documentation')]
 typos:
@@ -53,11 +53,6 @@ reuse:
 ruff:
     ruff check src tests examples docs drivers
     @echo -e "\e[1;32mruff clean!\e[0m"
-
-[doc('Run doc8 checks over the documentation')]
-doc8:
-    {{ PYTHON }} -m doc8 src docs
-    @echo -e "\e[1;32mdoc8 clean!\e[0m"
 
 [doc('Run ty checks over the source code')]
 ty:
