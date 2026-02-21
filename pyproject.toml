@@ -57,26 +57,21 @@ dev = [ "pyproject-fmt", "reuse", "typos", "uv" ]
 test = [ "doc8", "pytest", "ruff", "scipy-stubs", "ty" ]
 vis = [ "matplotlib", "scienceplots" ]
 
-[tool.hatch.build.targets.sdist]
-exclude = [
+[tool.hatch]
+build.targets.sdist.exclude = [
     ".github",
     ".ci",
     "docs/_build",
 ]
-
-[tool.hatch.build.targets.wheel]
-packages = [
+build.targets.wheel.packages = [
     "src/pyshocks",
 ]
-
-[tool.hatch.metadata]
 # NOTE: needed for PyWENO use from git
-allow-direct-references = true
+metadata.allow-direct-references = true
 
 [tool.ruff]
 target-version = "py310"
 line-length = 88
-
 preview = true
 lint.select = [
     "A",   # flake8-builtins
@@ -122,7 +117,6 @@ lint.ignore = [
     "S403",    # suspicious-pickle-import
     "SIM108",  # use-ternary-operator
 ]
-
 lint.per-file-ignores."pyshocks/__init__.py" = [
     "FBT003",
 ]
@@ -133,9 +127,9 @@ lint.isort.known-first-party = [
     "pyshocks",
 ]
 
-[tool.pytest.ini_options]
-testpaths = "tests"
-addopts = [
+[tool.pytest]
+ini_options.testpaths = "tests"
+ini_options.addopts = [
     "-rswx",
     "--durations=25",
     "--capture=no",
