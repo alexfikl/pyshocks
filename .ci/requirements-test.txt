@@ -30,7 +30,11 @@ kiwisolver==1.5.0
     # via matplotlib
 markdown-it-py==4.2.0
     # via rich
-matplotlib==3.10.9
+matplotlib==3.10.9 ; python_full_version < '3.11'
+    # via
+    #   pyshocks (pyproject.toml:vis)
+    #   scienceplots
+matplotlib==3.11.0 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml:vis)
     #   scienceplots
@@ -88,7 +92,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 rich==15.0.0
     # via pyshocks (pyproject.toml)
-ruff==0.15.15
+ruff==0.15.17
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.1
     # via pyshocks (pyproject.toml:vis)
@@ -108,7 +112,7 @@ six==1.17.0
     # via python-dateutil
 tomli==2.4.1 ; python_full_version < '3.11'
     # via pytest
-ty==0.0.40
+ty==0.0.49
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.15.0
     # via
