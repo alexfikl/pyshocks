@@ -58,16 +58,16 @@ test = [ "pytest", "ruff", "scipy-stubs", "ty" ]
 vis = [ "matplotlib", "scienceplots" ]
 
 [tool.hatch]
-build.targets.sdist.exclude = [
-    ".github",
-    ".ci",
-    "docs/_build",
-]
+# NOTE: needed for PyWENO use from git
+metadata.allow-direct-references = true
 build.targets.wheel.packages = [
     "src/pyshocks",
 ]
-# NOTE: needed for PyWENO use from git
-metadata.allow-direct-references = true
+build.targets.sdist.exclude = [
+    ".ci",
+    ".github",
+    "docs/_build",
+]
 
 [tool.ruff]
 target-version = "py310"
