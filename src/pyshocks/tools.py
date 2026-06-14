@@ -717,35 +717,19 @@ def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
         mp.style.use("petroff10")
         prop_cycle = mp.rcParams["axes.prop_cycle"]
 
-    overrides: dict[str, dict[str, Any]] = {
-        "figure": {
-            "figsize": (8, 8),
-            "dpi": 300,
-            "constrained_layout.use": True,
-        },
-        "text": {"usetex": use_tex},
-        "legend": {"fontsize": 32},
-        "lines": {"linewidth": 2, "markersize": 10},
-        "axes": {
-            "labelsize": 32,
-            "titlesize": 32,
-            "grid": True,
-            "grid.axis": "both",
-            "grid.which": "both",
-            # NOTE: preserve existing colors (the ones in "science" are ugly)
-            "prop_cycle": prop_cycle,
-        },
-        "xtick": {"labelsize": 24, "direction": "inout"},
-        "ytick": {"labelsize": 24, "direction": "inout"},
-        "axes.grid": {"axis": "both", "which": "both"},
-        "xtick.major": {"size": 6.5, "width": 1.5},
-        "ytick.major": {"size": 6.5, "width": 1.5},
-        "xtick.minor": {"size": 4.0},
-        "ytick.minor": {"size": 4.0},
-    }
-
-    for group, params in overrides.items():
-        mp.rc(group, **params)
+    mp.rc("figure", figsize=(8, 8), dpi=300)
+    mp.rc("figure.constrained_layout", use=True)
+    mp.rc("text", usetex=use_tex)
+    mp.rc("legend", fontsize=32)
+    mp.rc("lines", linewidth=2, markersize=10)
+    mp.rc("axes", labelsize=32, titlesize=32, grid=True, prop_cycle=prop_cycle)
+    mp.rc("xtick", labelsize=24, direction="inout")
+    mp.rc("ytick", labelsize=24, direction="inout")
+    mp.rc("axes.grid", axis="both", which="both")
+    mp.rc("xtick.major", size=6.5, width=1.5)
+    mp.rc("ytick.major", size=6.5, width=1.5)
+    mp.rc("xtick.minor", size=4.0)
+    mp.rc("ytick.minor", size=4.0)
 
 
 @contextmanager
