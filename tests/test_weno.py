@@ -24,7 +24,8 @@ from pyshocks.tools import Array, Scalar, get_environ_bool, set_recommended_matp
 ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_weno")
-set_recommended_matplotlib()
+if ENABLE_VISUAL:
+    set_recommended_matplotlib()
 
 
 # {{{ test_weno_smoothness_indicator_vectorization

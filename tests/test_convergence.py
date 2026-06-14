@@ -34,7 +34,8 @@ from pyshocks.tools import (
 ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_convergence")
-set_recommended_matplotlib()
+if ENABLE_VISUAL:
+    set_recommended_matplotlib()
 
 
 # {{{ evolve

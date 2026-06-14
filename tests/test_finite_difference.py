@@ -20,7 +20,8 @@ from pyshocks.tools import Array, get_environ_bool, set_recommended_matplotlib
 ENABLE_VISUAL = get_environ_bool("ENABLE_VISUAL")
 
 logger = get_logger("test_finite_difference")
-set_recommended_matplotlib()
+if ENABLE_VISUAL:
+    set_recommended_matplotlib()
 
 
 # {{{ test advection vs continuity
