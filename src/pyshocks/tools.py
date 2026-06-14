@@ -706,7 +706,7 @@ def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
 
     # NOTE: since v1.1.0 an import is required to import the styles
     prop_cycle = mp.rcParams["axes.prop_cycle"]
-    with suppress(ImportError):
+    with suppress(ImportError, AttributeError):
         import scienceplots  # noqa: F401
 
         mp.style.use(["science", "ieee"])
