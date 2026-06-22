@@ -662,6 +662,39 @@ def get_environ_bool(name: str) -> bool:
 # }}}
 
 
+# {{{ load_scienceplots_styles
+
+
+class Styles:
+    def __init__(self, styles: dict[str, str]) -> None:
+        self.styles = styles
+
+    def get(self, styles: str | Sequence[str]) -> tuple[str, ...]:
+        if isinstance(styles, str):
+            styles = [styles]
+
+        # NOTE: this silently does nothing if the styles are incorrectly named or
+        # if scienceplots does not actually exist. This should be fine..
+        return tuple(self.styles[style] for style in styles if style in self.styles)
+
+
+def load_scienceplots_styles() -> Styles:
+    from importlib.util import find_spec
+
+    spec = find_spec("scienceplots")
+    if spec is None:
+        return Styles({})
+
+    if spec.submodule_search_locations is None:
+        return Styles({})
+
+    styles_root = pathlib.Path(spec.submodule_search_locations[0]) / "styles"
+    return Styles({f.stem: str(f) for f in styles_root.rglob("*") if f.is_file()})
+
+
+# }}}
+
+
 # {{{ matplotlib
 
 
@@ -702,20 +735,15 @@ def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
     if use_tex is None:
         use_tex = "GITHUB_REPOSITORY" not in os.environ and check_usetex(s=True)
 
-    from contextlib import suppress
-
-    # NOTE: since v1.1.0 an import is required to import the styles
-    prop_cycle = mp.rcParams["axes.prop_cycle"]
-    with suppress(ImportError, AttributeError):
-        import scienceplots  # noqa: F401
-
-        mp.style.use(["science", "ieee"])
-
     # NOTE: the 'petroff10' style is available for version >= 3.10.0 and changes
     # the 'prop_cycle' to the 10 colors that are more accessible
+    prop_cycle = mp.rcParams["axes.prop_cycle"]
     if "petroff10" in mp.style.available:
         mp.style.use("petroff10")
         prop_cycle = mp.rcParams["axes.prop_cycle"]
+
+    scienceplots = load_scienceplots_styles()
+    mp.style.use(scienceplots.get(["science", "ieee"]))
 
     mp.rc("figure", figsize=(8, 8), dpi=300)
     mp.rc("figure.constrained_layout", use=True)
