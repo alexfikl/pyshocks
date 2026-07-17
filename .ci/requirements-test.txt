@@ -16,13 +16,19 @@ iniconfig==2.3.0
     # via pytest
 jax==0.6.2 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml)
-jax==0.10.2 ; python_full_version >= '3.11'
+jax==0.10.2 ; python_full_version == '3.11.*'
+    # via pyshocks (pyproject.toml)
+jax==0.11.0 ; python_full_version >= '3.12'
     # via pyshocks (pyproject.toml)
 jaxlib==0.6.2 ; python_full_version < '3.11'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
-jaxlib==0.10.2 ; python_full_version >= '3.11'
+jaxlib==0.10.2 ; python_full_version == '3.11.*'
+    # via
+    #   pyshocks (pyproject.toml)
+    #   jax
+jaxlib==0.11.0 ; python_full_version >= '3.12'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
@@ -107,7 +113,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 rich==15.0.0
     # via pyshocks (pyproject.toml)
-ruff==0.15.20
+ruff==0.15.22
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.2
     # via pyshocks (pyproject.toml:vis)
@@ -127,13 +133,13 @@ scipy-stubs==1.15.3.0 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml:test)
 scipy-stubs==1.17.1.5 ; python_full_version == '3.11.*'
     # via pyshocks (pyproject.toml:test)
-scipy-stubs==1.18.0.0 ; python_full_version >= '3.12'
+scipy-stubs==1.18.0.1 ; python_full_version >= '3.12'
     # via pyshocks (pyproject.toml:test)
 six==1.17.0
     # via python-dateutil
 tomli==2.4.1 ; python_full_version < '3.11'
     # via pytest
-ty==0.0.56
+ty==0.0.60
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.16.0
     # via
