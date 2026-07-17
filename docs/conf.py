@@ -11,7 +11,7 @@ from importlib import metadata
 m = metadata.metadata("pyshocks")
 project = m["Name"]
 author = m["Author-email"]
-copyright = f"2021-2025 {author}"  # noqa: A001
+copyright = f"2021-2025 {author}"  # ruff:ignore[builtin-variable-shadowing]
 version = m["Version"]
 release = version
 

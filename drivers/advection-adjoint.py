@@ -232,7 +232,7 @@ def main(
 ) -> None:
     if visualize or interactive:
         try:
-            import matplotlib.pyplot as plt  # noqa: F401
+            import matplotlib.pyplot as plt  # ruff:ignore[unused-import]
         except ImportError:
             interactive = visualize = False
 

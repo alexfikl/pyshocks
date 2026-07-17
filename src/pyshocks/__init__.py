@@ -66,7 +66,7 @@ jax.config.update("jax_enable_x64", val=True)
 jax.config.update("jax_platform_name", "cpu")
 
 # NOTE: enabled on more recent versions of jax
-try:  # noqa: SIM105
+try:  # ruff:ignore[suppressible-exception]
     # NOTE: this option is removed in newer version
     jax.config.update("jax_array", val=True)
 except AttributeError:

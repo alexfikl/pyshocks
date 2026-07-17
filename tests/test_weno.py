@@ -207,7 +207,7 @@ def test_weno_vs_pyweno(rec_name: str, order: int, n: int) -> None:
     from pyshocks import cell_average, make_leggauss_quadrature
 
     quad = make_leggauss_quadrature(grid, order=order)
-    u = cell_average(quad, lambda x: jnp.sin(x))  # noqa: PLW0108
+    u = cell_average(quad, lambda x: jnp.sin(x))  # ruff:ignore[unnecessary-lambda]
 
     uhost = u.copy()
     ul, sl = _pyweno_reconstruct(uhost, order, "left")

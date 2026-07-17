@@ -60,7 +60,7 @@ def func_step(x: Array, w: float = 0.25, a: float = -1.0, b: float = 1.0) -> Arr
 def test_flux_limiters(
     lm_name: str,
     lm_kwargs: dict[str, Any],
-    smooth: bool,  # noqa: FBT001
+    smooth: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     lm = make_limiter_from_name(lm_name, **lm_kwargs)
     grid = make_uniform_cell_grid(-1.0, 1.0, n=128, nghosts=1)
@@ -175,7 +175,7 @@ def test_flux_limiters(
 def test_tvd_slope_limiter_burgers(
     lm_name: str,
     lm_kwargs: dict[str, Any],
-    smooth: bool,  # noqa: FBT001
+    smooth: bool,  # ruff:ignore[boolean-type-hint-positional-argument]
 ) -> None:
     from pyshocks import burgers
     from pyshocks.reconstruction import MUSCL

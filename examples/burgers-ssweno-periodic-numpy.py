@@ -882,7 +882,7 @@ def check_interpolation(*, visualize: bool = True) -> None:
         # ax.plot(y, fhat[C], label="$f^C$")
         # ax.plot(y, fhat[R], label="$f^R$")
         # ax.semilogy(np.abs(fbar - fhathat), "o-")
-        ax.set_xlabel(r"$\bar{x}$")  # noqa: RUF027
+        ax.set_xlabel(r"$\bar{x}$")  # ruff:ignore[missing-f-string-syntax]
         # ax.set_ylim((1.0e-16, 1))
         # ax.legend()
 
@@ -939,7 +939,7 @@ def check_smoothness(*, visualize: bool = True) -> None:
         # ax.plot(y, beta[R], label=r"$\beta^R$")
         ax.plot(y, ddu, "k--")
         ax.plot(y, tau, label=r"$\tau$")
-        ax.set_xlabel(r"$\bar{x}$")  # noqa: RUF027
+        ax.set_xlabel(r"$\bar{x}$")  # ruff:ignore[missing-f-string-syntax]
         ax.legend()
 
         fig.savefig("burgers_ssweno_smooth_convergence")
@@ -988,7 +988,7 @@ def check_stencil_pick(*, visualize: bool = False) -> None:
         ax.plot(y, omega[L], "x-", label=r"$\omega^L$")
         ax.plot(y, omega[C], "o-", label=r"$\omega^C$")
         ax.plot(y, omega[R], "+-", label=r"$\omega^R$")
-        ax.set_xlabel(r"$\bar{x}$")  # noqa: RUF027
+        ax.set_xlabel(r"$\bar{x}$")  # ruff:ignore[missing-f-string-syntax]
         ax.legend()
 
         fig.savefig("burgers_ssweno_jump_weights")
@@ -998,8 +998,8 @@ def check_stencil_pick(*, visualize: bool = False) -> None:
         ax = fig.gca()
 
         ax.plot(x, u, "k-", ms=3, label="$u$")
-        ax.plot(y, uhat_p, "x-", ms=5, label=r"$\bar{u}^+$")  # noqa: RUF027
-        ax.plot(y, uhat_m, "s-", ms=3, label=r"$\bar{u}^-$")  # noqa: RUF027
+        ax.plot(y, uhat_p, "x-", ms=5, label=r"$\bar{u}^+$")  # ruff:ignore[missing-f-string-syntax]
+        ax.plot(y, uhat_m, "s-", ms=3, label=r"$\bar{u}^-$")  # ruff:ignore[missing-f-string-syntax]
         ax.plot(x, u, "ko", ms=5)
         ax.set_xlabel("$x$")
         ax.legend()

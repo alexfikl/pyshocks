@@ -187,7 +187,7 @@ def evolve(
 
         ax.plot(grid.x[s], u0[s], "--", label="$u(0, x)$")
         ax.plot(grid.x[s], u[s], "-", label="$u(T, x)$")
-        ax.plot(grid.x[s], uhat[s], "k--", label=r"$\hat{u}(T, x)$")  # noqa: RUF027
+        ax.plot(grid.x[s], uhat[s], "k--", label=r"$\hat{u}(T, x)$")  # ruff:ignore[missing-f-string-syntax]
         ax.set_xlabel("$x$")
         ax.legend()
 
@@ -198,7 +198,7 @@ def evolve(
         ax = fig.gca()
         ax.semilogy(grid.x[s], jnp.abs(u[s] - uhat[s]))
         ax.set_xlabel("$x$")
-        ax.set_ylabel(r"$|u - \hat{u}|$")  # noqa: RUF027
+        ax.set_ylabel(r"$|u - \hat{u}|$")  # ruff:ignore[missing-f-string-syntax]
 
         filename = f"convergence_{case}_{n:04}_error"
         fig.savefig(filename)
@@ -225,7 +225,7 @@ class BurgersTestCase(FiniteVolumeTestCase):
     def __str__(self) -> str:
         return f"burgers_{self.scheme_name}_constant"
 
-    def make_boundary(self, grid: Grid) -> Boundary:  # noqa: PLR6301
+    def make_boundary(self, grid: Grid) -> Boundary:  # ruff:ignore[no-self-use]
         from pyshocks.scalar import make_dirichlet_boundary
 
         return make_dirichlet_boundary(
@@ -317,7 +317,7 @@ class AdvectionTestCase(FiniteVolumeTestCase):
     def __str__(self) -> str:
         return f"advection_{self.scheme_name}_{self.rec_name}"
 
-    def make_boundary(self, grid: Grid) -> Boundary:  # noqa: PLR6301
+    def make_boundary(self, grid: Grid) -> Boundary:  # ruff:ignore[no-self-use]
         from pyshocks.scalar import PeriodicBoundary
 
         return PeriodicBoundary()

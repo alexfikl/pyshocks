@@ -334,7 +334,7 @@ def main(
 
     from matplotlib import animation
 
-    anim = animation.FuncAnimation(  # noqa: F841
+    anim = animation.FuncAnimation(  # ruff:ignore[unused-variable]
         fig, animate, np.arange(1, nt), init_func=init, interval=25, blit=True
     )
     plt.show()
