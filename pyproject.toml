@@ -96,30 +96,30 @@ lint.select = [
     "W",   # flake8
 ]
 lint.ignore = [
-    "A005",    # shadowing-builtin-module
-    "E402",    # module-import-not-at-top-of-file
-    "ISC001",  # single-line-implicit-string-concatenation
-    "N803",    # invalid-argument-name
-    "N806",    # non-lowercase-variable-in-function
-    "PLC0415", # import-outside-top-level
-    "PLC2801", # unnecessary-dunder-call
-    "PLR0912", # too-many-branches
-    "PLR0913", # too-many-arguments
-    "PLR0914", # too-many-locals
-    "PLR0915", # too-many-statements
-    "PLR0917", # too-many-positional
-    "PLR2004", # magic-value-comparison
-    "PLR6104", # non-augmented-assignment
-    "PLW0717", # too-many-statements-in-try
-    "RUF067",  # non-empty-init-module
-    "S101",    # assert
-    "S102",    # exec-builtin
-    "S301",    # suspicious-pickle-usage
-    "S403",    # suspicious-pickle-import
-    "SIM108",  # use-ternary-operator
+    "assert",                                    # assert
+    "exec-builtin",                              # exec-builtin
+    "if-else-block-instead-of-if-exp",           # use-ternary-operator
+    "import-outside-top-level",                  # import-outside-top-level
+    "invalid-argument-name",                     # invalid-argument-name
+    "magic-value-comparison",                    # magic-value-comparison
+    "module-import-not-at-top-of-file",          # module-import-not-at-top-of-file
+    "non-augmented-assignment",                  # non-augmented-assignment
+    "non-empty-init-module",                     # non-empty-init-module
+    "non-lowercase-variable-in-function",        # non-lowercase-variable-in-function
+    "single-line-implicit-string-concatenation", # single-line-implicit-string-concatenation
+    "stdlib-module-shadowing",                   # shadowing-builtin-module
+    "suspicious-pickle-import",                  # suspicious-pickle-import
+    "suspicious-pickle-usage",                   # suspicious-pickle-usage
+    "too-many-arguments",                        # too-many-arguments
+    "too-many-branches",                         # too-many-branches
+    "too-many-locals",                           # too-many-locals
+    "too-many-positional-arguments",             # too-many-positional
+    "too-many-statements",                       # too-many-statements
+    "too-many-statements-in-try-clause",         # too-many-statements-in-try
+    "unnecessary-dunder-call",                   # unnecessary-dunder-call
 ]
 lint.per-file-ignores."pyshocks/__init__.py" = [
-    "FBT003",
+    "boolean-positional-value-in-call",
 ]
 lint.flake8-quotes.docstring-quotes = "double"
 lint.flake8-quotes.inline-quotes = "double"
