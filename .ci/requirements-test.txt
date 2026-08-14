@@ -40,13 +40,13 @@ matplotlib==3.10.9 ; python_full_version < '3.11'
     # via
     #   pyshocks (pyproject.toml:vis)
     #   scienceplots
-matplotlib==3.11.0 ; python_full_version >= '3.11'
+matplotlib==3.11.1 ; python_full_version >= '3.11'
     # via
     #   pyshocks (pyproject.toml:vis)
     #   scienceplots
 mdurl==0.1.2
     # via markdown-it-py
-ml-dtypes==0.5.4
+ml-dtypes==0.6.0
     # via
     #   jax
     #   jaxlib
@@ -70,7 +70,7 @@ numpy==2.4.6 ; python_full_version == '3.11.*'
     #   numpy-typing-compat
     #   optype
     #   scipy
-numpy==2.5.1 ; python_full_version >= '3.12'
+numpy==2.5.2 ; python_full_version >= '3.12'
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -93,7 +93,7 @@ optype==0.17.1 ; python_full_version == '3.11.*'
     # via scipy-stubs
 optype==0.18.0 ; python_full_version >= '3.12'
     # via scipy-stubs
-packaging==26.2
+packaging==26.3
     # via
     #   matplotlib
     #   pytest
@@ -113,7 +113,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 rich==15.0.0
     # via pyshocks (pyproject.toml)
-ruff==0.15.22
+ruff==0.16.3
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.2
     # via pyshocks (pyproject.toml:vis)
@@ -139,7 +139,7 @@ six==1.17.0
     # via python-dateutil
 tomli==2.4.1 ; python_full_version < '3.11'
     # via pytest
-ty==0.0.60
+ty==0.0.71
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.16.0
     # via
