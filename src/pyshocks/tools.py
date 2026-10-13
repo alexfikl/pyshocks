@@ -79,7 +79,7 @@ import numpy as np
 from pyshocks.logging import get_logger
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Generator, Iterable, Sequence
     from types import TracebackType
 
 logger = get_logger(__name__)
@@ -761,7 +761,7 @@ def set_recommended_matplotlib(*, use_tex: bool | None = None) -> None:
 
 
 @contextmanager
-def figure(filename: PathLike | None = None, **kwargs: Any) -> Iterator[Any]:
+def figure(filename: PathLike | None = None, **kwargs: Any) -> Generator[Any]:
     import matplotlib.pyplot as mp
 
     fig = mp.figure()
@@ -783,7 +783,7 @@ def gca(
     *,
     clear: bool = True,
     **kwargs: Any,
-) -> Iterator[Any]:
+) -> Generator[Any]:
     try:
         yield fig.gca()
     finally:
