@@ -40,7 +40,7 @@ numpy==2.4.6 ; python_full_version == '3.11.*'
     #   jaxlib
     #   ml-dtypes
     #   scipy
-numpy==2.5.3 ; python_full_version >= '3.12'
+numpy==2.5.4 ; python_full_version >= '3.12'
     # via
     #   pyshocks (pyproject.toml)
     #   jax

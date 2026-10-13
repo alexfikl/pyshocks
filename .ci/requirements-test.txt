@@ -12,9 +12,11 @@ cycler==0.12.1
     # via matplotlib
 exceptiongroup==1.3.1 ; python_full_version < '3.11'
     # via pytest
-fonttools==4.65.0
+fonttools==4.65.0 ; python_full_version < '3.11'
     # via matplotlib
-iniconfig==2.3.0
+fonttools==4.66.1 ; python_full_version >= '3.11'
+    # via matplotlib
+iniconfig==2.3.1
     # via pytest
 jax==0.6.2 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml)
@@ -72,7 +74,7 @@ numpy==2.4.6 ; python_full_version == '3.11.*'
     #   numpy-typing-compat
     #   optype
     #   scipy
-numpy==2.5.3 ; python_full_version >= '3.12'
+numpy==2.5.4 ; python_full_version >= '3.12'
     # via
     #   pyshocks (pyproject.toml)
     #   contourpy
@@ -93,7 +95,7 @@ optype==0.9.3 ; python_full_version < '3.11'
     # via scipy-stubs
 optype==0.17.1 ; python_full_version == '3.11.*'
     # via scipy-stubs
-optype==0.18.0 ; python_full_version >= '3.12'
+optype==0.19.0 ; python_full_version >= '3.12'
     # via scipy-stubs
 packaging==26.3
     # via
@@ -107,7 +109,7 @@ pygments==2.21.0
     # via
     #   pytest
     #   rich
-pyparsing==3.3.2
+pyparsing==3.3.3
     # via matplotlib
 pytest==9.1.1
     # via pyshocks (pyproject.toml:test)
@@ -115,7 +117,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 rich==15.0.0
     # via pyshocks (pyproject.toml)
-ruff==0.16.8
+ruff==0.17.0
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.2
     # via pyshocks (pyproject.toml:vis)
@@ -135,13 +137,13 @@ scipy-stubs==1.15.3.0 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml:test)
 scipy-stubs==1.17.1.5 ; python_full_version == '3.11.*'
     # via pyshocks (pyproject.toml:test)
-scipy-stubs==1.18.1.0 ; python_full_version >= '3.12'
+scipy-stubs==1.18.1.1 ; python_full_version >= '3.12'
     # via pyshocks (pyproject.toml:test)
 six==1.17.0
     # via python-dateutil
-tomli==2.4.1 ; python_full_version < '3.11'
+tomli==2.5.0 ; python_full_version < '3.11'
     # via pytest
-ty==0.0.82
+ty==0.0.86
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.16.0
     # via
