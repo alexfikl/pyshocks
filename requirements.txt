@@ -4,7 +4,7 @@ jax==0.6.2 ; python_full_version < '3.11'
     # via pyshocks (pyproject.toml)
 jax==0.10.2 ; python_full_version == '3.11.*'
     # via pyshocks (pyproject.toml)
-jax==0.11.2 ; python_full_version >= '3.12'
+jax==0.12.0.1 ; python_full_version >= '3.12'
     # via pyshocks (pyproject.toml)
 jaxlib==0.6.2 ; python_full_version < '3.11'
     # via
@@ -14,7 +14,7 @@ jaxlib==0.10.2 ; python_full_version == '3.11.*'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
-jaxlib==0.11.2 ; python_full_version >= '3.12'
+jaxlib==0.12.0.1 ; python_full_version >= '3.12'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
