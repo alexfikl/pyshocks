@@ -18,7 +18,7 @@ jaxlib==0.12.0.1 ; python_full_version >= '3.12'
     # via
     #   pyshocks (pyproject.toml)
     #   jax
-markdown-it-py==4.2.0
+markdown-it-py==4.3.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py

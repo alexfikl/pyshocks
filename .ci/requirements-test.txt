@@ -38,7 +38,7 @@ jaxlib==0.12.0.1 ; python_full_version >= '3.12'
     #   jax
 kiwisolver==1.5.1
     # via matplotlib
-markdown-it-py==4.2.0
+markdown-it-py==4.3.0
     # via rich
 matplotlib==3.10.9 ; python_full_version < '3.11'
     # via
@@ -121,7 +121,7 @@ python-dateutil==4.0.0 ; python_full_version >= '3.11'
     # via matplotlib
 rich==15.0.0
     # via pyshocks (pyproject.toml)
-ruff==0.17.4
+ruff==0.17.5
     # via pyshocks (pyproject.toml:test)
 scienceplots==2.2.2
     # via pyshocks (pyproject.toml:vis)
@@ -147,7 +147,7 @@ six==1.17.0 ; python_full_version < '3.11'
     # via python-dateutil
 tomli==2.5.0 ; python_full_version < '3.11'
     # via pytest
-ty==0.0.99
+ty==0.0.102
     # via pyshocks (pyproject.toml:test)
 typing-extensions==4.16.0
     # via
